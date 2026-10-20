@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { useStaff } from '../../lib/staff';
 import {
   PERMISSION_GROUPS,
   ROLES,
@@ -20,8 +21,16 @@ type Tab = 'users' | 'roles';
 /** Dirección · Usuarios y permisos */
 export function UsersPermissions() {
   const [tab, setTab] = useState<Tab>('users');
+  const staff = useStaff();
   const [users, setUsers] = useState(USERS);
   const [roles, setRoles] = useState(ROLES);
+
+  // With a server, the list comes from the school's real staff.
+  useEffect(() => {
+    if (staff.users) setUsers(staff.users);
+  }, [staff.users]);
+
+  const loading = staff.live && !staff.users;
 
   return (
     <AdminLayout>
@@ -41,17 +50,31 @@ export function UsersPermissions() {
         ]}
       />
       <div role="tabpanel">
-        {tab === 'users' ? <UsersTab users={users} setUsers={setUsers} roles={roles} /> : <RolesTab roles={roles} setRoles={setRoles} users={users} />}
+        {staff.error ? (
+          <p className="notice" role="alert">
+            No se pudo cargar el personal: {staff.error}
+          </p>
+        ) : loading ? (
+          <p className="text-sm muted">Cargando…</p>
+        ) : tab === 'users' ? (
+          <UsersTab users={users} setUsers={setUsers} roles={roles} staff={staff} />
+        ) : (
+          <RolesTab roles={roles} setRoles={setRoles} users={users} />
+        )}
       </div>
     </AdminLayout>
   );
 }
 
-function UsersTab({ users, setUsers, roles }: { users: User[]; setUsers: (u: User[]) => void; roles: Role[] }) {
+type Staff = ReturnType<typeof useStaff>;
+
+function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: (u: User[]) => void; roles: Role[]; staff: Staff }) {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | RoleId>('all');
-  const [selectedId, setSelectedId] = useState<number | 'new'>(2);
+  const [selectedId, setSelectedId] = useState<User['id'] | 'new'>(staff.live ? (users[0]?.id ?? 'new') : 2);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const sections = staff.live ? staff.sections : SECTION_IDS;
 
   const list = users.filter(
     (u) => (roleFilter === 'all' || u.roles.includes(roleFilter)) && (u.name + u.contact).toLowerCase().includes(query.toLowerCase()),
@@ -61,6 +84,14 @@ function UsersTab({ users, setUsers, roles }: { users: User[]; setUsers: (u: Use
   const update = (u: User) => {
     setUsers(users.map((x) => (x.id === u.id ? u : x)));
     setSaved(false);
+    setSaveError('');
+  };
+
+  const save = async () => {
+    if (!staff.live || !selected) return setSaved(true);
+    const error = await staff.save(selected);
+    setSaveError(error);
+    setSaved(!error);
   };
 
   return (
@@ -138,16 +169,23 @@ function UsersTab({ users, setUsers, roles }: { users: User[]; setUsers: (u: Use
       </section>
 
       {selected ? (
-        <UserPanel key={selected.id} user={selected} roles={roles} onChange={update} saved={saved} onSave={() => setSaved(true)} />
+        <UserPanel key={selected.id} user={selected} roles={roles} sections={sections} onChange={update} saved={saved} error={saveError} onSave={save} />
       ) : (
         <InvitePanel
           roles={roles}
-          onInvite={(u) => {
-            const id = Math.max(...users.map((x) => x.id)) + 1;
+          sections={sections}
+          onInvite={async (u) => {
+            if (staff.live) {
+              const { id, error } = await staff.invite(u);
+              if (id) setSelectedId(id);
+              return error;
+            }
+            const id = Math.max(...users.map((x) => Number(x.id))) + 1;
             setUsers([...users, { ...u, id }]);
             setSelectedId(id);
+            return '';
           }}
-          onCancel={() => setSelectedId(users[0].id)}
+          onCancel={() => setSelectedId(users[0]?.id ?? 'new')}
         />
       )}
     </div>
@@ -185,7 +223,7 @@ function RoleChecks({ value, onChange, roles }: { value: RoleId[]; onChange: (r:
   );
 }
 
-function SectionPicker({ value, onChange }: { value?: string; onChange: (s: string) => void }) {
+function SectionPicker({ value, onChange, sections }: { value?: string; onChange: (s: string) => void; sections: string[] }) {
   return (
     <div className="field" style={{ maxWidth: 220 }}>
       <label htmlFor="u-seccion" className="field__label">
@@ -195,7 +233,7 @@ function SectionPicker({ value, onChange }: { value?: string; onChange: (s: stri
         <option value="" disabled>
           Elegir sección
         </option>
-        {SECTION_IDS.map((s) => (
+        {sections.map((s) => (
           <option key={s}>{s}</option>
         ))}
       </select>
@@ -203,7 +241,17 @@ function SectionPicker({ value, onChange }: { value?: string; onChange: (s: stri
   );
 }
 
-function UserPanel({ user, roles, onChange, saved, onSave }: { user: User; roles: Role[]; onChange: (u: User) => void; saved: boolean; onSave: () => void }) {
+interface UserPanelProps {
+  user: User;
+  roles: Role[];
+  sections: string[];
+  onChange: (u: User) => void;
+  saved: boolean;
+  error: string;
+  onSave: () => void;
+}
+
+function UserPanel({ user, roles, sections, onChange, saved, error, onSave }: UserPanelProps) {
   const { fromRoles, all } = effectivePermissions(user, roles);
   const isGuide = user.roles.includes('gui');
   const noRoles = user.roles.length === 0;
@@ -232,7 +280,7 @@ function UserPanel({ user, roles, onChange, saved, onSave }: { user: User; roles
       </div>
 
       <RoleChecks value={user.roles} roles={roles} onChange={(r) => onChange({ ...user, roles: r, section: r.includes('gui') ? user.section : undefined })} />
-      {isGuide && <SectionPicker value={user.section} onChange={(s) => onChange({ ...user, section: s })} />}
+      {isGuide && <SectionPicker value={user.section} sections={sections} onChange={(s) => onChange({ ...user, section: s })} />}
 
       <div className="stack gap-8">
         <h3 className="eyebrow">Permisos</h3>
@@ -279,7 +327,11 @@ function UserPanel({ user, roles, onChange, saved, onSave }: { user: User; roles
       </div>
 
       <div className="row wrap between gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
-        {saved ? (
+        {error ? (
+          <span role="alert" className="text-sm ink-orange">
+            No se guardó: {error}
+          </span>
+        ) : saved ? (
           <span role="status" className="text-sm strong ink-green">
             Cambios guardados
           </span>
@@ -294,19 +346,27 @@ function UserPanel({ user, roles, onChange, saved, onSave }: { user: User; roles
   );
 }
 
-function InvitePanel({ roles, onInvite, onCancel }: { roles: Role[]; onInvite: (u: Omit<User, 'id'>) => void; onCancel: () => void }) {
+interface InvitePanelProps {
+  roles: Role[];
+  sections: string[];
+  /** Resolves to an error message, or '' when the person was added. */
+  onInvite: (u: Omit<User, 'id'>) => Promise<string>;
+  onCancel: () => void;
+}
+
+function InvitePanel({ roles, sections, onInvite, onCancel }: InvitePanelProps) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [userRoles, setUserRoles] = useState<RoleId[]>(['doc']);
   const [section, setSection] = useState<string | undefined>();
   const [error, setError] = useState('');
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !contact.trim()) return setError('Escriba el nombre y un correo o teléfono para enviar la invitación.');
     if (userRoles.length === 0) return setError('Elija al menos un rol.');
     if (userRoles.includes('gui') && !section) return setError('Elija la sección a cargo del profesor guía.');
-    onInvite({ name: name.trim(), contact: contact.trim(), roles: userRoles, section, extra: [], active: true, lastSeen: 'Invitación enviada' });
+    setError(await onInvite({ name: name.trim(), contact: contact.trim(), roles: userRoles, section, extra: [], active: true, lastSeen: 'Invitación enviada' }));
   };
 
   return (
@@ -316,9 +376,9 @@ function InvitePanel({ roles, onInvite, onCancel }: { roles: Role[]; onInvite: (
           Invitar usuario
         </h2>
         <InputField id="inv-nombre" label="Nombre completo" value={name} onChange={(e) => setName(e.target.value)} />
-        <InputField id="inv-contacto" label="Correo o teléfono" hint="recibe el enlace de acceso" value={contact} onChange={(e) => setContact(e.target.value)} />
+        <InputField id="inv-contacto" label="Correo o teléfono" hint="con este mismo dato crea su cuenta" value={contact} onChange={(e) => setContact(e.target.value)} />
         <RoleChecks value={userRoles} roles={roles} onChange={setUserRoles} />
-        {userRoles.includes('gui') && <SectionPicker value={section} onChange={setSection} />}
+        {userRoles.includes('gui') && <SectionPicker value={section} sections={sections} onChange={setSection} />}
         {error && (
           <span className="text-sm ink-orange" role="alert">
             {error}

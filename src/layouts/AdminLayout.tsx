@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Navigate } from 'react-router-dom';
 import { Icon, cx } from '../components';
 import { SCHOOL_NAME, navCounts } from '../data/school';
+import { signOut, useAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
 const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue' | 'orange' } }> = [
@@ -19,6 +21,11 @@ const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue
 
 /** Shell for every page of the administration panel: dark sidebar + main column. */
 export function AdminLayout({ children }: { children: ReactNode }) {
+  const { ready, session, school } = useAuth();
+  // With a server configured, the panel needs a signed-in account.
+  if (supabase && ready && !session) return <Navigate to={routes.login} replace />;
+  if (supabase && !ready) return null;
+
   return (
     <div className="admin">
       <nav aria-label="Menú de dirección" className="admin__nav">
@@ -29,7 +36,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <div className="stack">
             <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Asistencia</span>
             <span className="text-xs" style={{ color: 'var(--night-ink-3)' }}>
-              {SCHOOL_NAME}
+              {school?.nombre ?? SCHOOL_NAME}
             </span>
           </div>
         </div>
@@ -42,8 +49,21 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         <NavLink to={routes.admin.settings} className="admin__link admin__link--bottom">
           Configuración
         </NavLink>
+        {session && (
+          <button type="button" className="admin__link" onClick={() => signOut()} title={session.user.email}>
+            Salir
+          </button>
+        )}
       </nav>
-      <main className="admin__main">{children}</main>
+      <main className="admin__main">
+        {session && !school && (
+          <p className="notice" role="alert">
+            Su cuenta ({session.user.email}) todavía no está vinculada a un colegio. Pida a dirección que lo registre
+            con este mismo correo, o escriba a soporte.
+          </p>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

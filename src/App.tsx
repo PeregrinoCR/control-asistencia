@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Link, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { routes } from './routes';
+import { AuthProvider } from './lib/auth';
+import { Login } from './screens/Login';
 import { ScreenIndex } from './screens/ScreenIndex';
 import { Assignments } from './screens/admin/Assignments';
 import { TeacherAbsences } from './screens/admin/TeacherAbsences';
@@ -50,11 +52,13 @@ function ScrollToTop() {
 
 export function App() {
   return (
+    <AuthProvider>
     <Router>
       <ScrollToTop />
       {inPreview && <PreviewHome />}
       <Routes>
         <Route path={routes.index} element={<ScreenIndex />} />
+        <Route path={routes.login} element={<Login />} />
 
         <Route path={routes.teacher.rollCall} element={<RollCall />} />
 
@@ -85,5 +89,6 @@ export function App() {
         <Route path="*" element={<Navigate to={routes.index} replace />} />
       </Routes>
     </Router>
+    </AuthProvider>
   );
 }

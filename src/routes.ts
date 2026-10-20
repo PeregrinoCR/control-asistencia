@@ -1,5 +1,6 @@
 export const routes = {
   index: '/',
+  login: '/entrar',
   teacher: {
     rollCall: '/docente/pase-de-lista',
   },

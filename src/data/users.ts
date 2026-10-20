@@ -120,7 +120,8 @@ export const ROLES: Role[] = [
 ];
 
 export interface User {
-  id: number;
+  /** Number in the sample data, uuid from the server. */
+  id: number | string;
   name: string;
   contact: string;
   roles: RoleId[];
