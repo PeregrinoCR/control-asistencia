@@ -5,9 +5,16 @@ import { FamilyTabBar, MobileScreen } from '../../layouts/MobileScreen';
 import { CHILDREN, GUARDIAN, type Child } from '../../data/family';
 import { MARK_STATUS, SCHOOL_PHONE } from '../../data/school';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { FamilyHomeLive } from './FamilyHomeLive';
 
 /** Familia · Inicio */
 export function FamilyHome() {
+  return supabase ? <FamilyHomeLive /> : <FamilyHomeSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function FamilyHomeSample() {
   const [childId, setChildId] = useState<Child['id']>('M');
   const child = CHILDREN.find((c) => c.id === childId)!;
   const tone = child.alert.mark === 'A' ? 'orange' : 'amber';

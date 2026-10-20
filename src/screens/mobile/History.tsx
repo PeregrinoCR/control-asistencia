@@ -3,6 +3,8 @@ import { ButtonLink, MiniStat } from '../../components';
 import { MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { OCTOBER_GRID, OCTOBER_RECORDS, type DayKind } from '../../data/family';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { HistoryLive } from './HistoryLive';
 
 const DOW = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
 const TITLES: Record<Exclude<DayKind, 'O'>, string> = {
@@ -16,6 +18,11 @@ const TAGS: Partial<Record<DayKind, string>> = { T: 'T', A: 'A', F: 'FER' };
 
 /** Familia · Historial del mes */
 export function History() {
+  return supabase ? <HistoryLive /> : <HistorySample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function HistorySample() {
   const [selected, setSelected] = useState(19);
 
   const kindOf = (day: number, inMonth: boolean): DayKind =>

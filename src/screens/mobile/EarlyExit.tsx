@@ -5,6 +5,8 @@ import { DoneState, MobileScreen, ScreenHeader } from '../../layouts/MobileScree
 import { EXIT_HOURS, EXIT_WAYS, GUARDIAN, type ExitWay } from '../../data/family';
 import { SCHOOL_NAME } from '../../data/school';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { EarlyExitLive } from './EarlyExitLive';
 
 const smallLabel = (text: string) => (
   <span style={{ fontWeight: 600, color: 'var(--ink-2)' }}>{text}</span>
@@ -12,6 +14,11 @@ const smallLabel = (text: string) => (
 
 /** Familia · Salida temprana y descargo */
 export function EarlyExit() {
+  return supabase ? <EarlyExitLive /> : <EarlyExitSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function EarlyExitSample() {
   // Opening from a free-lesson notice preselects that lesson's change time.
   const preset = (useLocation().state as { hour?: number } | null)?.hour;
   const [hour, setHour] = useState(preset ?? 2);

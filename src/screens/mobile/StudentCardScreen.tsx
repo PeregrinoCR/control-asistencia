@@ -4,11 +4,18 @@ import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileSc
 import { CARDS, cardPayload } from '../../data/gate';
 import { SCHOOL_NAME } from '../../data/school';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { StudentCardLive } from './StudentCardLive';
 
 const MINE = [CARDS[0], CARDS[1]];
 
 /** Familia · Carné digital: the QR the guard scans at the gate. */
 export function StudentCardScreen() {
+  return supabase ? <StudentCardLive /> : <StudentCardScreenSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function StudentCardScreenSample() {
   const [code, setCode] = useState(MINE[0].code);
   const [reported, setReported] = useState<Record<string, boolean>>({});
   const card = MINE.find((c) => c.code === code)!;

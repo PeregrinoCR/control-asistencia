@@ -53,6 +53,7 @@ create table if not exists salidas (
   fecha date not null,
   hora text not null,                 -- '8:00'
   modo text not null check (modo in ('pickup', 'alone')),
+  motivo text,
   retira_nombre text,
   retira_cedula text,
   comprobante text not null default upper(substr(md5(gen_random_uuid()::text), 1, 6)),
@@ -96,6 +97,7 @@ create table if not exists gira_autorizaciones (
   estudiante_id uuid references estudiantes on delete cascade,
   estado text not null check (estado in ('ok', 'no')),
   salud text,
+  telefono text,                       -- contacto ese día
   firma text,                          -- imagen de la firma (data URL)
   firmado_por uuid references auth.users,
   firmado timestamptz not null default now(),

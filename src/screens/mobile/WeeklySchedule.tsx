@@ -4,9 +4,16 @@ import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileSc
 import { CHILDREN, type Child } from '../../data/family';
 import { NOW_MINUTES, SCHOOL_DAYS, TIMETABLES, TODAY, dayTimetable, type DayId } from '../../data/schedule';
 import { EXAMS } from '../../data/settings';
+import { supabase } from '../../lib/supabase';
+import { WeeklyScheduleLive } from './WeeklyScheduleLive';
 
 /** Familia · Horario semanal of each child's section, with today's changes and upcoming tests. */
 export function WeeklySchedule() {
+  return supabase ? <WeeklyScheduleLive /> : <WeeklyScheduleSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function WeeklyScheduleSample() {
   const [childId, setChildId] = useState<Child['id']>('M');
   const [day, setDay] = useState<DayId>(TODAY);
   const child = CHILDREN.find((c) => c.id === childId)!;

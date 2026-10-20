@@ -2,9 +2,16 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../../components';
 import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { FamilySettingsLive } from './FamilySettingsLive';
 
 /** Familia · Ajustes. Only the student card is designed so far. */
 export function FamilySettings() {
+  return supabase ? <FamilySettingsLive /> : <FamilySettingsSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function FamilySettingsSample() {
   return (
     <MobileScreen>
       <ScreenHeader title="Ajustes" />

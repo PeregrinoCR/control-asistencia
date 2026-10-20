@@ -9,7 +9,8 @@ interface SinpePaymentProps {
   /** Text the family writes as the transfer description, so the school can match it. */
   reference: string;
   receipt: string | null;
-  onReceipt: (fileName: string | null) => void;
+  /** Receives the chosen file's name, or null when removed; the file itself comes as the second argument. */
+  onReceipt: (fileName: string | null, file?: File) => void;
 }
 
 /**
@@ -83,7 +84,10 @@ export function SinpePayment({ amount, number, holder, reference, receipt, onRec
             type="file"
             accept="image/*,application/pdf"
             className="sr-only"
-            onChange={(e) => onReceipt(e.target.files?.[0]?.name ?? null)}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              onReceipt(file?.name ?? null, file);
+            }}
           />
         </label>
       )}

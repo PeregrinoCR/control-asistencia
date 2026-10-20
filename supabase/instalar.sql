@@ -311,7 +311,6 @@ $$;
 create trigger vincular_cuenta after insert on auth.users
   for each row execute function vincular_cuenta();
 
-
 -- Ausencias y tardías del mes por estudiante, calculadas en el servidor.
 -- security_invoker: respeta las reglas de permisos de quien consulta.
 create or replace view asistencia_mes with (security_invoker = true) as
@@ -323,7 +322,6 @@ where fecha >= date_trunc('month', current_date)
 group by estudiante_id;
 
 grant select on asistencia_mes to authenticated;
-
 
 -- Familias, portón, giras, salidas tempranas, avisos, alerta temprana y configuración.
 -- Se puede correr más de una vez.
@@ -380,6 +378,7 @@ create table if not exists salidas (
   fecha date not null,
   hora text not null,                 -- '8:00'
   modo text not null check (modo in ('pickup', 'alone')),
+  motivo text,
   retira_nombre text,
   retira_cedula text,
   comprobante text not null default upper(substr(md5(gen_random_uuid()::text), 1, 6)),
@@ -423,6 +422,7 @@ create table if not exists gira_autorizaciones (
   estudiante_id uuid references estudiantes on delete cascade,
   estado text not null check (estado in ('ok', 'no')),
   salud text,
+  telefono text,                       -- contacto ese día
   firma text,                          -- imagen de la firma (data URL)
   firmado_por uuid references auth.users,
   firmado timestamptz not null default now(),
@@ -554,7 +554,6 @@ begin
   end if;
 end
 $$;
-
 
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 

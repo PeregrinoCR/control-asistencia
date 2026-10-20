@@ -16,23 +16,28 @@ interface AuthState {
   school: School | null;
   /** Roles of the signed-in staff member ('dir', 'doc', 'gua'…); empty for families. */
   roles: string[];
+  /** A guardian or an adult student with their own account. */
+  family: boolean;
 }
 
-const AuthContext = createContext<AuthState>({ ready: true, session: null, school: null, roles: [] });
+const AuthContext = createContext<AuthState>({ ready: true, session: null, school: null, roles: [], family: false });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ ready: !supabase, session: null, school: null, roles: [] });
+  const [state, setState] = useState<AuthState>({ ready: !supabase, session: null, school: null, roles: [], family: false });
 
   useEffect(() => {
     if (!supabase) return;
     const db = supabase;
     const load = async (session: Session | null) => {
-      if (!session) return setState({ ready: true, session, school: null, roles: [] });
-      const [school, me] = await Promise.all([
+      if (!session) return setState({ ready: true, session, school: null, roles: [], family: false });
+      const uid = session.user.id;
+      const [school, me, guardian, adult] = await Promise.all([
         db.from('colegios').select('id, nombre').maybeSingle(),
-        db.from('personal').select('roles').eq('usuario_id', session.user.id).maybeSingle(),
+        db.from('personal').select('roles').eq('usuario_id', uid).maybeSingle(),
+        db.from('encargados').select('id').eq('usuario_id', uid).maybeSingle(),
+        db.from('estudiantes').select('id').eq('usuario_id', uid).maybeSingle(),
       ]);
-      setState({ ready: true, session, school: school.data, roles: me.data?.roles ?? [] });
+      setState({ ready: true, session, school: school.data, roles: me.data?.roles ?? [], family: !!(guardian.data || adult.data) });
     };
     db.auth.getSession().then(({ data }) => load(data.session));
     const { data } = db.auth.onAuthStateChange((event, session) => {
@@ -46,8 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export const useAuth = () => useContext(AuthContext);
 
-/** Where a person lands after signing in: teachers on the roll call, the guard at the gate. */
-export function homeFor(roles: string[]) {
+/** Where a person lands after signing in: families on their app, teachers on the roll call, the guard at the gate. */
+export function homeFor(roles: string[], family = false) {
+  if (roles.length === 0 && family) return routes.family.home;
   const panel = roles.some((r) => ['dir', 'ori', 'adm'].includes(r));
   if (!panel && roles.some((r) => r === 'doc' || r === 'gui')) return routes.teacher.rollCall;
   if (!panel && roles.includes('gua')) return routes.guard.gate;

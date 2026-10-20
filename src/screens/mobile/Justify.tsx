@@ -3,6 +3,8 @@ import { Button, ButtonLink, Icon, TextareaField } from '../../components';
 import { DoneState, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { JUSTIFY_REASONS } from '../../data/family';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { JustifyLive } from './JustifyLive';
 
 const SUMMARY = [
   ['Estudiante', 'Mateo Brenes Quesada · 10-2'],
@@ -12,6 +14,11 @@ const SUMMARY = [
 
 /** Familia · Justificar ausencia */
 export function Justify() {
+  return supabase ? <JustifyLive /> : <JustifySample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function JustifySample() {
   const [reason, setReason] = useState(0);
   const [done, setDone] = useState(false);
 

@@ -15,8 +15,8 @@ const ERRORS: Record<string, string> = {
 
 /** Inicio de sesión del personal del colegio (correo y contraseña). */
 export function Login() {
-  const { ready, session, roles } = useAuth();
-  const from = (useLocation().state as { from?: string } | null)?.from ?? homeFor(roles);
+  const { ready, session, roles, family } = useAuth();
+  const from = (useLocation().state as { from?: string } | null)?.from ?? homeFor(roles, family);
   const [mode, setMode] = useState<Mode>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

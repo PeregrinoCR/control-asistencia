@@ -3,6 +3,8 @@ import { Button, ButtonLink, CheckCard, InputField, SignaturePad, SinpePayment }
 import { DoneState, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { GUARDIAN, TRIP_DECLARATIONS, TRIP_PAYMENT } from '../../data/family';
 import { routes } from '../../routes';
+import { supabase } from '../../lib/supabase';
+import { TripConsentLive } from './TripConsentLive';
 
 const TRIP_FACTS = [
   ['Fecha', 'Sáb 31 de octubre'],
@@ -17,6 +19,11 @@ type Mode = 'form' | 'approved' | 'declined';
 
 /** Familia · Autorizar gira */
 export function TripConsent() {
+  return supabase ? <TripConsentLive /> : <TripConsentSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function TripConsentSample() {
   const [checks, setChecks] = useState(TRIP_DECLARATIONS.map(() => false));
   const [signed, setSigned] = useState(false);
   const [error, setError] = useState(false);
