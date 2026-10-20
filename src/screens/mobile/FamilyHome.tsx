@@ -64,6 +64,37 @@ export function FamilyHome() {
           )}
         </section>
 
+        {child.freeLesson && (
+          <section className="card card--mobile gap-10" aria-labelledby="libre-t" style={{ borderColor: 'var(--amber-bg)', background: 'var(--amber-bg)' }}>
+            <div className="row gap-10">
+              <span className="alert-card__icon" style={{ background: 'var(--amber)' }}>
+                <Icon name="clock" size={22} strokeWidth={2.2} />
+              </span>
+              <span className="stack">
+                <span className="alert-card__when" style={{ color: 'var(--amber-ink)' }}>
+                  Hoy · {child.freeLesson.time}
+                </span>
+                <h2 id="libre-t" style={{ fontSize: 17, fontWeight: 700 }}>
+                  {child.freeLesson.subject} no tendrá lección
+                </h2>
+              </span>
+            </div>
+            <p style={{ fontSize: 15, lineHeight: 1.45, color: 'var(--ink-2)' }}>
+              El docente no viene hoy.{' '}
+              {child.freeLesson.authorizedExit
+                ? `No necesita hacer nada: ya autorizó la salida de ${child.short} a las ${child.freeLesson.authorizedExit}`
+                : child.freeLesson.last && child.freeLesson.exitAt
+                ? `Es la última lección: ${child.short} puede salir a las ${child.freeLesson.exitAt} si usted lo autoriza. Si no, se queda en el colegio hasta la hora de salida.`
+                : `${child.short} se queda en el colegio durante esa lección.`}
+            </p>
+            {child.freeLesson.last && child.freeLesson.exitAt && !child.freeLesson.authorizedExit && (
+              <ButtonLink variant="dark" size="lg" to={routes.family.earlyExit} state={{ hour: child.freeLesson.exitHourIndex }}>
+                Autorizar salida a las {child.freeLesson.exitAt}
+              </ButtonLink>
+            )}
+          </section>
+        )}
+
         <section className="card card--mobile gap-10">
           <h2 style={{ fontSize: 17, fontWeight: 700 }}>Permisos y autorizaciones</h2>
           <Link to={routes.family.trip} className="perm-link">
@@ -92,10 +123,17 @@ export function FamilyHome() {
               <span className="text-sm muted tabular" style={{ width: 76 }}>
                 {l.time}
               </span>
-              <span className="grow" style={{ fontSize: 15, fontWeight: 600 }}>
-                {l.subject}
+              <span className="stack grow">
+                <span style={{ fontSize: 15, fontWeight: 600 }}>{l.subject}</span>
+                {l.change?.kind === 'sub' && <span className="text-xs muted">Sustituye: {l.change.substitute}</span>}
               </span>
-              <StatusBadge status={MARK_STATUS[l.mark]} size="md" />
+              {l.change?.kind === 'free' ? (
+                <Badge tone="amber" size="md">
+                  Lección libre
+                </Badge>
+              ) : (
+                <StatusBadge status={MARK_STATUS[l.mark]} size="md" />
+              )}
             </div>
           ))}
         </section>

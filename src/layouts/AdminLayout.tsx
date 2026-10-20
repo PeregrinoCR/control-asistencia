@@ -7,6 +7,7 @@ import { routes } from '../routes';
 const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue' | 'orange' } }> = [
   { to: routes.admin.today, label: 'Hoy' },
   { to: routes.admin.assignments, label: 'Profesores y secciones' },
+  { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
   { to: routes.admin.trips, label: 'Giras y salidas', count: { n: navCounts.trips, tone: 'blue' } },
   { to: routes.admin.students, label: 'Estudiantes' },
   { to: routes.admin.justifications, label: 'Justificaciones', count: { n: navCounts.justifications, tone: 'orange' } },

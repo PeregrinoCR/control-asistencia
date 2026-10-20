@@ -19,6 +19,7 @@ const GROUPS = [
     links: [
       { to: routes.admin.today, role: 'Dirección', label: 'Panel del día' },
       { to: routes.admin.assignments, role: 'Dirección', label: 'Profesores, secciones y horarios' },
+      { to: routes.admin.teacherAbsences, role: 'Dirección', label: 'Ausencias de docentes' },
       { to: routes.admin.trips, role: 'Dirección', label: 'Giras y salidas tempranas' },
       { to: routes.admin.students, role: 'Dirección', label: 'Estudiantes' },
       { to: routes.admin.justifications, role: 'Dirección', label: 'Justificaciones' },

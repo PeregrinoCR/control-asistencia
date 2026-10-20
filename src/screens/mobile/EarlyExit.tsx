@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button, ButtonLink, CheckCard, InputField, SignaturePad } from '../../components';
 import { DoneState, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { EXIT_HOURS, EXIT_WAYS, GUARDIAN, type ExitWay } from '../../data/family';
@@ -11,7 +12,9 @@ const smallLabel = (text: string) => (
 
 /** Familia · Salida temprana y descargo */
 export function EarlyExit() {
-  const [hour, setHour] = useState(2);
+  // Opening from a free-lesson notice preselects that lesson's change time.
+  const preset = (useLocation().state as { hour?: number } | null)?.hour;
+  const [hour, setHour] = useState(preset ?? 2);
   const [way, setWay] = useState<ExitWay>('pickup');
   const [accepted, setAccepted] = useState(false);
   const [signed, setSigned] = useState(false);

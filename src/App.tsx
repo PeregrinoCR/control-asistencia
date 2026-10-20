@@ -3,6 +3,7 @@ import { BrowserRouter, Link, MemoryRouter, Navigate, Route, Routes, useLocation
 import { routes } from './routes';
 import { ScreenIndex } from './screens/ScreenIndex';
 import { Assignments } from './screens/admin/Assignments';
+import { TeacherAbsences } from './screens/admin/TeacherAbsences';
 import { EarlyWarning } from './screens/admin/EarlyWarning';
 import { Justifications } from './screens/admin/Justifications';
 import { Notices } from './screens/admin/Notices';
@@ -63,6 +64,7 @@ export function App() {
 
         <Route path={routes.admin.today} element={<Today />} />
         <Route path={routes.admin.assignments} element={<Assignments />} />
+        <Route path={routes.admin.teacherAbsences} element={<TeacherAbsences />} />
         <Route path={routes.admin.trips} element={<Trips />} />
         <Route path={routes.admin.students} element={<Students />} />
         <Route path={routes.admin.justifications} element={<Justifications />} />

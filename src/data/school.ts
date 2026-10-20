@@ -4,7 +4,7 @@ import type { Status } from '../components';
 export const SCHOOL_NAME = '[NOMBRE DEL COLEGIO]';
 export const SCHOOL_PHONE = '+50600000000';
 
-export const navCounts = { trips: 3, justifications: 6, earlyWarning: 14 };
+export const navCounts = { trips: 3, justifications: 6, earlyWarning: 14, teacherAbsences: 1 };
 
 /** Attendance marks used by the roll call, the family app and reports. */
 export type Mark = 'P' | 'T' | 'A';

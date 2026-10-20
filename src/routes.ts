@@ -15,6 +15,7 @@ export const routes = {
   admin: {
     today: '/direccion',
     assignments: '/direccion/asignaciones',
+    teacherAbsences: '/direccion/docentes-ausentes',
     trips: '/direccion/giras',
     students: '/direccion/estudiantes',
     justifications: '/direccion/justificaciones',

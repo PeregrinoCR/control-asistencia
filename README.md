@@ -22,6 +22,7 @@ npm run build      # type-checks, then builds to dist/
 | `/familia/salida` | Padre · Salida temprana y descargo |
 | `/direccion` | Dirección · Panel del día |
 | `/direccion/asignaciones` | Dirección · Profesores, secciones y horarios |
+| `/direccion/docentes-ausentes` | Dirección · Ausencias de docentes |
 | `/direccion/giras` | Dirección · Giras y salidas tempranas |
 | `/direccion/estudiantes` | Dirección · Estudiantes |
 | `/direccion/justificaciones` | Dirección · Justificaciones |

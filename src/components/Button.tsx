@@ -53,12 +53,12 @@ export function Button({ variant, size, block, regular, ready, className, type =
   );
 }
 
-type ButtonLinkProps = StyleProps & { to: string; className?: string; children: ReactNode };
+type ButtonLinkProps = StyleProps & { to: string; state?: unknown; className?: string; children: ReactNode };
 
 /** A navigation link styled as a button. */
-export function ButtonLink({ variant, size, block, regular, className, to, children }: ButtonLinkProps) {
+export function ButtonLink({ variant, size, block, regular, className, to, state, children }: ButtonLinkProps) {
   return (
-    <Link to={to} className={buttonClass({ variant, size, block, regular }, className)}>
+    <Link to={to} state={state} className={buttonClass({ variant, size, block, regular }, className)}>
       {children}
     </Link>
   );

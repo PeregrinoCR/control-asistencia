@@ -1,5 +1,8 @@
 import type { Mark } from './school';
 
+/** How a lesson changes when its teacher is absent. */
+export type LessonChange = { kind: 'free' } | { kind: 'sub'; substitute: string };
+
 export interface Child {
   id: 'M' | 'S';
   short: string;
@@ -11,7 +14,17 @@ export interface Child {
     body: string;
     canJustify: boolean;
   };
-  today: Array<{ time: string; subject: string; mark: Mark | 'N' }>;
+  today: Array<{ time: string; subject: string; mark: Mark | 'N'; change?: LessonChange }>;
+  /** A lesson without its teacher today, shown as a notice on the home screen. */
+  freeLesson?: {
+    subject: string;
+    time: string;
+    last: boolean;
+    exitAt?: string;
+    exitHourIndex?: number;
+    /** An early exit the guardian already authorized for today. */
+    authorizedExit?: string;
+  };
   month: { pct: string; absences: number; lates: number };
 }
 
@@ -51,9 +64,10 @@ export const CHILDREN: Child[] = [
     today: [
       { time: '6:00 p. m.', subject: 'Español', mark: 'T' },
       { time: '7:20 p. m.', subject: 'Matemática', mark: 'P' },
-      { time: '8:10 p. m.', subject: 'Estudios Sociales', mark: 'N' },
-      { time: '9:10 p. m.', subject: 'Ciencias', mark: 'N' },
+      { time: '8:10 p. m.', subject: 'Estudios Sociales', mark: 'N', change: { kind: 'sub', substitute: 'Marta Vindas' } },
+      { time: '9:10 p. m.', subject: 'Educación Cívica', mark: 'N', change: { kind: 'free' } },
     ],
+    freeLesson: { subject: 'Educación Cívica', time: '9:10 p. m.', last: true, exitAt: '8:50 p. m.', exitHourIndex: 3, authorizedExit: '8:10 p. m.' },
     month: { pct: '96 %', absences: 0, lates: 1 },
   },
 ];
