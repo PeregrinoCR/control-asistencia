@@ -116,7 +116,9 @@ export function FamilyHome() {
         <section className="card card--mobile">
           <div className="row between" style={{ alignItems: 'baseline' }}>
             <h2 style={{ fontSize: 17, fontWeight: 700 }}>Hoy, lección por lección</h2>
-            <span className="text-sm muted">Lun 19 oct</span>
+            <Link to={routes.family.schedule} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+              Ver horario
+            </Link>
           </div>
           {child.today.map((l) => (
             <div key={l.time} className="row gap-12" style={{ minHeight: 40 }}>

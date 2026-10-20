@@ -17,6 +17,7 @@ import { FamilyHome } from './screens/mobile/FamilyHome';
 import { FamilySettings } from './screens/mobile/FamilySettings';
 import { Gate } from './screens/mobile/Gate';
 import { StudentCardScreen } from './screens/mobile/StudentCardScreen';
+import { WeeklySchedule } from './screens/mobile/WeeklySchedule';
 import { History } from './screens/mobile/History';
 import { Justify } from './screens/mobile/Justify';
 import { PushPreview } from './screens/mobile/PushPreview';
@@ -64,6 +65,7 @@ export function App() {
         <Route path={routes.family.earlyExit} element={<EarlyExit />} />
         <Route path={routes.family.settings} element={<FamilySettings />} />
         <Route path={routes.family.card} element={<StudentCardScreen />} />
+        <Route path={routes.family.schedule} element={<WeeklySchedule />} />
 
         <Route path={routes.guard.gate} element={<Gate />} />
 

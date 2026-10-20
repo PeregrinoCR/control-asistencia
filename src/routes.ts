@@ -15,6 +15,7 @@ export const routes = {
     earlyExit: '/familia/salida',
     settings: '/familia/ajustes',
     card: '/familia/carne',
+    schedule: '/familia/horario',
   },
   admin: {
     today: '/direccion',

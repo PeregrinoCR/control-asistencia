@@ -440,3 +440,78 @@
   position: absolute;
   bottom: 12px;
 }
+
+/* ---------- Horario semanal ---------- */
+
+.day-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.day-tabs__item {
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-choice);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+}
+.day-tabs__item[aria-selected='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.day-tabs__today {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.day-tabs__item[aria-selected='true'] .day-tabs__today {
+  color: var(--night-ink-2);
+}
+
+.tt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-soft);
+}
+.tt-row:first-child {
+  border-top: none;
+}
+.tt-row__time {
+  width: 72px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.tt-row--break {
+  min-height: 36px;
+}
+.tt-row--break .tt-row__time {
+  font-weight: 400;
+  color: var(--muted);
+}
+.tt-row[data-now='true'] {
+  box-shadow: inset 3px 0 0 var(--blue);
+  padding-left: 10px;
+  margin-left: -10px;
+}
+.tt-row[data-free='true'] .tt-row__time + .stack > span:first-child {
+  text-decoration: line-through;
+  color: var(--muted);
+}

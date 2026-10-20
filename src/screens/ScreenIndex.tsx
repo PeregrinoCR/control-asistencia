@@ -13,6 +13,7 @@ const GROUPS = [
       { to: routes.family.trip, role: 'Padre', label: 'Autorizar gira' },
       { to: routes.family.earlyExit, role: 'Padre', label: 'Salida temprana y descargo' },
       { to: routes.family.card, role: 'Padre', label: 'Carné estudiantil (QR)' },
+      { to: routes.family.schedule, role: 'Padre', label: 'Horario semanal' },
       { to: routes.guard.gate, role: 'Guarda', label: 'Control de portón' },
     ],
   },

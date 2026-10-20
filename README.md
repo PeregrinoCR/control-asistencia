@@ -21,6 +21,7 @@ npm run build      # type-checks, then builds to dist/
 | `/familia/gira` | Padre · Autorizar gira |
 | `/familia/salida` | Padre · Salida temprana y descargo |
 | `/familia/carne` | Padre · Carné estudiantil (QR) |
+| `/familia/horario` | Padre · Horario semanal |
 | `/porton` | Guarda · Control de portón |
 | `/direccion` | Dirección · Panel del día |
 | `/direccion/asignaciones` | Dirección · Profesores, secciones y horarios |
