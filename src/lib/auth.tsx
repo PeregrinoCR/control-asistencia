@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { routes } from '../routes';
 import { supabase } from './supabase';
 
 interface School {
@@ -13,19 +14,25 @@ interface AuthState {
   session: Session | null;
   /** School of the signed-in staff member; null when the account isn't linked yet. */
   school: School | null;
+  /** Roles of the signed-in staff member ('dir', 'doc', 'gua'…); empty for families. */
+  roles: string[];
 }
 
-const AuthContext = createContext<AuthState>({ ready: true, session: null, school: null });
+const AuthContext = createContext<AuthState>({ ready: true, session: null, school: null, roles: [] });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ ready: !supabase, session: null, school: null });
+  const [state, setState] = useState<AuthState>({ ready: !supabase, session: null, school: null, roles: [] });
 
   useEffect(() => {
     if (!supabase) return;
     const db = supabase;
     const load = async (session: Session | null) => {
-      const { data } = session ? await db.from('colegios').select('id, nombre').maybeSingle() : { data: null };
-      setState({ ready: true, session, school: data });
+      if (!session) return setState({ ready: true, session, school: null, roles: [] });
+      const [school, me] = await Promise.all([
+        db.from('colegios').select('id, nombre').maybeSingle(),
+        db.from('personal').select('roles').eq('usuario_id', session.user.id).maybeSingle(),
+      ]);
+      setState({ ready: true, session, school: school.data, roles: me.data?.roles ?? [] });
     };
     db.auth.getSession().then(({ data }) => load(data.session));
     const { data } = db.auth.onAuthStateChange((event, session) => {
@@ -38,5 +45,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+
+/** Where a person lands after signing in: teachers on the roll call, the guard at the gate. */
+export function homeFor(roles: string[]) {
+  const panel = roles.some((r) => ['dir', 'ori', 'adm'].includes(r));
+  if (!panel && roles.some((r) => r === 'doc' || r === 'gui')) return routes.teacher.rollCall;
+  if (!panel && roles.includes('gua')) return routes.guard.gate;
+  return routes.admin.today;
+}
+
+/** Whether the person can use the administration panel (guide teachers see their own section). */
+export const hasPanel = (roles: string[]) => roles.some((r) => ['dir', 'ori', 'adm', 'gui'].includes(r));
 
 export const signOut = () => supabase?.auth.signOut();

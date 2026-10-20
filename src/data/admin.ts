@@ -194,7 +194,8 @@ export const JUST_STATUS: Record<JustState, Status> = {
 };
 
 export interface Justification {
-  id: number;
+  /** Number in the sample data, uuid from the server. */
+  id: number | string;
   name: string;
   section: string;
   minor: boolean;

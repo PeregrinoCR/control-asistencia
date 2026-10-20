@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Avatar, Button, Icon } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
 import type { Mark } from '../../data/school';
 import { SCHOOL_DAYS } from '../../data/schedule';
-import { signOut, useAuth } from '../../lib/auth';
+import { hasPanel, signOut, useAuth } from '../../lib/auth';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { ageOn } from '../../lib/students';
 import { supabase } from '../../lib/supabase';
@@ -39,7 +39,7 @@ const SUB: Record<Mark, { text: string; tone: string }> = {
 
 /** Docente · Pase de lista, with the teacher's real lessons for today. */
 export function RollCallLive() {
-  const { ready, session } = useAuth();
+  const { ready, session, roles } = useAuth();
   const location = useLocation();
   const [me, setMe] = useState<{ id: string; name: string } | null | undefined>(undefined);
   const [lessons, setLessons] = useState<Lesson[] | null>(null);
@@ -145,9 +145,16 @@ export function RollCallLive() {
       <div className="roll-header">
         <div className="row between">
           <span className="text-sm muted strong">{me.name}</span>
-          <button type="button" className="link-button text-sm" onClick={() => signOut()}>
-            Salir
-          </button>
+          <span className="row gap-8">
+            {hasPanel(roles) && (
+              <Link to={routes.admin.today} className="link-button text-sm">
+                Panel
+              </Link>
+            )}
+            <button type="button" className="link-button text-sm" onClick={() => signOut()}>
+              Salir
+            </button>
+          </span>
         </div>
         {lesson ? (
           <>

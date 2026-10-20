@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Button, Icon, InputField, Segmented } from '../components';
-import { useAuth } from '../lib/auth';
+import { homeFor, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
@@ -15,8 +15,8 @@ const ERRORS: Record<string, string> = {
 
 /** Inicio de sesión del personal del colegio (correo y contraseña). */
 export function Login() {
-  const { ready, session } = useAuth();
-  const from = (useLocation().state as { from?: string } | null)?.from ?? routes.admin.today;
+  const { ready, session, roles } = useAuth();
+  const from = (useLocation().state as { from?: string } | null)?.from ?? homeFor(roles);
   const [mode, setMode] = useState<Mode>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

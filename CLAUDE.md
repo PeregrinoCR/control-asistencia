@@ -40,7 +40,8 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 
 - **Servidor** (Supabase, ver `supabase/README.md`): Fase 1 hecha (tablas, permisos, vincular cuentas).
   Fase 2: inicio de sesión (`/entrar`, `src/lib/auth.tsx`) y con datos reales: Usuarios (`src/lib/staff.ts`), Estudiantes y encargados con importación CSV (`src/lib/students.ts`),
-  horario por sección (`src/lib/schedule.ts`, tabla `horario`) y pase de lista (`RollCallLive.tsx`).
+  horario por sección (`src/lib/schedule.ts`, tabla `horario`), pase de lista (`RollCallLive.tsx`), Hoy y
+  Justificaciones. Al entrar, cada rol va a su pantalla (`homeFor` en `src/lib/auth.tsx`).
   Cada pantalla real vive en `*Live.tsx`; sin servidor se muestra la de ejemplo.
   Faltan: el resto de pantallas con datos reales, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).

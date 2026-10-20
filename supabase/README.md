@@ -36,7 +36,7 @@ Cuando esa persona crea su cuenta con el mismo dato, queda unida automáticament
 
 1. Base de datos ✔
 2. Inicio de sesión ✔ y datos reales en la app ← **aquí** (hecho: Usuarios y permisos, Estudiantes,
-   horarios y pase de lista; faltan Hoy, justificaciones, app de familias y el resto)
+   horarios, pase de lista, Hoy y Justificaciones; faltan app de familias, portón y el resto)
 3. Portón, comprobantes SINPE y bitácora
 4. Avisos push y SMS con línea propia (teléfono Android como enviador)
 5. Copias de seguridad, dominio y piloto

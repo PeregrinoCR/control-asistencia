@@ -2,11 +2,18 @@ import { useState } from 'react';
 import { Avatar, Button, Meter, Segmented, Stat, StatusBadge } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { FOLLOW_UP, ROLL_STATE, SECTIONS_TODAY } from '../../data/admin';
+import { supabase } from '../../lib/supabase';
+import { TodayLive } from './TodayLive';
 
 type Shift = 'diu' | 'noc' | 'all';
 
 /** Dirección · Panel del día */
 export function Today() {
+  return supabase ? <TodayLive /> : <TodaySample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function TodaySample() {
   const [shift, setShift] = useState<Shift>('noc');
 
   return (

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Navigate } from 'react-router-dom';
 import { Icon, cx } from '../components';
 import { SCHOOL_NAME, navCounts } from '../data/school';
-import { signOut, useAuth } from '../lib/auth';
+import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
@@ -21,10 +21,11 @@ const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue
 
 /** Shell for every page of the administration panel: dark sidebar + main column. */
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const { ready, session, school } = useAuth();
+  const { ready, session, school, roles } = useAuth();
   // With a server configured, the panel needs a signed-in account.
   if (supabase && ready && !session) return <Navigate to={routes.login} replace />;
   if (supabase && !ready) return null;
+  if (supabase && school && !hasPanel(roles)) return <Navigate to={homeFor(roles)} replace />;
 
   return (
     <div className="admin">
