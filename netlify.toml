@@ -1,0 +1,14 @@
+# Publicación en Netlify. Las claves de Supabase se ponen en Netlify:
+# Site configuration › Environment variables (VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# La app maneja sus propias rutas (/entrar, /direccion…): todas abren index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
