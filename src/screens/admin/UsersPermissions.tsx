@@ -56,6 +56,8 @@ export function UsersPermissions() {
           </p>
         ) : loading ? (
           <p className="text-sm muted">Cargando…</p>
+        ) : staff.live && users.length === 0 ? (
+          <p className="text-sm muted">Todavía no hay personal registrado para su colegio.</p>
         ) : tab === 'users' ? (
           <UsersTab users={users} setUsers={setUsers} roles={roles} staff={staff} />
         ) : (

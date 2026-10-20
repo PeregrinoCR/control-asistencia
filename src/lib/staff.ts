@@ -23,7 +23,9 @@ export function useStaff() {
   const [error, setError] = useState('');
 
   const reload = useCallback(async () => {
-    if (!supabase || !school) return;
+    if (!supabase) return;
+    // Signed in but not linked to a school yet: show nothing rather than the sample data.
+    if (!school) return setUsers([]);
     const [staff, secs] = await Promise.all([
       supabase.from('personal').select('*').order('nombre'),
       supabase.from('secciones').select('id, nombre').order('nombre'),
@@ -79,5 +81,5 @@ export function useStaff() {
     return { id: data?.id as string | undefined, error: error?.message ?? '' };
   };
 
-  return { live: !!supabase && !!school, users, sections: sections.map((s) => s.nombre), error, save, invite };
+  return { live: !!supabase, users, sections: sections.map((s) => s.nombre), error, save, invite };
 }
