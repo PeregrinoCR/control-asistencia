@@ -42,4 +42,15 @@ npm run build      # type-checks, then builds to dist/
 - `src/screens/mobile`, `src/screens/admin` — one file per screen.
 - `src/data/` — mock data, ready to be swapped for API calls.
 
+## Modules
+
+Each school turns parts of the app on or off in **Configuración › Módulos**. Choosing public (MEP) or
+private loads recommended defaults:
+
+- **Exportación para SABER**: downloads open early-warning cases as a CSV from Alerta temprana.
+  The columns still need checking against the MEP's current template.
+- **Pagos por SINPE Móvil**: families see the school's SINPE number on a trip, pay from their bank
+  and upload the receipt; the school marks it paid in Giras. The app moves no money.
+- **SMS de respaldo** and **SMS solo para avisos urgentes**: SMS has a per-message cost.
+
 Bracketed text such as `[NOMBRE DEL COLEGIO]` marks details the school fills in.
