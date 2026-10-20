@@ -74,7 +74,7 @@ export interface TimetableRow {
   teacher?: string;
 }
 
-/** "7:55 p. m." → minutes since midnight. */
+/** "8:00 p. m." → minutes since midnight. */
 function toMinutes(label: string) {
   const m = label.match(/(\d+):(\d+)\s*([ap])/);
   if (!m) return 0;
@@ -88,7 +88,7 @@ export function dayTimetable(section: string, day: DayId): TimetableRow[] {
   let lesson = 0;
   return SHIFT_BLOCKS.noc.blocks.map(([name, start, end]) => {
     const base = { name, start, end, from: toMinutes(start), to: toMinutes(end) };
-    if (/Recreo/.test(name)) return { ...base, kind: 'break' as const };
+    if (/Recreo|Merienda/.test(name)) return { ...base, kind: 'break' as const };
     const subject = t.week[day][lesson++];
     return { ...base, kind: 'lesson' as const, subject, teacher: t.teachers[subject] };
   });

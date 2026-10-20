@@ -68,7 +68,7 @@ export function EarlyExit() {
               id="s-motivo"
               touch
               label={<span style={{ fontSize: 16 }}>Motivo</span>}
-              placeholder="Ej.: cita médica a las 8:30 p. m."
+              placeholder="Ej.: cita médica a las 8:35 p. m."
             />
 
             <fieldset className="fieldset fieldset--lg stack gap-8">

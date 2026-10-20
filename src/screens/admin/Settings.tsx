@@ -245,7 +245,7 @@ function ShiftsTab() {
             </thead>
             <tbody>
               {SHIFT_BLOCKS[shift].blocks.map(([name, start, end, minutes]) => {
-                const rest = /Recreo|Almuerzo/.test(name);
+                const rest = /Recreo|Merienda|Almuerzo/.test(name);
                 return (
                   <tr key={name} data-tone={rest ? 'rest' : undefined}>
                     <td className="strong">{name}</td>

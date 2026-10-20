@@ -26,7 +26,7 @@ export const CARDS: StudentCard[] = [
     section: '8-1',
     age: 14,
     idNumber: '1-0000-0002',
-    exit: { time: '7:55 p. m.', how: 'Sale por sus propios medios', receipt: 'ST-0042' },
+    exit: { time: '8:00 p. m.', how: 'Sale por sus propios medios', receipt: 'ST-0042' },
   },
   {
     code: 'P9L3-DG17',
@@ -34,7 +34,7 @@ export const CARDS: StudentCard[] = [
     section: '10-2',
     age: 17,
     idNumber: '1-0000-0005',
-    exit: { time: '7:55 p. m.', how: 'Lo retira su madre', pickup: { name: 'Teresa Solano', idNumber: '1-0000-0105' }, receipt: 'ST-0043' },
+    exit: { time: '8:00 p. m.', how: 'Lo retira su madre', pickup: { name: 'Teresa Solano', idNumber: '1-0000-0105' }, receipt: 'ST-0043' },
   },
   { code: 'H2W6-SC19', name: 'Sebastián Chaves Rojas', section: '10-2', age: 19, idNumber: '1-0000-0004' },
   { code: 'M5X1-GN17', name: 'Gabriel Núñez Porras', section: '10-2', age: 17, idNumber: '1-0000-0008' },

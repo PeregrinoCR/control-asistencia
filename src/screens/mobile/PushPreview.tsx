@@ -81,9 +81,9 @@ export function PushPreview() {
           appColor="var(--green)"
           opacity={0.82}
           source="Salida · Sofía (8-1)"
-          when="7:57 p. m."
+          when="8:02 p. m."
           title="Sofía salió del colegio"
-          body="Salida temprana que usted autorizó para las 7:55 p. m. El guarda la registró en el portón."
+          body="Salida temprana que usted autorizó para las 8:00 p. m. El guarda la registró en el portón."
         />
 
         <div

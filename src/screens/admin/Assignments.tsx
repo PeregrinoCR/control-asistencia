@@ -97,7 +97,7 @@ export function Assignments() {
                 Sección {selected.id}
               </h2>
               <span className="muted" style={{ fontSize: 14 }}>
-                Nocturna · 6:00 p. m. – 9:25 p. m. · {selected.students} estudiantes
+                Nocturna · 6:00 p. m. – 9:15 p. m. · {selected.students} estudiantes
               </span>
             </div>
             <div className="row wrap gap-8">

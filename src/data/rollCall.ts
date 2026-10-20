@@ -16,7 +16,7 @@ export const ROLL_STUDENTS: RollStudent[] = [
   { id: 3, name: 'Isabella Castro Jiménez' },
   { id: 4, name: 'Sebastián Chaves Rojas', adult: true },
   { id: 5, name: 'Camila Fallas Vargas' },
-  { id: 6, name: 'Daniel Gamboa Solano', exitNote: 'Presente · salida autorizada 7:55 p. m.' },
+  { id: 6, name: 'Daniel Gamboa Solano', exitNote: 'Presente · salida autorizada 8:00 p. m.' },
   { id: 7, name: 'Mariana Herrera Calvo', adult: true },
   { id: 8, name: 'Thiago Jiménez Ulate' },
   { id: 9, name: 'Lucía Monge Arias' },
