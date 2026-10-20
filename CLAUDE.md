@@ -38,7 +38,8 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 
 ## Pendiente
 
-- **Servidor**: base de datos, inicio de sesión, aplicar permisos, notificaciones push y SMS.
+- **Servidor** (Supabase, ver `supabase/README.md`): Fase 1 hecha (tablas, permisos, vincular cuentas).
+  Faltan: usar datos reales en la app, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Imprimir carnés en lote; guardar registros del portón.
 - Unificar horarios: Asignaciones (`SUBJECT_SCHEDULE`) y `src/data/schedule.ts` no coinciden.
