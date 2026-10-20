@@ -1,0 +1,63 @@
+/* Design tokens taken from the "App de asistencia escolar" design. */
+:root {
+  /* Type */
+  --font-display: 'Bricolage Grotesque', sans-serif;
+  --font-body: 'Figtree', system-ui, sans-serif;
+
+  /* Grounds and ink */
+  --bg: #f5f6f2;
+  --surface: #ffffff;
+  --sunken: #e7eae3;
+  --neutral-bg: #eceeea;
+  --ink: #17222e;
+  --ink-2: #2c3844;
+  --ink-3: #3a4652;
+  --muted: #4a5663;
+  --muted-2: #5a6570;
+  --faint: #a3aca3;
+
+  /* Lines */
+  --border: #e2e5de;
+  --border-soft: #eef0eb;
+  --border-input: #c9cfc5;
+  --border-choice: #d5dad3;
+  --border-dashed: #9aa49a;
+
+  /* Night (sidebar, dark cards) */
+  --night: #142030;
+  --night-2: #22344a;
+  --night-line: #2c3d52;
+  --night-ink: #e4e9ee;
+  --night-ink-2: #c7d2dd;
+  --night-ink-3: #a9b6c4;
+  --night-ink-4: #d9e0e7;
+
+  /* Status: presente / informativo */
+  --blue: #1e4fd8;
+  --blue-ink: #163ba3;
+  --blue-bg: #e8eefc;
+  /* Status: tarde */
+  --amber: #b26b00;
+  --amber-ink: #7a4b00;
+  --amber-bg: #fbf0d9;
+  --amber-chart: #d9a441;
+  /* Status: ausente / urgente */
+  --orange: #c2410c;
+  --orange-ink: #a3330a;
+  --orange-bg: #fbe6dc;
+  --orange-line: #e9c9b8;
+  /* Status: confirmado / resuelto */
+  --green: #0f5e55;
+  --green-ink: #0d5c46;
+  --green-bg: #e6f3ee;
+
+  /* Shape */
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+  --shadow-raised: rgba(23, 34, 46, 0.12) 0 1px 3px;
+}
