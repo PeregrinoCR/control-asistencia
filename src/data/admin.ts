@@ -43,7 +43,7 @@ export const FOLLOW_UP = [
 
 export const SHIFTS: Array<{ name: string; range: string; detail: string; status: Status; active?: boolean; action: string }> = [
   { name: 'Diurna', range: '7:00 a. m. – 4:10 p. m.', detail: '12 lecciones de 40 min · 0 secciones', status: { label: 'Inactiva', tone: 'neutral' }, action: 'Editar horario' },
-  { name: 'Nocturna', range: '6:00 p. m. – 9:15 p. m.', detail: '5 lecciones de 35 min, recreo y merienda · 8 secciones', status: { label: 'Activa', tone: 'green' }, active: true, action: 'Editar horario' },
+  { name: 'Nocturna', range: '6:00 p. m. – 9:50 p. m.', detail: '6 lecciones de 35 min, recreo y merienda · 8 secciones', status: { label: 'Activa', tone: 'green' }, active: true, action: 'Editar horario' },
   { name: 'Sábados (giras y tutorías)', range: '8:00 a. m. – 12:00 m. d.', detail: 'Horario especial · se activa por actividad', status: { label: 'Especial', tone: 'amber' }, action: 'Editar horario' },
   { name: 'Horario personalizado', range: 'Cualquier hora', detail: 'Para CINDEA, IPEC, cursos libres o técnicos', status: { label: 'Nuevo', tone: 'blue' }, action: 'Crear jornada' },
 ];
@@ -70,8 +70,8 @@ export const SUBJECT_SCHEDULE: Record<string, { when: string; perWeek: number }>
   Matemática: { when: 'Lun y Mié · 6:00 – 7:10 p. m.', perWeek: 4 },
   Español: { when: 'Mar y Jue · 6:00 – 7:10 p. m.', perWeek: 4 },
   Inglés: { when: 'Lun y Jue · 7:25 – 8:35 p. m.', perWeek: 4 },
-  'Estudios Sociales': { when: 'Mar · 8:00 – 9:15 p. m.', perWeek: 2 },
-  'Educación Cívica': { when: 'Lun · 8:40 – 9:15 p. m.', perWeek: 1 },
+  'Estudios Sociales': { when: 'Mar · 8:00 – 9:50 p. m.', perWeek: 2 },
+  'Educación Cívica': { when: 'Lun · 9:15 – 9:50 p. m.', perWeek: 1 },
   Ciencias: { when: 'Mié y Vie · 7:25 – 8:35 p. m.', perWeek: 4 },
   Biología: { when: 'Mié y Vie · 7:25 – 8:35 p. m.', perWeek: 4 },
   Química: { when: 'Vie · 6:00 – 7:10 p. m.', perWeek: 2 },
@@ -211,11 +211,11 @@ export interface Justification {
 
 export const JUSTIFICATIONS: Justification[] = [
   { id: 1, name: 'Mateo Brenes Quesada', section: '10-2', minor: true, kind: 'Ausencia', date: 'lun 19 oct', lessons: 'Matemática (1.ª y 2.ª)', reason: 'Enfermedad', by: 'Laura Quesada (madre)', sent: 'Hoy 7:40 p. m.', comment: 'Amaneció con fiebre y lo llevé al EBAIS. Mañana regresa a lecciones.', doc: 'dictamen_medico_19oct.pdf', state: 'p' },
-  { id: 2, name: 'Renata Alfaro Mora', section: '7-2', minor: true, kind: 'Ausencia', date: 'jue 15 y vie 16 oct', lessons: '10 lecciones', reason: 'Cita médica', by: 'Gloria Mora (madre)', sent: 'Ayer 9:12 p. m.', comment: 'Tuvo cita de especialista en el hospital y luego reposo.', doc: 'constancia_CCSS.jpg', state: 'p' },
-  { id: 3, name: 'Joaquín Ramírez Ulate', section: '11-1', minor: false, kind: 'Ausencia', date: 'mié 14 oct', lessons: '5 lecciones', reason: 'Trabajo', by: 'El estudiante (mayor de edad)', sent: '16 oct', comment: 'Me asignaron turno de cierre en el trabajo. Adjunto constancia del patrono.', doc: 'constancia_patronal.pdf', state: 'p' },
-  { id: 4, name: 'Emilia Vargas León', section: '9-1', minor: true, kind: 'Ausencia', date: 'mié 14 oct', lessons: '5 lecciones', reason: 'Asunto familiar', by: 'Rosa León (abuela)', sent: '16 oct', comment: 'Tuvimos que viajar por un familiar enfermo.', doc: '', state: 'p' },
-  { id: 5, name: 'Gabriel Núñez Porras', section: '10-2', minor: true, kind: 'Ausencia', date: 'mar 13 oct', lessons: '5 lecciones', reason: 'Transporte', by: 'Óscar Núñez (padre)', sent: '15 oct', comment: 'El bus de la ruta [RUTA] no pasó esa noche.', doc: '', state: 'p' },
+  { id: 2, name: 'Renata Alfaro Mora', section: '7-2', minor: true, kind: 'Ausencia', date: 'jue 15 y vie 16 oct', lessons: '12 lecciones', reason: 'Cita médica', by: 'Gloria Mora (madre)', sent: 'Ayer 9:12 p. m.', comment: 'Tuvo cita de especialista en el hospital y luego reposo.', doc: 'constancia_CCSS.jpg', state: 'p' },
+  { id: 3, name: 'Joaquín Ramírez Ulate', section: '11-1', minor: false, kind: 'Ausencia', date: 'mié 14 oct', lessons: '6 lecciones', reason: 'Trabajo', by: 'El estudiante (mayor de edad)', sent: '16 oct', comment: 'Me asignaron turno de cierre en el trabajo. Adjunto constancia del patrono.', doc: 'constancia_patronal.pdf', state: 'p' },
+  { id: 4, name: 'Emilia Vargas León', section: '9-1', minor: true, kind: 'Ausencia', date: 'mié 14 oct', lessons: '6 lecciones', reason: 'Asunto familiar', by: 'Rosa León (abuela)', sent: '16 oct', comment: 'Tuvimos que viajar por un familiar enfermo.', doc: '', state: 'p' },
+  { id: 5, name: 'Gabriel Núñez Porras', section: '10-2', minor: true, kind: 'Ausencia', date: 'mar 13 oct', lessons: '6 lecciones', reason: 'Transporte', by: 'Óscar Núñez (padre)', sent: '15 oct', comment: 'El bus de la ruta [RUTA] no pasó esa noche.', doc: '', state: 'p' },
   { id: 6, name: 'Sofía Brenes Quesada', section: '8-1', minor: true, kind: 'Tardía', date: 'vie 16 oct', lessons: 'Español (1.ª)', reason: 'Transporte', by: 'Laura Quesada (madre)', sent: '16 oct', comment: 'Presa en la carretera por un accidente.', doc: '', state: 'p' },
-  { id: 7, name: 'Lucía Monge Arias', section: '10-1', minor: true, kind: 'Ausencia', date: 'vie 9 oct', lessons: '5 lecciones', reason: 'Enfermedad', by: 'Silvia Arias (madre)', sent: '12 oct', comment: 'Gripe fuerte.', doc: 'receta.jpg', state: 'a' },
-  { id: 8, name: 'Daniel Gamboa Solano', section: '10-2', minor: true, kind: 'Ausencia', date: 'jue 1 oct', lessons: '5 lecciones', reason: 'Otro motivo', by: 'Teresa Solano (madre)', sent: '14 oct', comment: 'Se nos olvidó justificar a tiempo.', doc: '', state: 'r' },
+  { id: 7, name: 'Lucía Monge Arias', section: '10-1', minor: true, kind: 'Ausencia', date: 'vie 9 oct', lessons: '6 lecciones', reason: 'Enfermedad', by: 'Silvia Arias (madre)', sent: '12 oct', comment: 'Gripe fuerte.', doc: 'receta.jpg', state: 'a' },
+  { id: 8, name: 'Daniel Gamboa Solano', section: '10-2', minor: true, kind: 'Ausencia', date: 'jue 1 oct', lessons: '6 lecciones', reason: 'Otro motivo', by: 'Teresa Solano (madre)', sent: '14 oct', comment: 'Se nos olvidó justificar a tiempo.', doc: '', state: 'r' },
 ];

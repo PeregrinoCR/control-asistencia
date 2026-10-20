@@ -46,7 +46,8 @@ export const CHILDREN: Child[] = [
       { time: '6:00 p. m.', subject: 'Matemática', mark: 'A' },
       { time: '7:25 p. m.', subject: 'Español', mark: 'N' },
       { time: '8:00 p. m.', subject: 'Inglés', mark: 'N' },
-      { time: '8:40 p. m.', subject: 'Educación Cívica', mark: 'N' },
+      { time: '8:40 p. m.', subject: 'Español', mark: 'N' },
+      { time: '9:15 p. m.', subject: 'Educación Cívica', mark: 'N' },
     ],
     month: { pct: '83 %', absences: 2, lates: 2 },
   },
@@ -65,9 +66,10 @@ export const CHILDREN: Child[] = [
       { time: '6:00 p. m.', subject: 'Español', mark: 'T' },
       { time: '7:25 p. m.', subject: 'Matemática', mark: 'P' },
       { time: '8:00 p. m.', subject: 'Estudios Sociales', mark: 'N', change: { kind: 'sub', substitute: 'Marta Vindas' } },
-      { time: '8:40 p. m.', subject: 'Educación Cívica', mark: 'N', change: { kind: 'free' } },
+      { time: '8:40 p. m.', subject: 'Matemática', mark: 'N' },
+      { time: '9:15 p. m.', subject: 'Educación Cívica', mark: 'N', change: { kind: 'free' } },
     ],
-    freeLesson: { subject: 'Educación Cívica', time: '8:40 p. m.', last: true, exitAt: '8:35 p. m.', exitHourIndex: 3, authorizedExit: '8:00 p. m.' },
+    freeLesson: { subject: 'Educación Cívica', time: '9:15 p. m.', last: true, exitAt: '9:15 p. m.', exitHourIndex: 4, authorizedExit: '8:00 p. m.' },
     month: { pct: '96 %', absences: 0, lates: 1 },
   },
 ];
@@ -114,7 +116,7 @@ export const TRIP_DECLARATIONS = [
 ];
 
 /** Lesson change times of the night shift. */
-export const EXIT_HOURS = ['6:35', '7:10', '8:00', '8:35'];
+export const EXIT_HOURS = ['6:35', '7:10', '8:00', '8:35', '9:15'];
 
 export const EXIT_WAYS = [
   { id: 'pickup', label: 'Lo retira una persona adulta', help: 'Debe presentar cédula en el portón.' },

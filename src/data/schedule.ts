@@ -18,8 +18,8 @@ export const NOW_MINUTES = 20 * 60 + 12;
 interface SectionTimetable {
   room: string;
   teachers: Record<string, string>;
-  /** Subject of each of the 5 night-shift lessons, per day. */
-  week: Record<DayId, [string, string, string, string, string]>;
+  /** Subject of each of the 6 night-shift lessons, per day. */
+  week: Record<DayId, [string, string, string, string, string, string]>;
 }
 
 export const TIMETABLES: Record<string, SectionTimetable> = {
@@ -35,11 +35,11 @@ export const TIMETABLES: Record<string, SectionTimetable> = {
       Química: 'Ricardo Mora',
     },
     week: {
-      L: ['Matemática', 'Matemática', 'Español', 'Inglés', 'Educación Cívica'],
-      K: ['Español', 'Español', 'Estudios Sociales', 'Estudios Sociales', 'Inglés'],
-      M: ['Matemática', 'Matemática', 'Biología', 'Biología', 'Español'],
-      J: ['Inglés', 'Inglés', 'Química', 'Matemática', 'Estudios Sociales'],
-      V: ['Química', 'Química', 'Biología', 'Inglés', 'Matemática'],
+      L: ['Matemática', 'Matemática', 'Español', 'Inglés', 'Español', 'Educación Cívica'],
+      K: ['Español', 'Español', 'Estudios Sociales', 'Estudios Sociales', 'Inglés', 'Inglés'],
+      M: ['Matemática', 'Matemática', 'Biología', 'Biología', 'Español', 'Español'],
+      J: ['Inglés', 'Inglés', 'Química', 'Química', 'Matemática', 'Estudios Sociales'],
+      V: ['Química', 'Biología', 'Biología', 'Inglés', 'Matemática', 'Matemática'],
     },
   },
   '8-1': {
@@ -53,11 +53,11 @@ export const TIMETABLES: Record<string, SectionTimetable> = {
       Ciencias: 'Ricardo Mora',
     },
     week: {
-      L: ['Español', 'Español', 'Matemática', 'Estudios Sociales', 'Educación Cívica'],
-      K: ['Matemática', 'Matemática', 'Inglés', 'Inglés', 'Ciencias'],
-      M: ['Ciencias', 'Ciencias', 'Español', 'Matemática', 'Estudios Sociales'],
-      J: ['Inglés', 'Inglés', 'Español', 'Español', 'Matemática'],
-      V: ['Estudios Sociales', 'Ciencias', 'Ciencias', 'Matemática', 'Inglés'],
+      L: ['Español', 'Español', 'Matemática', 'Estudios Sociales', 'Matemática', 'Educación Cívica'],
+      K: ['Matemática', 'Matemática', 'Inglés', 'Inglés', 'Ciencias', 'Ciencias'],
+      M: ['Ciencias', 'Ciencias', 'Español', 'Español', 'Matemática', 'Estudios Sociales'],
+      J: ['Inglés', 'Inglés', 'Español', 'Español', 'Matemática', 'Matemática'],
+      V: ['Estudios Sociales', 'Estudios Sociales', 'Ciencias', 'Matemática', 'Inglés', 'Inglés'],
     },
   },
 };

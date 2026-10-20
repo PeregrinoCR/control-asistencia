@@ -52,7 +52,7 @@ export function EarlyExit() {
           <div className="screen-body gap-18">
             <fieldset className="fieldset fieldset--lg">
               <legend>Hora de salida</legend>
-              <div className="grid-4" style={{ gap: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 6 }}>
                 {EXIT_HOURS.map((h, i) => (
                   <button key={h} type="button" className="choice choice--center" aria-pressed={i === hour} onClick={() => setHour(i)}>
                     {h}

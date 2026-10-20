@@ -37,7 +37,7 @@ export const ABSENCE_REASONS = ['Incapacidad', 'Cita médica', 'Permiso con goce
 export const TEACHER_LESSONS_TODAY: Record<string, AffectedLesson[]> = {
   'Jorge Céspedes': [
     { section: '8-1', subject: 'Estudios Sociales', time: '8:00 p. m.', last: false, minors: 22, students: 28 },
-    { section: '8-1', subject: 'Educación Cívica', time: '8:40 p. m.', last: true, minors: 22, students: 28 },
+    { section: '8-1', subject: 'Educación Cívica', time: '9:15 p. m.', last: true, minors: 22, students: 28 },
   ],
   'Karla Montero': [
     { section: '10-2', subject: 'Inglés', time: '7:25 p. m.', last: false, minors: 12, students: 29 },
@@ -45,7 +45,7 @@ export const TEACHER_LESSONS_TODAY: Record<string, AffectedLesson[]> = {
   ],
   'Patricia Ulate': [
     { section: '7-1', subject: 'Matemática', time: '6:00 p. m.', last: false, minors: 30, students: 32 },
-    { section: '9-1', subject: 'Matemática', time: '8:40 p. m.', last: true, minors: 21, students: 33 },
+    { section: '9-1', subject: 'Matemática', time: '9:15 p. m.', last: true, minors: 21, students: 33 },
   ],
   'Ricardo Mora': [
     { section: '11-1', subject: 'Biología', time: '7:25 p. m.', last: false, minors: 9, students: 32 },

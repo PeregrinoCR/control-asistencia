@@ -40,6 +40,7 @@ export const SHIFT_BLOCKS: Record<ShiftId, { label: string; blocks: Array<[name:
       ['4.ª lección', '8:00 p. m.', '8:35 p. m.', 35],
       ['Merienda', '8:35 p. m.', '8:40 p. m.', 5],
       ['5.ª lección', '8:40 p. m.', '9:15 p. m.', 35],
+      ['6.ª lección', '9:15 p. m.', '9:50 p. m.', 35],
     ],
   },
   diu: {
@@ -126,7 +127,7 @@ export const SPECIAL_TYPES = [
     label: 'Cambio de lecciones',
     detail: 'Se mueven o se juntan lecciones. El pase de lista sigue el nuevo orden.',
     title: 'Viernes 30 de octubre: horario de lecciones cambia',
-    body: 'La 3.ª lección se extiende 20 minutos por el simulacro de evacuación. La salida se mantiene a las 9:15 p. m.',
+    body: 'La 3.ª lección se extiende 20 minutos por el simulacro de evacuación. La salida se mantiene a las 9:50 p. m.',
   },
 ];
 
@@ -161,7 +162,7 @@ export const EXAMS: Array<{ date: string; time: string; subject: string; section
   { date: 'Jue 5 nov', time: '6:00 p. m.', subject: 'Inglés', section: '10-2', teacher: 'Karla Montero', room: 'Aula 5', published: false },
   { date: 'Jue 5 nov', time: '8:00 p. m.', subject: 'Química', section: '11-2', teacher: 'Ricardo Mora', room: 'Laboratorio', published: true },
   { date: 'Vie 6 nov', time: '6:00 p. m.', subject: 'Matemática', section: '7-1', teacher: 'Patricia Ulate', room: 'Aula 1', published: true },
-  { date: 'Vie 6 nov', time: '8:40 p. m.', subject: 'Educación Cívica', section: '10-2', teacher: 'Jorge Céspedes', room: 'Aula 5', published: true },
+  { date: 'Vie 6 nov', time: '9:15 p. m.', subject: 'Educación Cívica', section: '10-2', teacher: 'Jorge Céspedes', room: 'Aula 5', published: true },
 ];
 
 export const EXAM_RULES = [
