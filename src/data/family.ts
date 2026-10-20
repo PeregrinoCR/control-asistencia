@@ -108,3 +108,12 @@ export const EXIT_WAYS = [
 ] as const;
 
 export type ExitWay = (typeof EXIT_WAYS)[number]['id'];
+
+/** Trip fee paid by SINPE Móvil. Only shown when the school turns on the payments module. */
+export const TRIP_PAYMENT = {
+  enabled: true,
+  amount: '[MONTO] colones',
+  sinpeNumber: '[NÚMERO SINPE]',
+  holder: '[NOMBRE DEL TITULAR]',
+  reference: 'Gira 10-2 Mateo Brenes',
+};

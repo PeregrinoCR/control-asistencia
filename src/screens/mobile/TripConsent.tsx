@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Button, ButtonLink, CheckCard, InputField, SignaturePad } from '../../components';
+import { Button, ButtonLink, CheckCard, InputField, SignaturePad, SinpePayment } from '../../components';
 import { DoneState, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
-import { GUARDIAN, TRIP_DECLARATIONS } from '../../data/family';
+import { GUARDIAN, TRIP_DECLARATIONS, TRIP_PAYMENT } from '../../data/family';
 import { routes } from '../../routes';
 
 const TRIP_FACTS = [
   ['Fecha', 'Sáb 31 de octubre'],
   ['Horario', '7:00 a. m. – 4:00 p. m.'],
   ['Salida y regreso', 'Portón principal'],
-  ['Costo', '[MONTO] colones'],
+  ['Costo', TRIP_PAYMENT.amount],
   ['Transporte', '[EMPRESA DE BUSES]'],
   ['A cargo', 'Prof. Ricardo Mora'],
 ];
@@ -21,6 +21,7 @@ export function TripConsent() {
   const [signed, setSigned] = useState(false);
   const [error, setError] = useState(false);
   const [mode, setMode] = useState<Mode>('form');
+  const [receipt, setReceipt] = useState<string | null>(null);
   const ready = checks.every(Boolean) && signed;
 
   const approve = () => (ready ? setMode('approved') : setError(true));
@@ -45,7 +46,8 @@ export function TripConsent() {
           }
         >
           {mode === 'approved'
-            ? 'El colegio recibió su autorización firmada. El profesor Ricardo Mora tendrá a Mateo en la lista de la gira y le avisaremos cuando salgan y cuando regresen.'
+            ? 'El colegio recibió su autorización firmada. El profesor Ricardo Mora tendrá a Mateo en la lista de la gira y le avisaremos cuando salgan y cuando regresen.' +
+              (receipt ? ' Su comprobante de pago está en revisión.' : ' Recuerde pagar la gira por SINPE Móvil antes del 26 de octubre.')
             : 'Avisamos al profesor a cargo. Mateo no está en la lista de la gira y ese día no tiene lecciones.'}
         </DoneState>
       ) : (
@@ -106,6 +108,17 @@ export function TripConsent() {
                 </CheckCard>
               ))}
             </fieldset>
+
+            {TRIP_PAYMENT.enabled && (
+              <SinpePayment
+                amount={TRIP_PAYMENT.amount}
+                number={TRIP_PAYMENT.sinpeNumber}
+                holder={TRIP_PAYMENT.holder}
+                reference={TRIP_PAYMENT.reference}
+                receipt={receipt}
+                onReceipt={setReceipt}
+              />
+            )}
 
             <div className="stack gap-8">
               <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>

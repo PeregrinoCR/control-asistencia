@@ -7,5 +7,6 @@ export { Icon, type IconName } from './Icon';
 export { Meter } from './Meter';
 export { Segmented, type SegmentOption } from './Segmented';
 export { SignaturePad } from './SignaturePad';
+export { SinpePayment } from './SinpePayment';
 export { MiniStat, Stat } from './Stat';
 export { SettingRow, Switch } from './Switch';

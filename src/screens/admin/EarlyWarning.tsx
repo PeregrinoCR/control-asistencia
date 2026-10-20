@@ -17,6 +17,20 @@ export function EarlyWarning() {
   const marks = d.strip.split('');
   const count = (k: string) => marks.filter((m) => m === k).length;
 
+  // Spreadsheet of open cases to load into the MEP's SABER early-warning module.
+  // Columns follow the case data we hold; check them against the MEP's current template.
+  const exportForSaber = () => {
+    const header = ['Estudiante', 'Sección', 'Edad', 'Nivel de riesgo', 'Ausencias injustificadas', 'Ausencias consecutivas', 'Tardías', 'Motivos', 'Seguimiento', 'Responsable', 'Fecha de apertura'];
+    const rows = CASES.map((c) => [c.name, c.section, c.age, RISK[c.level].label, c.unexcused, c.consecutive, c.lates, c.reasons.join('; '), c.status, c.owner, c.opened]);
+    const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'alerta-temprana-saber.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <AdminLayout>
       <PageHeader
@@ -25,6 +39,9 @@ export function EarlyWarning() {
         actions={
           <>
             <Button regular>Informe general (PDF)</Button>
+            <Button regular onClick={exportForSaber}>
+              Exportar para SABER
+            </Button>
             <Button variant="primary">Agregar caso manual</Button>
           </>
         }

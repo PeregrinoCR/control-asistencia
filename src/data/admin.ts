@@ -113,14 +113,23 @@ export const CONSENT_STATUS: Record<ConsentState, Status> = {
   wait: { label: 'Pendiente', tone: 'neutral' },
 };
 
-export const TRIP_ROSTER: Array<{ name: string; section: string; guardian: string; state: ConsentState; health: string; signed: string }> = [
-  { name: 'Mateo Brenes Quesada', section: '10-2', guardian: 'Laura Quesada Arias', state: 'wait', health: '—', signed: 'Recordatorio enviado hoy' },
-  { name: 'Isabella Castro Jiménez', section: '10-2', guardian: 'Rodrigo Castro', state: 'ok', health: 'Sin observaciones', signed: '17/10 · 8:41 p. m.' },
-  { name: 'Camila Fallas Vargas', section: '10-2', guardian: 'Ana Vargas Soto', state: 'ok', health: 'Asma · inhalador', signed: '16/10 · 7:12 p. m.' },
-  { name: 'Thiago Jiménez Ulate', section: '10-2', guardian: 'Marco Jiménez', state: 'no', health: '—', signed: '18/10 · 9:03 p. m.' },
-  { name: 'Lucía Monge Arias', section: '10-1', guardian: 'Silvia Arias', state: 'ok', health: 'Alergia a la penicilina', signed: '16/10 · 6:55 p. m.' },
-  { name: 'Sofía Picado León', section: '10-1', guardian: 'Carlos Picado', state: 'wait', health: '—', signed: 'Aviso sin abrir · SMS enviado' },
-  { name: 'Valeria Araya Mora', section: '10-1', guardian: 'Gloria Mora', state: 'ok', health: 'Sin observaciones', signed: '15/10 · 9:20 p. m.' },
+export type PaymentState = 'paid' | 'review' | 'pending' | 'none';
+
+export const PAYMENT_STATUS: Record<PaymentState, Status> = {
+  paid: { label: 'Pagado', tone: 'green' },
+  review: { label: 'Comprobante en revisión', tone: 'blue' },
+  pending: { label: 'Sin pagar', tone: 'amber' },
+  none: { label: 'No aplica', tone: 'neutral' },
+};
+
+export const TRIP_ROSTER: Array<{ name: string; section: string; guardian: string; state: ConsentState; health: string; signed: string; payment: PaymentState; receipt?: string }> = [
+  { name: 'Mateo Brenes Quesada', section: '10-2', guardian: 'Laura Quesada Arias', state: 'wait', health: '—', signed: 'Recordatorio enviado hoy', payment: 'pending' },
+  { name: 'Isabella Castro Jiménez', section: '10-2', guardian: 'Rodrigo Castro', state: 'ok', health: 'Sin observaciones', signed: '17/10 · 8:41 p. m.', payment: 'paid' },
+  { name: 'Camila Fallas Vargas', section: '10-2', guardian: 'Ana Vargas Soto', state: 'ok', health: 'Asma · inhalador', signed: '16/10 · 7:12 p. m.', payment: 'review', receipt: 'sinpe_camila_fallas.jpg' },
+  { name: 'Thiago Jiménez Ulate', section: '10-2', guardian: 'Marco Jiménez', state: 'no', health: '—', signed: '18/10 · 9:03 p. m.', payment: 'none' },
+  { name: 'Lucía Monge Arias', section: '10-1', guardian: 'Silvia Arias', state: 'ok', health: 'Alergia a la penicilina', signed: '16/10 · 6:55 p. m.', payment: 'paid' },
+  { name: 'Sofía Picado León', section: '10-1', guardian: 'Carlos Picado', state: 'wait', health: '—', signed: 'Aviso sin abrir · SMS enviado', payment: 'pending' },
+  { name: 'Valeria Araya Mora', section: '10-1', guardian: 'Gloria Mora', state: 'ok', health: 'Sin observaciones', signed: '15/10 · 9:20 p. m.', payment: 'review', receipt: 'comprobante_sinpe.pdf' },
 ];
 
 export const TRIP_TOTALS = { authorized: 16, declined: 2, pending: 8, minors: 26, adults: 32 };

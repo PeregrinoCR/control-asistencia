@@ -942,3 +942,8 @@ p {
   align-items: center;
   gap: 6px;
 }
+
+/* A card laid out horizontally */
+.card.row {
+  flex-direction: row;
+}

@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { Badge, Button, Segmented, StatusBadge } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
-import { CONSENT_STATUS, EARLY_EXITS, TRIP_ROSTER, TRIP_TOTALS } from '../../data/admin';
+import { CONSENT_STATUS, EARLY_EXITS, PAYMENT_STATUS, TRIP_ROSTER, TRIP_TOTALS, type PaymentState } from '../../data/admin';
 
 type Tab = 'trip' | 'exits';
 
 /** Dirección · Giras y salidas tempranas */
 export function Trips() {
   const [tab, setTab] = useState<Tab>('trip');
+  const [payments, setPayments] = useState<Record<string, PaymentState>>(
+    Object.fromEntries(TRIP_ROSTER.map((r) => [r.name, r.payment])),
+  );
+  const paid = Object.values(payments).filter((p) => p === 'paid').length;
+  const inReview = Object.values(payments).filter((p) => p === 'review').length;
   const t = TRIP_TOTALS;
   const share = (n: number) => `${((100 * n) / t.minors).toFixed(1)}%`;
 
@@ -70,6 +75,9 @@ export function Trips() {
                 </span>
                 <span className="muted">+ {t.adults} mayores de edad confirman ellos mismos</span>
               </div>
+              <div className="text-sm" style={{ color: 'var(--ink-2)' }}>
+                Pagos por SINPE Móvil en esta lista: <strong>{paid} pagados</strong> · {inReview} por confirmar
+              </div>
               <div className="row wrap gap-8">
                 <Button variant="dark" size="md">
                   Recordar a {t.pending} pendientes
@@ -84,7 +92,7 @@ export function Trips() {
               Menores de edad en la gira
             </h2>
             <div className="table-wrap">
-              <table className="table" style={{ minWidth: 680 }}>
+              <table className="table" style={{ minWidth: 900 }}>
                 <thead>
                   <tr>
                     <th>Estudiante</th>
@@ -93,6 +101,7 @@ export function Trips() {
                     <th>Estado</th>
                     <th>Salud</th>
                     <th>Firma</th>
+                    <th>Pago</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -106,6 +115,21 @@ export function Trips() {
                       </td>
                       <td style={{ color: 'var(--ink-2)' }}>{r.health}</td>
                       <td className="text-sm muted">{r.signed}</td>
+                      <td>
+                        <span className="row wrap gap-8">
+                          <StatusBadge status={PAYMENT_STATUS[payments[r.name]]} />
+                          {payments[r.name] === 'review' && (
+                            <>
+                              <a href={`#comprobante-${r.name}`} className="text-sm" style={{ fontWeight: 700, textDecoration: 'none' }} title={r.receipt}>
+                                Ver comprobante
+                              </a>
+                              <Button size="sm" onClick={() => setPayments({ ...payments, [r.name]: 'paid' })}>
+                                Marcar pagado
+                              </Button>
+                            </>
+                          )}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

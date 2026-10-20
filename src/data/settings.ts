@@ -170,3 +170,17 @@ export const EXAM_RULES = [
   { id: 'miss', label: 'Aviso inmediato si falta a la prueba', help: 'Con enlace para justificar', on: true },
   { id: 'adults', label: 'Incluir a estudiantes mayores de edad', help: 'Ellos reciben el aviso directamente', on: true },
 ];
+
+export type Sector = 'public' | 'private';
+
+/** Optional parts of the app. Defaults depend on whether the school is public (MEP) or private. */
+export const MODULES: Array<{ id: string; label: string; help: string; defaults: Record<Sector, boolean> }> = [
+  { id: 'saber', label: 'Exportación para SABER (MEP)', help: 'Casos de alerta temprana en archivo para cargar en la plataforma del MEP', defaults: { public: true, private: false } },
+  { id: 'pay', label: 'Pagos por SINPE Móvil', help: 'Las familias pagan giras o cuotas y suben el comprobante; dirección lo confirma', defaults: { public: false, private: true } },
+  { id: 'sms', label: 'SMS de respaldo', help: 'Cada mensaje tiene costo. Si se apaga, solo se envían notificaciones en la app', defaults: { public: true, private: true } },
+  { id: 'smsUrgent', label: 'SMS solo para avisos urgentes', help: 'Ausencias de menores, suspensiones y salidas. Reduce el costo de SMS', defaults: { public: true, private: false } },
+];
+
+export function moduleDefaults(sector: Sector) {
+  return Object.fromEntries(MODULES.map((m) => [m.id, m.defaults[sector]])) as Record<string, boolean>;
+}

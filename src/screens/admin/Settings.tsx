@@ -19,12 +19,15 @@ import {
   SPECIAL_SCOPES,
   SPECIAL_TYPES,
   WEEKDAYS,
+  MODULES,
+  moduleDefaults,
+  type Sector,
   type ShiftId,
 } from '../../data/settings';
 import { ruleState } from '../../data/school';
 import { routes } from '../../routes';
 
-type Tab = 'inst' | 'jor' | 'prof' | 'esp' | 'exa';
+type Tab = 'inst' | 'mod' | 'jor' | 'prof' | 'esp' | 'exa';
 
 /** Dirección · Configuración */
 export function Settings() {
@@ -60,6 +63,7 @@ export function Settings() {
         }}
         options={[
           { value: 'inst', label: 'Institución' },
+          { value: 'mod', label: 'Módulos' },
           { value: 'jor', label: 'Jornadas y horarios' },
           { value: 'prof', label: 'Profesores y secciones' },
           { value: 'esp', label: 'Horarios especiales' },
@@ -69,6 +73,7 @@ export function Settings() {
 
       <div role="tabpanel">
         {tab === 'inst' && <InstitutionTab />}
+        {tab === 'mod' && <ModulesTab />}
         {tab === 'jor' && <ShiftsTab />}
         {tab === 'prof' && <RolesTab />}
         {tab === 'esp' && <SpecialTab />}
@@ -129,6 +134,74 @@ function InstitutionTab() {
           </Button>
         </section>
       </aside>
+    </div>
+  );
+}
+
+function ModulesTab() {
+  const [sector, setSector] = useState<Sector>('public');
+  const [modules, setModules] = useState(moduleDefaults('public'));
+
+  return (
+    <div className="split">
+      <section aria-labelledby="mod-t" className="card card--roomy split__main">
+        <div className="stack gap-4">
+          <h2 id="mod-t" className="title-section">
+            Módulos
+          </h2>
+          <span className="text-sm muted">La app es gratuita para el colegio. Active solo lo que van a usar.</span>
+        </div>
+        <fieldset className="fieldset">
+          <legend>Tipo de centro educativo</legend>
+          <div className="row wrap gap-8">
+            {([
+              ['public', 'Público (MEP)'],
+              ['private', 'Privado o subvencionado'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className="chip"
+                aria-pressed={sector === value}
+                onClick={() => {
+                  setSector(value);
+                  setModules(moduleDefaults(value));
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="text-sm muted" style={{ display: 'block', marginTop: 8 }}>
+            Al cambiar el tipo se cargan los módulos recomendados. Puede ajustarlos después.
+          </span>
+        </fieldset>
+        <div className="stack">
+          {MODULES.map((m) => (
+            <SettingRow
+              key={m.id}
+              label={m.label}
+              help={m.help}
+              checked={modules[m.id] && (m.id !== 'smsUrgent' || modules.sms)}
+              onChange={(v) => setModules({ ...modules, [m.id]: v })}
+            />
+          ))}
+        </div>
+      </section>
+
+      {modules.pay && (
+        <aside aria-labelledby="sinpe-t" className="card split__side gap-14">
+          <h2 id="sinpe-t" style={{ fontSize: 16, fontWeight: 700 }}>
+            Cuenta para recibir pagos
+          </h2>
+          <InputField id="m-sinpe" type="tel" label="Número SINPE Móvil" placeholder="[NÚMERO SINPE]" />
+          <InputField id="m-titular" label="A nombre de" placeholder="[NOMBRE DEL TITULAR]" />
+          <span className="text-sm muted">
+            Las familias ven este número al pagar. El dinero llega directo a esta cuenta; la app no cobra comisión ni
+            procesa el pago, solo registra el comprobante.
+          </span>
+        </aside>
+      )}
     </div>
   );
 }
