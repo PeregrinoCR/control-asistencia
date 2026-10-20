@@ -5,6 +5,8 @@ export { cx } from './cx';
 export { CheckCard, InputField, TextareaField } from './Field';
 export { Icon, type IconName } from './Icon';
 export { Meter } from './Meter';
+export { QrCode } from './QrCode';
+export { QrScanner } from './QrScanner';
 export { Segmented, type SegmentOption } from './Segmented';
 export { SignaturePad } from './SignaturePad';
 export { SinpePayment } from './SinpePayment';

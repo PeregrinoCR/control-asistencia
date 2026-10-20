@@ -12,6 +12,8 @@ const GROUPS = [
       { to: routes.family.history, role: 'Padre', label: 'Historial del mes' },
       { to: routes.family.trip, role: 'Padre', label: 'Autorizar gira' },
       { to: routes.family.earlyExit, role: 'Padre', label: 'Salida temprana y descargo' },
+      { to: routes.family.card, role: 'Padre', label: 'Carné estudiantil (QR)' },
+      { to: routes.guard.gate, role: 'Guarda', label: 'Control de portón' },
     ],
   },
   {

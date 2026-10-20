@@ -90,6 +90,20 @@ const ICONS = {
       <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
     </>
   ),
+  camera: (
+    <>
+      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </>
+  ),
+  qr: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4h-4" />
+    </>
+  ),
   upload: (
     <>
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />

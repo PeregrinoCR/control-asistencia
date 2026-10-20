@@ -349,3 +349,94 @@
   font-size: 22px;
   line-height: 1;
 }
+
+/* ---------- Carné digital ---------- */
+
+.id-card {
+  background: var(--night);
+  color: #f2f4f0;
+  border-radius: var(--radius-2xl);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.id-card__photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--night-2);
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Portón ---------- */
+
+.gate-result {
+  border-radius: var(--radius-2xl);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gate-result[data-kind='ok'] { background: var(--green-bg); --gate-ink: var(--green-ink); --gate: var(--green); }
+.gate-result[data-kind='warn'] { background: var(--amber-bg); --gate-ink: var(--amber-ink); --gate: var(--amber); }
+.gate-result[data-kind='deny'] { background: var(--orange-bg); --gate-ink: var(--orange-ink); --gate: var(--orange); }
+.gate-result__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gate-ink);
+}
+.gate-result__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--gate);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.scanner {
+  position: relative;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  background: var(--night);
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scanner__video {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+.scanner__frame {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border: 3px solid #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 999px rgba(20, 32, 48, 0.45);
+}
+.scanner__error {
+  color: var(--night-ink);
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 24px 20px 64px;
+  text-align: center;
+}
+.scanner__close {
+  position: absolute;
+  bottom: 12px;
+}

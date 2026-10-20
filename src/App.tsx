@@ -15,6 +15,8 @@ import { Trips } from './screens/admin/Trips';
 import { EarlyExit } from './screens/mobile/EarlyExit';
 import { FamilyHome } from './screens/mobile/FamilyHome';
 import { FamilySettings } from './screens/mobile/FamilySettings';
+import { Gate } from './screens/mobile/Gate';
+import { StudentCardScreen } from './screens/mobile/StudentCardScreen';
 import { History } from './screens/mobile/History';
 import { Justify } from './screens/mobile/Justify';
 import { PushPreview } from './screens/mobile/PushPreview';
@@ -61,6 +63,9 @@ export function App() {
         <Route path={routes.family.trip} element={<TripConsent />} />
         <Route path={routes.family.earlyExit} element={<EarlyExit />} />
         <Route path={routes.family.settings} element={<FamilySettings />} />
+        <Route path={routes.family.card} element={<StudentCardScreen />} />
+
+        <Route path={routes.guard.gate} element={<Gate />} />
 
         <Route path={routes.admin.today} element={<Today />} />
         <Route path={routes.admin.assignments} element={<Assignments />} />

@@ -3,6 +3,9 @@ export const routes = {
   teacher: {
     rollCall: '/docente/pase-de-lista',
   },
+  guard: {
+    gate: '/porton',
+  },
   family: {
     home: '/familia',
     push: '/familia/notificacion',
@@ -11,6 +14,7 @@ export const routes = {
     trip: '/familia/gira',
     earlyExit: '/familia/salida',
     settings: '/familia/ajustes',
+    card: '/familia/carne',
   },
   admin: {
     today: '/direccion',
