@@ -39,7 +39,7 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 ## Pendiente
 
 - **Servidor** (Supabase, ver `supabase/README.md`): Fase 1 hecha (tablas, permisos, vincular cuentas).
-  Fase 2: inicio de sesión (`/entrar`, `src/lib/auth.tsx`) y Usuarios con datos reales (`src/lib/staff.ts`).
+  Fase 2: inicio de sesión (`/entrar`, `src/lib/auth.tsx`) y con datos reales: Usuarios (`src/lib/staff.ts`), Estudiantes y encargados con importación CSV (`src/lib/students.ts`).
   Faltan: el resto de pantallas con datos reales, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Imprimir carnés en lote; guardar registros del portón.

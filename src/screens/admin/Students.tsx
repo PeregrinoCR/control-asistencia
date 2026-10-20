@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Avatar, Button, Icon, MiniStat, Segmented, StatusBadge } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { ENROLLMENT, PERM_STATUS, STUDENTS, type AppUse } from '../../data/admin';
+import { supabase } from '../../lib/supabase';
+import { StudentsLive } from './StudentsLive';
 
 type AgeFilter = 'all' | 'min' | 'adu';
 
@@ -10,6 +12,11 @@ const appInk = (app: AppUse) =>
 
 /** Dirección · Estudiantes */
 export function Students() {
+  return supabase ? <StudentsLive /> : <StudentsSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function StudentsSample() {
   const [filter, setFilter] = useState<AgeFilter>('all');
   const [selectedId, setSelectedId] = useState(2);
 

@@ -1,0 +1,370 @@
+import { useState, type FormEvent } from 'react';
+import { Avatar, Button, Icon, InputField, Segmented } from '../../components';
+import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { IMPORT_COLUMNS, parseEnrollment, useStudents, type LiveStudent, type NewStudent } from '../../lib/students';
+
+type AgeFilter = 'all' | 'min' | 'adu';
+type Panel = { kind: 'student'; id: string } | { kind: 'add' } | { kind: 'import' } | null;
+type Students = ReturnType<typeof useStudents>;
+
+const isAdult = (s: LiveStudent) => s.age !== null && s.age >= 18;
+
+/** Who gets the notices: the student when adult, otherwise the first guardian. */
+function contactOf(s: LiveStudent) {
+  if (isAdult(s)) return { name: 'El propio estudiante', account: s.hasAccount };
+  const g = s.guardians[0];
+  return g ? { name: `${g.name}${g.relation ? ` (${g.relation})` : ''}`, account: g.hasAccount } : null;
+}
+
+/** Dirección · Estudiantes, with the school's real enrollment. */
+export function StudentsLive() {
+  const data = useStudents();
+  const [filter, setFilter] = useState<AgeFilter>('all');
+  const [section, setSection] = useState('');
+  const [query, setQuery] = useState('');
+  const [panel, setPanel] = useState<Panel>(null);
+
+  const all = data.students ?? [];
+  const q = query.toLowerCase();
+  const list = all.filter(
+    (s) =>
+      (filter === 'all' || (filter === 'min' ? !isAdult(s) : isAdult(s))) &&
+      (!section || s.section === section) &&
+      [s.name, s.idNumber, ...s.guardians.map((g) => g.name)].join(' ').toLowerCase().includes(q),
+  );
+  const minors = all.filter((s) => !isAdult(s)).length;
+  const selected = panel?.kind === 'student' ? all.find((s) => s.id === panel.id) : undefined;
+
+  return (
+    <AdminLayout>
+      <PageHeader
+        kicker={`${all.length} matriculados · ${minors} menores de edad`}
+        title="Estudiantes"
+        actions={
+          <>
+            <Button regular onClick={() => setPanel({ kind: 'import' })}>
+              Importar matrícula
+            </Button>
+            <Button variant="primary" onClick={() => setPanel({ kind: 'add' })}>
+              Agregar estudiante
+            </Button>
+          </>
+        }
+      />
+
+      {data.error ? (
+        <p className="notice" role="alert">
+          No se pudieron cargar los estudiantes: {data.error}
+        </p>
+      ) : !data.students ? (
+        <p className="text-sm muted">Cargando…</p>
+      ) : (
+        <>
+          <div className="row wrap gap-10">
+            <div className="search">
+              <Icon name="search" size={18} />
+              <label htmlFor="e-buscar" className="sr-only">
+                Buscar estudiante
+              </label>
+              <input
+                id="e-buscar"
+                type="search"
+                className="input"
+                placeholder="Buscar por nombre, cédula o encargado"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            <Segmented
+              label="Filtrar por edad"
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'min', label: 'Menores de edad' },
+                { value: 'adu', label: 'Mayores de edad' },
+              ]}
+            />
+            <label htmlFor="e-seccion" className="sr-only">
+              Sección
+            </label>
+            <select id="e-seccion" className="input" style={{ width: 'auto' }} value={section} onChange={(e) => setSection(e.target.value)}>
+              <option value="">Todas las secciones</option>
+              {data.sections.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="split">
+            <section aria-label="Lista de estudiantes" className="card split__main" style={{ padding: '8px 18px 18px', gap: 0, flexBasis: 560 }}>
+              {all.length === 0 ? (
+                <p className="text-sm muted" style={{ paddingTop: 12 }}>
+                  Todavía no hay estudiantes. Agréguelos uno por uno o importe la matrícula desde Excel.
+                </p>
+              ) : (
+                <div className="table-wrap">
+                  <table className="table table--compact" style={{ minWidth: 620 }}>
+                    <thead>
+                      <tr>
+                        <th>Estudiante</th>
+                        <th>Sección</th>
+                        <th>Edad</th>
+                        <th>Recibe los avisos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((r) => {
+                        const c = contactOf(r);
+                        return (
+                          <tr key={r.id} aria-selected={r.id === selected?.id}>
+                            <td>
+                              <button type="button" className="row-button" onClick={() => setPanel({ kind: 'student', id: r.id })}>
+                                <Avatar name={r.name} size="sm" />
+                                {r.name}
+                              </button>
+                            </td>
+                            <td>{r.section}</td>
+                            <td>{r.age === null ? '—' : `${r.age} años`}</td>
+                            <td>
+                              {c ? (
+                                <span className="stack">
+                                  <span>{c.name}</span>
+                                  <span className={c.account ? 'text-xs strong ink-green' : 'text-xs strong ink-orange'}>
+                                    {c.account ? 'Usa la app' : 'Sin cuenta'}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span className="text-sm ink-orange">Falta el encargado</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {all.length > 0 && (
+                <span className="text-sm muted" style={{ display: 'block', paddingTop: 12 }}>
+                  Mostrando {list.length} de {all.length}
+                </span>
+              )}
+            </section>
+
+            {panel?.kind === 'add' && <AddPanel data={data} onClose={() => setPanel(null)} />}
+            {panel?.kind === 'import' && <ImportPanel data={data} onClose={() => setPanel(null)} />}
+            {selected && <StudentPanel s={selected} />}
+          </div>
+        </>
+      )}
+    </AdminLayout>
+  );
+}
+
+function StudentPanel({ s }: { s: LiveStudent }) {
+  const adult = isAdult(s);
+  return (
+    <aside aria-labelledby="ficha-t" className="card split__side gap-16" style={{ padding: 20 }}>
+      <div className="row gap-14">
+        <Avatar name={s.name} size="lg" tone="blue" />
+        <div className="stack">
+          <h2 id="ficha-t" className="display" style={{ fontSize: 22 }}>
+            {s.name}
+          </h2>
+          <span className="muted" style={{ fontSize: 14 }}>
+            Sección {s.section}
+            {s.age !== null && ` · ${s.age} años · ${adult ? 'mayor de edad' : 'menor de edad'}`}
+          </span>
+          {s.idNumber && <span className="text-sm muted">Cédula {s.idNumber}</span>}
+        </div>
+      </div>
+      {adult && (
+        <div className="stack gap-4">
+          <h3 className="eyebrow" style={{ fontSize: 14 }}>
+            Contacto (el propio estudiante)
+          </h3>
+          <span style={{ fontSize: 14 }}>{s.phone || 'Sin teléfono'}</span>
+          <span className={s.hasAccount ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>
+            {s.hasAccount ? 'Usa la app' : 'Aún no crea su cuenta'}
+          </span>
+        </div>
+      )}
+      <div className="stack gap-8">
+        <h3 className="eyebrow" style={{ fontSize: 14 }}>
+          {s.guardians.length > 1 ? 'Encargados' : 'Encargado legal'}
+        </h3>
+        {s.guardians.length === 0 && <span className="text-sm ink-orange">Sin encargado registrado.</span>}
+        {s.guardians.map((g) => (
+          <div key={g.id} className="stack gap-4" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>
+              {g.name}
+              {g.relation && <span className="muted" style={{ fontWeight: 400 }}> · {g.relation}</span>}
+            </span>
+            <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>{[g.phone, g.email].filter(Boolean).join(' · ') || 'Sin contacto'}</span>
+            <span className={g.hasAccount ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>
+              {g.hasAccount ? 'Usa la app' : 'Aún no crea su cuenta'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+const EMPTY: NewStudent = {
+  name: '',
+  idNumber: '',
+  birth: '',
+  section: '',
+  phone: '',
+  guardian: { name: '', idNumber: '', relation: '', phone: '', email: '' },
+};
+
+function AddPanel({ data, onClose }: { data: Students; onClose: () => void }) {
+  const [form, setForm] = useState(EMPTY);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const g = form.guardian!;
+  const set = (patch: Partial<NewStudent>) => setForm({ ...form, ...patch });
+  const setG = (patch: Partial<typeof g>) => setForm({ ...form, guardian: { ...g, ...patch } });
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.section) return setMsg({ ok: false, text: 'Escriba el nombre y elija la sección.' });
+    setBusy(true);
+    const { added, problems } = await data.add([form]);
+    setBusy(false);
+    if (problems.length) return setMsg({ ok: false, text: problems.join(' ') });
+    if (added) {
+      setForm(EMPTY);
+      setMsg({ ok: true, text: `${form.name} quedó matriculado(a). Puede agregar otro.` });
+    }
+  };
+
+  return (
+    <aside aria-labelledby="add-t" className="card split__side gap-16" style={{ padding: 20, flexBasis: 380 }}>
+      <form className="stack gap-12" onSubmit={submit}>
+        <h2 id="add-t" className="title-section">
+          Agregar estudiante
+        </h2>
+        <InputField id="a-nombre" label="Nombre completo" value={form.name} onChange={(e) => set({ name: e.target.value })} />
+        <div className="grid-2">
+          <InputField id="a-cedula" label="Cédula" value={form.idNumber} onChange={(e) => set({ idNumber: e.target.value })} />
+          <InputField id="a-nac" label="Nacimiento" type="date" value={form.birth} onChange={(e) => set({ birth: e.target.value })} />
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label htmlFor="a-seccion" className="field__label">
+              Sección
+            </label>
+            <select id="a-seccion" className="input" value={form.section} onChange={(e) => set({ section: e.target.value })}>
+              <option value="" disabled>
+                Elegir
+              </option>
+              {data.sections.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <InputField id="a-tel" label="Teléfono" hint="si es mayor" value={form.phone} onChange={(e) => set({ phone: e.target.value })} />
+        </div>
+        <h3 className="eyebrow" style={{ paddingTop: 6 }}>
+          Encargado legal
+        </h3>
+        <span className="text-xs muted">Si ya está registrado (por ejemplo, por un hermano), se reutiliza por su cédula o teléfono.</span>
+        <InputField id="a-g-nombre" label="Nombre completo" value={g.name} onChange={(e) => setG({ name: e.target.value })} />
+        <div className="grid-2">
+          <InputField id="a-g-cedula" label="Cédula" value={g.idNumber} onChange={(e) => setG({ idNumber: e.target.value })} />
+          <InputField id="a-g-par" label="Parentesco" placeholder="madre, padre…" value={g.relation} onChange={(e) => setG({ relation: e.target.value })} />
+        </div>
+        <div className="grid-2">
+          <InputField id="a-g-tel" label="Teléfono" value={g.phone} onChange={(e) => setG({ phone: e.target.value })} />
+          <InputField id="a-g-correo" label="Correo" type="email" value={g.email} onChange={(e) => setG({ email: e.target.value })} />
+        </div>
+        {msg && (
+          <span role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-sm strong ink-green' : 'text-sm ink-orange'}>
+            {msg.text}
+          </span>
+        )}
+        <div className="row wrap gap-8" style={{ justifyContent: 'flex-end' }}>
+          <Button onClick={onClose}>Cerrar</Button>
+          <Button type="submit" variant="primary" disabled={busy}>
+            {busy ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </div>
+      </form>
+    </aside>
+  );
+}
+
+function downloadTemplate() {
+  const example = ['Ana Pérez Mora', '1-1111-1111', '2009-05-14', '10-2', '', 'Rosa Mora Solís', '1-0222-0333', 'madre', '8888-1111', 'rosa@correo.com'];
+  const csv = '﻿' + [IMPORT_COLUMNS, example].map((r) => r.join(';')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'plantilla-matricula.csv';
+  a.click();
+}
+
+function ImportPanel({ data, onClose }: { data: Students; onClose: () => void }) {
+  const [rows, setRows] = useState<NewStudent[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ added: number; problems: string[] } | null>(null);
+
+  const read = async (file?: File) => {
+    setResult(null);
+    setRows(file ? parseEnrollment(await file.text()) : []);
+  };
+
+  const save = async () => {
+    setBusy(true);
+    setResult(await data.add(rows));
+    setBusy(false);
+    setRows([]);
+  };
+
+  return (
+    <aside aria-labelledby="imp-t" className="card split__side gap-12" style={{ padding: 20, flexBasis: 380 }}>
+      <h2 id="imp-t" className="title-section">
+        Importar matrícula
+      </h2>
+      <ol className="text-sm stack gap-4" style={{ paddingLeft: 18, margin: 0 }}>
+        <li>Descargue la plantilla y ábrala en Excel.</li>
+        <li>Llene una fila por estudiante (la primera fila es de títulos; borre el ejemplo).</li>
+        <li>Guárdela como "CSV" y súbala aquí.</li>
+      </ol>
+      <Button regular onClick={downloadTemplate}>
+        Descargar plantilla
+      </Button>
+      <div className="field">
+        <label htmlFor="imp-file" className="field__label">
+          Archivo CSV
+        </label>
+        <input id="imp-file" type="file" accept=".csv,text/csv" onChange={(e) => read(e.target.files?.[0])} />
+      </div>
+      {rows.length > 0 && (
+        <span className="text-sm">
+          {rows.length} estudiantes encontrados en el archivo
+          {rows[0] && ` (primero: ${rows[0].name || 'sin nombre'}, sección ${rows[0].section || '—'})`}.
+        </span>
+      )}
+      {result && (
+        <div role="status" className="stack gap-4">
+          <span className="text-sm strong ink-green">{result.added} estudiantes guardados.</span>
+          {result.problems.map((p) => (
+            <span key={p} className="text-sm ink-orange">
+              {p}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="row wrap gap-8" style={{ justifyContent: 'flex-end' }}>
+        <Button onClick={onClose}>Cerrar</Button>
+        <Button variant="primary" disabled={busy || rows.length === 0} onClick={save}>
+          {busy ? 'Guardando…' : `Guardar ${rows.length || ''}`}
+        </Button>
+      </div>
+    </aside>
+  );
+}
