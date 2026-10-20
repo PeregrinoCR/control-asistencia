@@ -43,7 +43,7 @@ export const FOLLOW_UP = [
 
 export const SHIFTS: Array<{ name: string; range: string; detail: string; status: Status; active?: boolean; action: string }> = [
   { name: 'Diurna', range: '7:00 a. m. – 4:10 p. m.', detail: '12 lecciones de 40 min · 0 secciones', status: { label: 'Inactiva', tone: 'neutral' }, action: 'Editar horario' },
-  { name: 'Nocturna', range: '6:00 p. m. – 9:50 p. m.', detail: '5 lecciones de 40 min y recreo · 8 secciones', status: { label: 'Activa', tone: 'green' }, active: true, action: 'Editar horario' },
+  { name: 'Nocturna', range: '6:00 p. m. – 9:25 p. m.', detail: '5 lecciones de 35 min y recreo · 8 secciones', status: { label: 'Activa', tone: 'green' }, active: true, action: 'Editar horario' },
   { name: 'Sábados (giras y tutorías)', range: '8:00 a. m. – 12:00 m. d.', detail: 'Horario especial · se activa por actividad', status: { label: 'Especial', tone: 'amber' }, action: 'Editar horario' },
   { name: 'Horario personalizado', range: 'Cualquier hora', detail: 'Para CINDEA, IPEC, cursos libres o técnicos', status: { label: 'Nuevo', tone: 'blue' }, action: 'Crear jornada' },
 ];
@@ -67,14 +67,14 @@ export const SECTIONS: Section[] = [
 ];
 
 export const SUBJECT_SCHEDULE: Record<string, { when: string; perWeek: number }> = {
-  Matemática: { when: 'Lun y Mié · 6:00 – 7:20 p. m.', perWeek: 4 },
-  Español: { when: 'Mar y Jue · 6:00 – 7:20 p. m.', perWeek: 4 },
-  Inglés: { when: 'Lun y Jue · 7:20 – 8:50 p. m.', perWeek: 4 },
-  'Estudios Sociales': { when: 'Mar · 8:10 – 9:50 p. m.', perWeek: 2 },
-  'Educación Cívica': { when: 'Lun · 9:10 – 9:50 p. m.', perWeek: 1 },
-  Ciencias: { when: 'Mié y Vie · 7:20 – 8:50 p. m.', perWeek: 4 },
-  Biología: { when: 'Mié y Vie · 7:20 – 8:50 p. m.', perWeek: 4 },
-  Química: { when: 'Vie · 6:00 – 7:20 p. m.', perWeek: 2 },
+  Matemática: { when: 'Lun y Mié · 6:00 – 7:10 p. m.', perWeek: 4 },
+  Español: { when: 'Mar y Jue · 6:00 – 7:10 p. m.', perWeek: 4 },
+  Inglés: { when: 'Lun y Jue · 7:10 – 8:30 p. m.', perWeek: 4 },
+  'Estudios Sociales': { when: 'Mar · 7:55 – 9:25 p. m.', perWeek: 2 },
+  'Educación Cívica': { when: 'Lun · 8:50 – 9:25 p. m.', perWeek: 1 },
+  Ciencias: { when: 'Mié y Vie · 7:10 – 8:30 p. m.', perWeek: 4 },
+  Biología: { when: 'Mié y Vie · 7:10 – 8:30 p. m.', perWeek: 4 },
+  Química: { when: 'Vie · 6:00 – 7:10 p. m.', perWeek: 2 },
 };
 
 /** Subjects and assigned teacher for a section. An empty teacher means "sin asignar". */
@@ -135,9 +135,9 @@ export const TRIP_ROSTER: Array<{ name: string; section: string; guardian: strin
 export const TRIP_TOTALS = { authorized: 16, declined: 2, pending: 8, minors: 26, adults: 32 };
 
 export const EARLY_EXITS: Array<{ time: string; name: string; section: string; authorizedBy: string; how: string; left?: string; receipt: string }> = [
-  { time: '7:20 p. m.', name: 'Sebastián Ríos Mena', section: '9-1', authorizedBy: 'Luis Ríos (padre)', how: 'Lo retira su abuela, céd. 2-0000-0000', left: '7:22 p. m.', receipt: 'ST-0040' },
-  { time: '8:10 p. m.', name: 'Sofía Brenes Quesada', section: '8-1', authorizedBy: 'Laura Quesada Arias', how: 'Sale por sus propios medios', receipt: 'ST-0042' },
-  { time: '8:10 p. m.', name: 'Daniel Gamboa Solano', section: '10-2', authorizedBy: 'Teresa Solano (madre)', how: 'Lo retira su madre', receipt: 'ST-0043' },
+  { time: '7:10 p. m.', name: 'Sebastián Ríos Mena', section: '9-1', authorizedBy: 'Luis Ríos (padre)', how: 'Lo retira su abuela, céd. 2-0000-0000', left: '7:12 p. m.', receipt: 'ST-0040' },
+  { time: '7:55 p. m.', name: 'Sofía Brenes Quesada', section: '8-1', authorizedBy: 'Laura Quesada Arias', how: 'Sale por sus propios medios', receipt: 'ST-0042' },
+  { time: '7:55 p. m.', name: 'Daniel Gamboa Solano', section: '10-2', authorizedBy: 'Teresa Solano (madre)', how: 'Lo retira su madre', receipt: 'ST-0043' },
 ];
 
 // ---------- Estudiantes ----------
@@ -170,9 +170,9 @@ export interface Student {
 export const STUDENTS: Student[] = [
   { id: 1, name: 'Renata Alfaro Mora', section: '7-2', age: 13, contact: 'Gloria Mora (madre)', phone: '8800-1101', app: 'Usa la app', pct: '86 %', absences: 3, lates: 1, permissions: [{ label: 'Gira a [DESTINO]', state: 'na' }] },
   { id: 2, name: 'Mateo Brenes Quesada', section: '10-2', age: 16, contact: 'Laura Quesada Arias (madre)', phone: '8800-1102', app: 'Usa la app', pct: '83 %', absences: 2, lates: 2, permissions: [{ label: 'Gira a [DESTINO]', state: 'wait' }, { label: 'Salida temprana 15 oct', state: 'ok' }] },
-  { id: 3, name: 'Sofía Brenes Quesada', section: '8-1', age: 14, contact: 'Laura Quesada Arias (madre)', phone: '8800-1102', app: 'Usa la app', pct: '96 %', absences: 0, lates: 1, permissions: [{ label: 'Salida temprana hoy 8:10 p. m.', state: 'ok' }] },
+  { id: 3, name: 'Sofía Brenes Quesada', section: '8-1', age: 14, contact: 'Laura Quesada Arias (madre)', phone: '8800-1102', app: 'Usa la app', pct: '96 %', absences: 0, lates: 1, permissions: [{ label: 'Salida temprana hoy 7:55 p. m.', state: 'ok' }] },
   { id: 4, name: 'Sebastián Chaves Rojas', section: '10-2', age: 19, contact: 'Él mismo (mayor de edad)', phone: '8800-1104', app: 'Usa la app', pct: '92 %', absences: 1, lates: 3, permissions: [{ label: 'Gira a [DESTINO]', state: 'self' }] },
-  { id: 5, name: 'Daniel Gamboa Solano', section: '10-2', age: 17, contact: 'Teresa Solano (madre)', phone: '8800-1105', app: 'Solo SMS', pct: '94 %', absences: 1, lates: 0, permissions: [{ label: 'Salida temprana hoy 8:10 p. m.', state: 'ok' }] },
+  { id: 5, name: 'Daniel Gamboa Solano', section: '10-2', age: 17, contact: 'Teresa Solano (madre)', phone: '8800-1105', app: 'Solo SMS', pct: '94 %', absences: 1, lates: 0, permissions: [{ label: 'Salida temprana hoy 7:55 p. m.', state: 'ok' }] },
   { id: 6, name: 'Mariana Herrera Calvo', section: '10-2', age: 21, contact: 'Ella misma (mayor de edad)', phone: '8800-1106', app: 'Usa la app', pct: '97 %', absences: 0, lates: 1, permissions: [{ label: 'Gira a [DESTINO]', state: 'self' }] },
   { id: 7, name: 'Lucía Monge Arias', section: '10-1', age: 16, contact: 'Silvia Arias (madre)', phone: '8800-1107', app: 'Usa la app', pct: '95 %', absences: 1, lates: 0, permissions: [{ label: 'Gira a [DESTINO]', state: 'ok' }] },
   { id: 8, name: 'Gabriel Núñez Porras', section: '10-2', age: 17, contact: 'Óscar Núñez (padre)', phone: '8800-1108', app: 'No ha abierto 2 avisos', pct: '78 %', absences: 4, lates: 2, permissions: [{ label: 'Gira a [DESTINO]', state: 'wait' }] },

@@ -44,9 +44,9 @@ export const CHILDREN: Child[] = [
     },
     today: [
       { time: '6:00 p. m.', subject: 'Matemática', mark: 'A' },
-      { time: '7:20 p. m.', subject: 'Español', mark: 'N' },
-      { time: '8:10 p. m.', subject: 'Inglés', mark: 'N' },
-      { time: '9:10 p. m.', subject: 'Educación Cívica', mark: 'N' },
+      { time: '7:10 p. m.', subject: 'Español', mark: 'N' },
+      { time: '7:55 p. m.', subject: 'Inglés', mark: 'N' },
+      { time: '8:50 p. m.', subject: 'Educación Cívica', mark: 'N' },
     ],
     month: { pct: '83 %', absences: 2, lates: 2 },
   },
@@ -63,11 +63,11 @@ export const CHILDREN: Child[] = [
     },
     today: [
       { time: '6:00 p. m.', subject: 'Español', mark: 'T' },
-      { time: '7:20 p. m.', subject: 'Matemática', mark: 'P' },
-      { time: '8:10 p. m.', subject: 'Estudios Sociales', mark: 'N', change: { kind: 'sub', substitute: 'Marta Vindas' } },
-      { time: '9:10 p. m.', subject: 'Educación Cívica', mark: 'N', change: { kind: 'free' } },
+      { time: '7:10 p. m.', subject: 'Matemática', mark: 'P' },
+      { time: '7:55 p. m.', subject: 'Estudios Sociales', mark: 'N', change: { kind: 'sub', substitute: 'Marta Vindas' } },
+      { time: '8:50 p. m.', subject: 'Educación Cívica', mark: 'N', change: { kind: 'free' } },
     ],
-    freeLesson: { subject: 'Educación Cívica', time: '9:10 p. m.', last: true, exitAt: '8:50 p. m.', exitHourIndex: 3, authorizedExit: '8:10 p. m.' },
+    freeLesson: { subject: 'Educación Cívica', time: '8:50 p. m.', last: true, exitAt: '8:30 p. m.', exitHourIndex: 3, authorizedExit: '7:55 p. m.' },
     month: { pct: '96 %', absences: 0, lates: 1 },
   },
 ];
@@ -102,7 +102,7 @@ export const OCTOBER_RECORDS: Record<number, { kind: Exclude<DayKind, 'X' | 'O'>
   12: { kind: 'F', note: 'Día de las Culturas. No hubo lecciones.' },
   13: { kind: 'T', note: 'Llegó a las 6:24 p. m. a la primera lección.' },
   14: { kind: 'P' },
-  15: { kind: 'P', note: 'Salida temprana a las 8:10 p. m., autorizada por Laura Quesada con descargo firmado.' },
+  15: { kind: 'P', note: 'Salida temprana a las 7:55 p. m., autorizada por Laura Quesada con descargo firmado.' },
   16: { kind: 'P' },
   19: { kind: 'A', note: 'Marcado ausente en Matemática a las 6:12 p. m. Aún no hay justificación.', canJustify: true },
 };
@@ -114,7 +114,7 @@ export const TRIP_DECLARATIONS = [
 ];
 
 /** Lesson change times of the night shift. */
-export const EXIT_HOURS = ['6:40', '7:20', '8:10', '8:50'];
+export const EXIT_HOURS = ['6:35', '7:10', '7:55', '8:30'];
 
 export const EXIT_WAYS = [
   { id: 'pickup', label: 'Lo retira una persona adulta', help: 'Debe presentar cédula en el portón.' },

@@ -33,13 +33,13 @@ export const SHIFT_BLOCKS: Record<ShiftId, { label: string; blocks: Array<[name:
   noc: {
     label: 'Nocturna',
     blocks: [
-      ['1.ª lección', '6:00 p. m.', '6:40 p. m.', 40],
-      ['2.ª lección', '6:40 p. m.', '7:20 p. m.', 40],
-      ['3.ª lección', '7:20 p. m.', '8:00 p. m.', 40],
-      ['Recreo', '8:00 p. m.', '8:10 p. m.', 10],
-      ['4.ª lección', '8:10 p. m.', '8:50 p. m.', 40],
-      ['Recreo · merienda', '8:50 p. m.', '9:10 p. m.', 20],
-      ['5.ª lección', '9:10 p. m.', '9:50 p. m.', 40],
+      ['1.ª lección', '6:00 p. m.', '6:35 p. m.', 35],
+      ['2.ª lección', '6:35 p. m.', '7:10 p. m.', 35],
+      ['3.ª lección', '7:10 p. m.', '7:45 p. m.', 35],
+      ['Recreo', '7:45 p. m.', '7:55 p. m.', 10],
+      ['4.ª lección', '7:55 p. m.', '8:30 p. m.', 35],
+      ['Recreo · merienda', '8:30 p. m.', '8:50 p. m.', 20],
+      ['5.ª lección', '8:50 p. m.', '9:25 p. m.', 35],
     ],
   },
   diu: {
@@ -104,14 +104,14 @@ export const SPECIAL_TYPES = [
     id: 'early',
     label: 'Salida anticipada',
     detail: 'Las lecciones terminan a las [HORA]. Las lecciones posteriores no se registran.',
-    title: 'Jueves 22 de octubre: lecciones terminan a las 8:10 p. m.',
+    title: 'Jueves 22 de octubre: lecciones terminan a las 7:55 p. m.',
     body: 'Por la reunión de encargados. Los menores de edad salen solo con autorización del encargado en la app o si los retiran en el portón.',
   },
   {
     id: 'late',
     label: 'Ingreso tardío',
     detail: 'Las lecciones empiezan a las [HORA]. No se marcan tardías antes de esa hora.',
-    title: 'Lunes 9 de noviembre: lecciones inician a las 6:40 p. m.',
+    title: 'Lunes 9 de noviembre: lecciones inician a las 6:35 p. m.',
     body: 'Por la charla de orientación vocacional para 11.º. La primera lección se repone según indique cada docente.',
   },
   {
@@ -126,7 +126,7 @@ export const SPECIAL_TYPES = [
     label: 'Cambio de lecciones',
     detail: 'Se mueven o se juntan lecciones. El pase de lista sigue el nuevo orden.',
     title: 'Viernes 30 de octubre: horario de lecciones cambia',
-    body: 'La 3.ª lección se extiende 20 minutos por el simulacro de evacuación. La salida se mantiene a las 9:50 p. m.',
+    body: 'La 3.ª lección se extiende 20 minutos por el simulacro de evacuación. La salida se mantiene a las 9:25 p. m.',
   },
 ];
 
@@ -143,9 +143,9 @@ export const SPECIAL_RULES = [
 ];
 
 export const SPECIAL_EVENTS = [
-  { month: 'Oct', day: '22', name: 'Reunión de encargados', change: 'Lecciones terminan a las 8:10 p. m.', who: 'Toda la jornada', notice: 'Aviso 1 día antes y el mismo día', scheduled: true },
+  { month: 'Oct', day: '22', name: 'Reunión de encargados', change: 'Lecciones terminan a las 7:55 p. m.', who: 'Toda la jornada', notice: 'Aviso 1 día antes y el mismo día', scheduled: true },
   { month: 'Oct', day: '30', name: 'Simulacro de evacuación', change: '3.ª lección se extiende 20 min', who: '7-1 a 9-1', notice: 'Aviso el mismo día 4:00 p. m.', scheduled: true },
-  { month: 'Nov', day: '9', name: 'Charla de orientación vocacional', change: 'Ingreso a las 6:40 p. m.', who: '11-1 y 11-2', notice: 'Sin aviso todavía', scheduled: false },
+  { month: 'Nov', day: '9', name: 'Charla de orientación vocacional', change: 'Ingreso a las 6:35 p. m.', who: '11-1 y 11-2', notice: 'Sin aviso todavía', scheduled: false },
   { month: 'Nov', day: '27', name: 'Entrega de notas', change: 'Suspensión de lecciones', who: 'Toda la jornada', notice: 'Sin aviso todavía', scheduled: false },
 ];
 
@@ -155,13 +155,13 @@ export const EXAMS: Array<{ date: string; time: string; subject: string; section
   { date: 'Lun 2 nov', time: '6:00 p. m.', subject: 'Matemática', section: '10-2', teacher: 'Andrea Solís', room: 'Aula 5', published: true },
   { date: 'Lun 2 nov', time: '6:00 p. m.', subject: 'Matemática', section: '10-1', teacher: 'Andrea Solís', room: 'Aula 4', published: true },
   { date: 'Mar 3 nov', time: '6:00 p. m.', subject: 'Español', section: '10-2', teacher: 'Esteban Quirós', room: 'Aula 5', published: true },
-  { date: 'Mar 3 nov', time: '7:20 p. m.', subject: 'Inglés', section: '11-1', teacher: 'Ana Lucía Rojas', room: 'Aula 8', published: true },
-  { date: 'Mié 4 nov', time: '7:20 p. m.', subject: 'Biología', section: '10-2', teacher: 'Ricardo Mora', room: 'Laboratorio', published: false },
+  { date: 'Mar 3 nov', time: '7:10 p. m.', subject: 'Inglés', section: '11-1', teacher: 'Ana Lucía Rojas', room: 'Aula 8', published: true },
+  { date: 'Mié 4 nov', time: '7:10 p. m.', subject: 'Biología', section: '10-2', teacher: 'Ricardo Mora', room: 'Laboratorio', published: false },
   { date: 'Mié 4 nov', time: '6:00 p. m.', subject: 'Estudios Sociales', section: '9-1', teacher: 'Jorge Céspedes', room: 'Aula 3', published: true },
   { date: 'Jue 5 nov', time: '6:00 p. m.', subject: 'Inglés', section: '10-2', teacher: 'Karla Montero', room: 'Aula 5', published: false },
-  { date: 'Jue 5 nov', time: '8:10 p. m.', subject: 'Química', section: '11-2', teacher: 'Ricardo Mora', room: 'Laboratorio', published: true },
+  { date: 'Jue 5 nov', time: '7:55 p. m.', subject: 'Química', section: '11-2', teacher: 'Ricardo Mora', room: 'Laboratorio', published: true },
   { date: 'Vie 6 nov', time: '6:00 p. m.', subject: 'Matemática', section: '7-1', teacher: 'Patricia Ulate', room: 'Aula 1', published: true },
-  { date: 'Vie 6 nov', time: '9:10 p. m.', subject: 'Educación Cívica', section: '10-2', teacher: 'Jorge Céspedes', room: 'Aula 5', published: true },
+  { date: 'Vie 6 nov', time: '8:50 p. m.', subject: 'Educación Cívica', section: '10-2', teacher: 'Jorge Céspedes', room: 'Aula 5', published: true },
 ];
 
 export const EXAM_RULES = [

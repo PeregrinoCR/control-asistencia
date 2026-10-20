@@ -12,7 +12,7 @@ export function Today() {
   return (
     <AdminLayout>
       <PageHeader
-        kicker="Lunes 19 de octubre · 6:00 p. m. a 9:50 p. m. · actualizado 7:25 p. m."
+        kicker="Lunes 19 de octubre · 6:00 p. m. a 9:25 p. m. · actualizado 7:25 p. m."
         title="Asistencia de hoy"
         actions={
           <>

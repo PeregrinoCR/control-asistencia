@@ -27,7 +27,7 @@ export const NOTICE_TYPES: Array<{ id: NoticeType; label: string; color: string;
     color: 'var(--orange)',
     sample: {
       title: 'Corte de electricidad en el colegio',
-      body: 'Las lecciones de hoy terminan a las 8:10 p. m. Los menores de edad saldrán solo si su encargado lo autoriza en la app o los retira.',
+      body: 'Las lecciones de hoy terminan a las 7:55 p. m. Los menores de edad saldrán solo si su encargado lo autoriza en la app o los retira.',
     },
   },
   {
@@ -70,6 +70,6 @@ export const AUTO_RULES = [
 export const SENT_NOTICES: Array<{ title: string; type: Status; to: string; when: string; read: number }> = [
   { title: 'Entrega de informes del II periodo', type: { label: 'Informativo', tone: 'blue' }, to: 'Toda la jornada', when: 'Vie 16 oct · 4:30 p. m.', read: 82 },
   { title: 'Recordatorio: autorización de gira', type: { label: 'Recordatorio', tone: 'green' }, to: 'Encargados 10-1 y 10-2', when: 'Jue 15 oct · 5:00 p. m.', read: 69 },
-  { title: 'Lecciones terminan 8:50 p. m. por actividad', type: { label: 'Urgente', tone: 'orange' }, to: 'Toda la jornada', when: 'Mar 6 oct · 6:20 p. m.', read: 91 },
+  { title: 'Lecciones terminan 8:30 p. m. por actividad', type: { label: 'Urgente', tone: 'orange' }, to: 'Toda la jornada', when: 'Mar 6 oct · 6:20 p. m.', read: 91 },
   { title: 'Feriado 12 de octubre: no hay lecciones', type: { label: 'Suspensión', tone: 'amber' }, to: 'Toda la jornada', when: 'Jue 8 oct · 3:00 p. m.', read: 88 },
 ];

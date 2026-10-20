@@ -19,7 +19,7 @@ export function Gate() {
   const [manual, setManual] = useState('');
   const [result, setResult] = useState<GateResult | null>(null);
   const [log, setLog] = useState<LogEntry[]>([
-    { name: 'Sebastián Ríos Mena', section: '9-1', mode: 'out', time: '7:22 p. m.' },
+    { name: 'Sebastián Ríos Mena', section: '9-1', mode: 'out', time: '7:12 p. m.' },
     { name: 'Mateo Brenes Quesada', section: '10-2', mode: 'in', time: '5:52 p. m.' },
   ]);
 

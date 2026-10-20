@@ -74,7 +74,7 @@ export interface TimetableRow {
   teacher?: string;
 }
 
-/** "8:10 p. m." → minutes since midnight. */
+/** "7:55 p. m." → minutes since midnight. */
 function toMinutes(label: string) {
   const m = label.match(/(\d+):(\d+)\s*([ap])/);
   if (!m) return 0;
