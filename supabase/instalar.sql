@@ -7,6 +7,8 @@ drop table if exists bitacora, justificaciones, asistencia, horario, materias, c
   estudiante_encargado, encargados, estudiantes, personal, roles, secciones, colegios cascade;
 drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estudiantes, tiene_permiso, mi_colegio cascade;
 
+drop view if exists asistencia_mes;
+
 -- Control de asistencia: estructura inicial (Fase 1).
 -- Todo cuelga de un colegio; las reglas de seguridad (RLS) hacen que cada persona
 -- vea solo los datos de su colegio y lo que sus permisos le permiten.
@@ -306,6 +308,18 @@ $$;
 
 create trigger vincular_cuenta after insert on auth.users
   for each row execute function vincular_cuenta();
+
+-- Ausencias y tardías del mes por estudiante, calculadas en el servidor.
+-- security_invoker: respeta las reglas de permisos de quien consulta.
+create or replace view asistencia_mes with (security_invoker = true) as
+select estudiante_id,
+  count(*) filter (where marca = 'A') as ausencias,
+  count(*) filter (where marca = 'T') as tardias
+from asistencia
+where fecha >= date_trunc('month', current_date)
+group by estudiante_id;
+
+grant select on asistencia_mes to authenticated;
 
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 

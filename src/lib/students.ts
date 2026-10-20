@@ -22,6 +22,9 @@ export interface LiveStudent {
   phone: string;
   hasAccount: boolean;
   guardians: Guardian[];
+  /** Lessons absent and late this month. */
+  absences: number;
+  lates: number;
 }
 
 /** One row of the enrollment form or the imported file. */
@@ -54,16 +57,20 @@ export function useStudents() {
   const reload = useCallback(async () => {
     if (!supabase) return;
     if (!school) return setStudents([]);
-    const [st, secs] = await Promise.all([
+    const [st, secs, att] = await Promise.all([
       supabase
         .from('estudiantes')
         .select('id, nombre, cedula, nacimiento, telefono, usuario_id, secciones(nombre), estudiante_encargado(parentesco, encargados(*))')
         .eq('activo', true)
         .order('nombre'),
       supabase.from('secciones').select('id, nombre').order('nombre'),
+      supabase.from('asistencia_mes').select('estudiante_id, ausencias, tardias'),
     ]);
-    if (st.error || secs.error) return setError((st.error ?? secs.error)!.message);
-    setSections(secs.data);
+    // Monthly totals are optional: if migration 0002 isn't installed yet, show zeros.
+    const err = st.error ?? secs.error;
+    if (err) return setError(err.message);
+    setSections(secs.data!);
+    const totals = new Map((att.data ?? []).map((a) => [a.estudiante_id, a]));
     setStudents(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (st.data as any[]).map((r) => ({
@@ -75,6 +82,8 @@ export function useStudents() {
         section: r.secciones?.nombre ?? '—',
         phone: r.telefono ?? '',
         hasAccount: !!r.usuario_id,
+        absences: totals.get(r.id)?.ausencias ?? 0,
+        lates: totals.get(r.id)?.tardias ?? 0,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         guardians: (r.estudiante_encargado ?? []).map((l: any) => ({
           id: l.encargados.id,

@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { Avatar, Badge, Button, Icon, StatusBadge } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SECTIONS, SHIFTS, SUBJECT_SCHEDULE, TEACHERS, sectionPlan } from '../../data/admin';
+import { supabase } from '../../lib/supabase';
+import { AssignmentsLive } from './AssignmentsLive';
 
 /** Dirección · Profesores, secciones y horarios */
 export function Assignments() {
+  return supabase ? <AssignmentsLive /> : <AssignmentsSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function AssignmentsSample() {
   const [selectedId, setSelectedId] = useState('10-2');
   const index = SECTIONS.findIndex((s) => s.id === selectedId);
   const selected = SECTIONS[index];

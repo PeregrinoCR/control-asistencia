@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Button, Icon, InputField, Segmented } from '../components';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -16,6 +16,7 @@ const ERRORS: Record<string, string> = {
 /** Inicio de sesión del personal del colegio (correo y contraseña). */
 export function Login() {
   const { ready, session } = useAuth();
+  const from = (useLocation().state as { from?: string } | null)?.from ?? routes.admin.today;
   const [mode, setMode] = useState<Mode>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +24,7 @@ export function Login() {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   if (!supabase) return <Navigate to={routes.admin.today} replace />;
-  if (ready && session) return <Navigate to={routes.admin.today} replace />;
+  if (ready && session) return <Navigate to={from} replace />;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

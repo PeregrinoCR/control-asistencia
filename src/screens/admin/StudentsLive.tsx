@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Avatar, Button, Icon, InputField, Segmented } from '../../components';
+import { Avatar, Button, Icon, InputField, MiniStat, Segmented } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { IMPORT_COLUMNS, parseEnrollment, useStudents, type LiveStudent, type NewStudent } from '../../lib/students';
 
@@ -104,13 +104,15 @@ export function StudentsLive() {
                 </p>
               ) : (
                 <div className="table-wrap">
-                  <table className="table table--compact" style={{ minWidth: 620 }}>
+                  <table className="table table--compact" style={{ minWidth: 700 }}>
                     <thead>
                       <tr>
                         <th>Estudiante</th>
                         <th>Sección</th>
                         <th>Edad</th>
                         <th>Recibe los avisos</th>
+                        <th className="num">Ausencias</th>
+                        <th className="num">Tardías</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -138,6 +140,8 @@ export function StudentsLive() {
                                 <span className="text-sm ink-orange">Falta el encargado</span>
                               )}
                             </td>
+                            <td className={r.absences >= 3 ? 'num strong ink-orange' : 'num strong'}>{r.absences}</td>
+                            <td className="num strong">{r.lates}</td>
                           </tr>
                         );
                       })}
@@ -178,6 +182,10 @@ function StudentPanel({ s }: { s: LiveStudent }) {
           </span>
           {s.idNumber && <span className="text-sm muted">Cédula {s.idNumber}</span>}
         </div>
+      </div>
+      <div className="grid-2">
+        <MiniStat look="inset" label="Ausencias este mes" value={s.absences} ink="orange" />
+        <MiniStat look="inset" label="Tardías este mes" value={s.lates} ink="amber" />
       </div>
       {adult && (
         <div className="stack gap-4">

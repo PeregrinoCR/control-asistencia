@@ -39,10 +39,12 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 ## Pendiente
 
 - **Servidor** (Supabase, ver `supabase/README.md`): Fase 1 hecha (tablas, permisos, vincular cuentas).
-  Fase 2: inicio de sesión (`/entrar`, `src/lib/auth.tsx`) y con datos reales: Usuarios (`src/lib/staff.ts`), Estudiantes y encargados con importación CSV (`src/lib/students.ts`).
+  Fase 2: inicio de sesión (`/entrar`, `src/lib/auth.tsx`) y con datos reales: Usuarios (`src/lib/staff.ts`), Estudiantes y encargados con importación CSV (`src/lib/students.ts`),
+  horario por sección (`src/lib/schedule.ts`, tabla `horario`) y pase de lista (`RollCallLive.tsx`).
+  Cada pantalla real vive en `*Live.tsx`; sin servidor se muestra la de ejemplo.
   Faltan: el resto de pantallas con datos reales, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Imprimir carnés en lote; guardar registros del portón.
-- Unificar horarios: Asignaciones (`SUBJECT_SCHEDULE`) y `src/data/schedule.ts` no coinciden.
+- Horario familiar (`src/data/schedule.ts`) aún es de ejemplo; con servidor debe leer la tabla `horario`.
 - Pase de lista del docente sustituto.
 - App instalable: recomendado Capacitor (iOS y Android) o PWA.

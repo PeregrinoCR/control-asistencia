@@ -11,6 +11,12 @@
 5. **Project Settings › API**: copiar *Project URL* y la clave *anon public* en un archivo
    `.env.local` (ver `.env.example`).
 
+## Actualizaciones
+
+Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrations/`:
+
+- `0002_asistencia_mes.sql`: totales de ausencias y tardías del mes.
+
 ## Primer ingreso del director
 
 1. Abrir la app en `/entrar` › **Crear cuenta** con el correo puesto en `instalar.sql`.
@@ -29,8 +35,8 @@ Cuando esa persona crea su cuenta con el mismo dato, queda unida automáticament
 ## Fases
 
 1. Base de datos ✔
-2. Inicio de sesión ✔ y datos reales en la app ← **aquí** (hecho: Usuarios y permisos, Estudiantes;
-   faltan Hoy, pase de lista y el resto)
+2. Inicio de sesión ✔ y datos reales en la app ← **aquí** (hecho: Usuarios y permisos, Estudiantes,
+   horarios y pase de lista; faltan Hoy, justificaciones, app de familias y el resto)
 3. Portón, comprobantes SINPE y bitácora
 4. Avisos push y SMS con línea propia (teléfono Android como enviador)
 5. Copias de seguridad, dominio y piloto

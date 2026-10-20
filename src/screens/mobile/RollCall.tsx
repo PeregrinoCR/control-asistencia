@@ -3,6 +3,8 @@ import { Avatar, Button, Icon, IconButton } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
 import { ROLL_INITIAL, ROLL_SECTION, ROLL_STUDENTS, type RollStudent } from '../../data/rollCall';
 import type { Mark } from '../../data/school';
+import { supabase } from '../../lib/supabase';
+import { RollCallLive } from './RollCallLive';
 
 type Marks = Record<number, Mark | undefined>;
 
@@ -30,6 +32,11 @@ function subtitle(s: RollStudent, mark: Mark | undefined): { text: string; tone:
 
 /** Docente · Pase de lista */
 export function RollCall() {
+  return supabase ? <RollCallLive /> : <RollCallSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function RollCallSample() {
   const [marks, setMarks] = useState<Marks>(ROLL_INITIAL);
   const [sent, setSent] = useState(false);
 
