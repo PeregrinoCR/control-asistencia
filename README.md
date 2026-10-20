@@ -31,6 +31,7 @@ npm run build      # type-checks, then builds to dist/
 | `/direccion/justificaciones` | Dirección · Justificaciones |
 | `/direccion/avisos` | Dirección · Avisos a familias |
 | `/direccion/reportes` | Dirección · Reportes |
+| `/direccion/usuarios` | Dirección · Usuarios y permisos |
 | `/direccion/configuracion` | Dirección · Configuración |
 | `/direccion/alerta-temprana` | Dirección · Alerta temprana |
 

@@ -14,6 +14,7 @@ const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue
   { to: routes.admin.notices, label: 'Avisos a familias' },
   { to: routes.admin.earlyWarning, label: 'Alerta temprana', count: { n: navCounts.earlyWarning, tone: 'orange' } },
   { to: routes.admin.reports, label: 'Reportes' },
+  { to: routes.admin.users, label: 'Usuarios y permisos' },
 ];
 
 /** Shell for every page of the administration panel: dark sidebar + main column. */

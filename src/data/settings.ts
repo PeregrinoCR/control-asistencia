@@ -89,17 +89,6 @@ export const SHIFT_RULES = [
   { id: 'auto', label: 'Recordar al docente si no pasó lista', help: '10 minutos después de iniciar la lección', on: true },
 ];
 
-export const PERMISSIONS = ['Pasar lista', 'Aprobar justificaciones', 'Crear giras', 'Enviar avisos', 'Ver reportes', 'Registrar salidas'];
-
-export const ROLES: Array<{ id: string; name: string; users: string; grants: boolean[] }> = [
-  { id: 'dir', name: 'Dirección', users: '2 usuarios', grants: [true, true, true, true, true, true] },
-  { id: 'doc', name: 'Docente', users: '22 usuarios', grants: [true, false, false, false, false, false] },
-  { id: 'gui', name: 'Profesor guía', users: '8 usuarios', grants: [true, true, true, true, true, false] },
-  { id: 'ori', name: 'Orientación', users: '1 usuario', grants: [false, true, false, true, true, false] },
-  { id: 'adm', name: 'Administrativo', users: '2 usuarios', grants: [false, true, false, true, true, false] },
-  { id: 'gua', name: 'Guarda de portón', users: '2 usuarios', grants: [false, false, false, false, false, true] },
-];
-
 export const SPECIAL_TYPES = [
   {
     id: 'early',

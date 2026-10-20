@@ -8,8 +8,6 @@ import {
   EXAM_SECTIONS,
   INSTITUTION_FIELDS,
   INSTITUTION_KINDS,
-  PERMISSIONS,
-  ROLES,
   SCHOOL_CALENDAR,
   SHIFT_BLOCKS,
   SHIFT_DAYS,
@@ -319,10 +317,6 @@ function ShiftsTab() {
 }
 
 function RolesTab() {
-  const [grants, setGrants] = useState(() => Object.fromEntries(ROLES.map((r) => [r.id, r.grants])));
-  const toggle = (role: string, i: number) =>
-    setGrants({ ...grants, [role]: grants[role].map((v, j) => (j === i ? !v : v)) });
-
   return (
     <div className="stack gap-16">
       <div className="grid-tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
@@ -342,56 +336,15 @@ function RolesTab() {
           </Link>
         </div>
       </div>
-      <section aria-labelledby="roles-t" className="card gap-10">
-        <div className="row wrap between gap-10">
-          <h2 id="roles-t" className="title-section">
-            Roles y permisos
-          </h2>
-          <Button variant="primary" size="md">
-            Invitar usuario
-          </Button>
-        </div>
-        <div className="table-wrap">
-          <table className="table table--dense" style={{ minWidth: 760 }}>
-            <thead>
-              <tr>
-                <th>Rol</th>
-                {PERMISSIONS.map((p) => (
-                  <th key={p} className="center">
-                    {p}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {ROLES.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <span className="stack">
-                      <span className="strong">{r.name}</span>
-                      <span className="text-xs muted">{r.users}</span>
-                    </span>
-                  </td>
-                  {PERMISSIONS.map((p, i) => (
-                    <td key={p} className="center">
-                      <button
-                        type="button"
-                        role="checkbox"
-                        className="perm-check"
-                        aria-checked={grants[r.id][i]}
-                        aria-label={`${r.name}: ${p}`}
-                        onClick={() => toggle(r.id, i)}
-                      >
-                        <Icon name="check" size={16} strokeWidth={3} />
-                      </button>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div className="card row wrap between gap-12">
+        <span className="stack gap-2">
+          <span className="title-section">Roles y permisos</span>
+          <span className="text-sm muted">Qué puede hacer cada rol y cada persona del personal.</span>
+        </span>
+        <Link to={routes.admin.users} className="btn btn--dark" style={{ fontSize: 14 }}>
+          Abrir usuarios y permisos
+        </Link>
+      </div>
     </div>
   );
 }

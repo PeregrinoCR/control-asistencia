@@ -27,6 +27,7 @@ export const routes = {
     notices: '/direccion/avisos',
     earlyWarning: '/direccion/alerta-temprana',
     reports: '/direccion/reportes',
+    users: '/direccion/usuarios',
     settings: '/direccion/configuracion',
   },
 } as const;

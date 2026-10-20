@@ -28,6 +28,7 @@ const GROUPS = [
       { to: routes.admin.justifications, role: 'Dirección', label: 'Justificaciones' },
       { to: routes.admin.notices, role: 'Dirección', label: 'Avisos a familias' },
       { to: routes.admin.reports, role: 'Dirección', label: 'Reportes' },
+      { to: routes.admin.users, role: 'Dirección', label: 'Usuarios y permisos' },
       { to: routes.admin.settings, role: 'Dirección', label: 'Configuración' },
       { to: routes.admin.earlyWarning, role: 'Dirección', label: 'Alerta temprana' },
     ],
