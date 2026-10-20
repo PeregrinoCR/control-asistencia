@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Avatar, Stat, StatusBadge, type Status } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { pct } from '../../data/school';
+import { fetchAll } from '../../lib/fetchAll';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
@@ -19,17 +20,6 @@ interface SectionRow {
 interface Summary {
   sections: SectionRow[];
   followUp: Array<{ name: string; section: string; absences: number }>;
-}
-
-/** Reads every row, past the server's 1000-row page limit. */
-async function fetchAll<T>(query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) {
-  const out: T[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await query(from, from + 999);
-    if (error) throw new Error(error.message);
-    out.push(...(data ?? []));
-    if (!data || data.length < 1000) return out;
-  }
 }
 
 function rollStatus(r: SectionRow): Status {

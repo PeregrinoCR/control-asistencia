@@ -43,6 +43,9 @@ export const CARDS: StudentCard[] = [
 
 export const cardPayload = (c: StudentCard) => CARD_PREFIX + c.code;
 
+/** The card code inside a scanned QR or a typed code. */
+export const cardCode = (payload: string) => payload.trim().toUpperCase().replace(CARD_PREFIX, '');
+
 export type GateMode = 'in' | 'out';
 
 export type GateResult =
@@ -51,9 +54,9 @@ export type GateResult =
   | { kind: 'deny'; title: string; detail: string; card?: StudentCard };
 
 /** Decides what the guard sees after scanning. `now` is minutes after 6:00 p. m. */
-export function checkCard(payload: string, mode: GateMode, now: number): GateResult {
-  const code = payload.trim().toUpperCase().replace(CARD_PREFIX, '');
-  const card = CARDS.find((c) => c.code === code);
+export function checkCard(payload: string, mode: GateMode, now: number, cards: StudentCard[] = CARDS): GateResult {
+  const code = cardCode(payload);
+  const card = cards.find((c) => c.code === code);
   if (!card) return { kind: 'deny', title: 'Carné no reconocido', detail: 'No pertenece a este colegio. Pida la cédula y avise a dirección.' };
   if (card.revoked)
     return { kind: 'deny', card, title: 'Carné reportado como perdido', detail: 'Retenga el carné y pida la cédula. La familia ya solicitó uno nuevo.' };

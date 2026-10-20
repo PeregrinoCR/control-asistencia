@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button, Meter, Segmented, Stat } from '../../components';
 import { LineChart } from '../../components/LineChart';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { supabase } from '../../lib/supabase';
+import { ReportsLive } from './ReportsLive';
 import { DOWNLOADS, MONTHLY, OCTOBER_BY_SECTION, WEEKLY } from '../../data/reports';
 import { pct } from '../../data/school';
 
@@ -9,6 +11,11 @@ type Mode = 'w' | 'm';
 
 /** Dirección · Reportes */
 export function Reports() {
+  return supabase ? <ReportsLive /> : <ReportsSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function ReportsSample() {
   const [mode, setMode] = useState<Mode>('w');
   const data = mode === 'w' ? WEEKLY : MONTHLY;
   const avg = data.reduce((a, d) => a + d.value, 0) / data.length;

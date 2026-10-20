@@ -53,13 +53,23 @@ function Home({ f }: { f: FamilyCtx }) {
           ? db.from('giras').select('id, titulo, fecha, fecha_limite').contains('secciones', [kid.sectionId]).gte('fecha', today).order('fecha')
           : Promise.resolve({ data: [] }),
         db.from('gira_autorizaciones').select('gira_id, estado').eq('estudiante_id', kid.id),
-        db.from('avisos').select('id, tipo, titulo, cuerpo, enviado').order('enviado', { ascending: false }).limit(3),
+        db.from('avisos').select('id, tipo, titulo, cuerpo, destino, secciones, enviado').order('enviado', { ascending: false }).limit(20),
       ]);
       const answers = new Map((a.data ?? []).map((x) => [x.gira_id, x.estado]));
       setTrips((g.data ?? []).map((t) => ({ id: t.id, title: t.titulo, date: t.fecha, deadline: t.fecha_limite, answer: answers.get(t.id) ?? null })));
-      setNotices((n.data ?? []).map((x) => ({ id: x.id, type: x.tipo, title: x.titulo, body: x.cuerpo, sent: x.enviado })));
+      // Notices for everyone, for guardians or adults as fits this account, or for the student's section.
+      const mine = (n.data ?? [])
+        .filter((x) => x.destino === 'all' || x.destino === (f.me.self ? 'adu' : 'enc') || (x.destino === 'sec' && (x.secciones as string[]).includes(kid.sectionId ?? '')))
+        .slice(0, 3);
+      setNotices(mine.map((x) => ({ id: x.id, type: x.tipo, title: x.titulo, body: x.cuerpo, sent: x.enviado })));
+      const uid = (await db.auth.getUser()).data.user?.id;
+      if (uid && mine.length)
+        await db.from('aviso_lecturas').upsert(
+          mine.map((x) => ({ aviso_id: x.id, usuario_id: uid })),
+          { onConflict: 'aviso_id,usuario_id', ignoreDuplicates: true },
+        );
     })();
-  }, [kid, today]);
+  }, [kid, today, f.me.self]);
 
   // The latest absence or late arrival today, if any.
   const flagged = [...(lessons ?? [])].reverse().find((l) => l.mark === 'A' || l.mark === 'T');

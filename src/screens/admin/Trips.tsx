@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { Badge, Button, Segmented, StatusBadge } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { supabase } from '../../lib/supabase';
+import { TripsLive } from './TripsLive';
 import { CONSENT_STATUS, EARLY_EXITS, PAYMENT_STATUS, TRIP_ROSTER, TRIP_TOTALS, type PaymentState } from '../../data/admin';
 
 type Tab = 'trip' | 'exits';
 
 /** Dirección · Giras y salidas tempranas */
 export function Trips() {
+  return supabase ? <TripsLive /> : <TripsSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function TripsSample() {
   const [tab, setTab] = useState<Tab>('trip');
   const [payments, setPayments] = useState<Record<string, PaymentState>>(
     Object.fromEntries(TRIP_ROSTER.map((r) => [r.name, r.payment])),

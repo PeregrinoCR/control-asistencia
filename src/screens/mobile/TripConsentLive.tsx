@@ -62,7 +62,7 @@ function Trips({ f }: { f: FamilyCtx }) {
       setTrips((g.data ?? []) as Trip[]);
       setAnswers(Object.fromEntries((a.data ?? []).map((x) => [x.gira_id, { estado: x.estado, pago: x.pago }])));
       const sinpe = c.data?.config?.sinpe ?? {};
-      setPayments({ on: !!c.data?.modulos?.pagos, number: sinpe.numero ?? '', holder: sinpe.titular ?? '' });
+      setPayments({ on: !!(c.data?.modulos?.pay ?? c.data?.modulos?.pagos), number: sinpe.numero ?? '', holder: sinpe.titular ?? '' });
     })();
   }, [kid]);
 

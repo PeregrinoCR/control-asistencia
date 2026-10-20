@@ -1,0 +1,652 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
+import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import {
+  EXAM_RULES,
+  INSTITUTION_FIELDS,
+  INSTITUTION_KINDS,
+  MODULES,
+  SCHOOL_CALENDAR,
+  SHIFT_BLOCKS,
+  SHIFT_RULES,
+  SPECIAL_RULES,
+  SPECIAL_SCOPES,
+  SPECIAL_TYPES,
+  WEEKDAYS,
+  moduleDefaults,
+  type Sector,
+} from '../../data/settings';
+import { ruleState } from '../../data/school';
+import { useAuth } from '../../lib/auth';
+import { localDate } from '../../lib/schedule';
+import { supabase } from '../../lib/supabase';
+import { routes } from '../../routes';
+
+type Tab = 'inst' | 'mod' | 'jor' | 'prof' | 'esp' | 'exa';
+
+export interface SpecialEvent {
+  id: string;
+  fecha: string;
+  nombre: string;
+  tipo: string;
+  alcance: string;
+  detalle: string;
+  programado: boolean;
+}
+
+export interface Exam {
+  id: string;
+  fecha: string;
+  hora: string;
+  materia: string;
+  seccion: string;
+  aula: string;
+  publicada: boolean;
+}
+
+/** Everything this screen edits, kept in `colegios` (name, sector, phone, modules) and `colegios.config`. */
+interface Form {
+  nombre: string;
+  sector: Sector;
+  telefono: string;
+  modulos: Record<string, boolean>;
+  institucion: Record<string, string>;
+  tipo: number;
+  calendario: Record<string, string>;
+  sinpe: { numero: string; titular: string };
+  jornada: { dias: string[]; reglas: Record<string, boolean>; tarde: number; ausencia: number };
+  eventos: SpecialEvent[];
+  reglasEspeciales: Record<string, boolean>;
+  pruebas: Exam[];
+  reglasPruebas: Record<string, boolean>;
+}
+
+const shortDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' });
+
+/** Dirección · Configuración, saved to the school's record. */
+export function SettingsLive() {
+  const { school } = useAuth();
+  const [tab, setTab] = useState<Tab>('inst');
+  const [form, setForm] = useState<Form | null>(null);
+  const [counts, setCounts] = useState({ teachers: 0, sections: 0, subjects: 0 });
+  const [sections, setSections] = useState<string[]>([]);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const db = supabase!;
+    (async () => {
+      const [c, t, s, m] = await Promise.all([
+        db.from('colegios').select('nombre, sector, telefono, modulos, config').maybeSingle(),
+        db.from('docentes').select('id'),
+        db.from('secciones').select('nombre').order('nombre'),
+        db.from('materias').select('id'),
+      ]);
+      const r = c.data;
+      if (!r) return;
+      const cfg = r.config ?? {};
+      const mods = r.modulos ?? {};
+      setForm({
+        nombre: r.nombre,
+        sector: r.sector,
+        telefono: r.telefono ?? '',
+        // Older installs saved the payments switch as `pagos`.
+        modulos: { ...moduleDefaults(r.sector), ...mods, pay: mods.pay ?? mods.pagos ?? moduleDefaults(r.sector).pay },
+        institucion: cfg.institucion ?? {},
+        tipo: cfg.tipo ?? 2,
+        calendario: cfg.calendario ?? {},
+        sinpe: { numero: cfg.sinpe?.numero ?? '', titular: cfg.sinpe?.titular ?? '' },
+        jornada: { dias: ['L', 'K', 'M', 'J', 'V'], reglas: ruleState(SHIFT_RULES), tarde: 10, ausencia: 20, ...(cfg.jornada ?? {}) },
+        eventos: cfg.eventos ?? [],
+        reglasEspeciales: { ...ruleState(SPECIAL_RULES), ...(cfg.reglasEspeciales ?? {}) },
+        pruebas: cfg.pruebas ?? [],
+        reglasPruebas: { ...ruleState(EXAM_RULES), ...(cfg.reglasPruebas ?? {}) },
+      });
+      setCounts({ teachers: t.data?.length ?? 0, sections: s.data?.length ?? 0, subjects: m.data?.length ?? 0 });
+      setSections((s.data ?? []).map((x) => x.nombre));
+    })();
+  }, []);
+
+  const update = (patch: Partial<Form>) => {
+    setForm((f) => (f ? { ...f, ...patch } : f));
+    setMsg(null);
+  };
+
+  /** Saves the whole form, keeping settings other screens store in `config`. */
+  const save = async (next = form) => {
+    if (!next) return '';
+    setBusy(true);
+    const db = supabase!;
+    const { data } = await db.from('colegios').select('config').maybeSingle();
+    const { nombre, sector, telefono, modulos, ...rest } = next;
+    const { error } = await db
+      .from('colegios')
+      .update({ nombre: nombre.trim() || '[NOMBRE DEL COLEGIO]', sector, telefono: telefono.trim() || null, modulos, config: { ...(data?.config ?? {}), ...rest } })
+      .eq('id', school!.id);
+    setBusy(false);
+    setMsg(error ? { ok: false, text: 'No se guardó: ' + error.message } : { ok: true, text: 'Cambios guardados' });
+    return error?.message ?? '';
+  };
+
+  return (
+    <AdminLayout>
+      <PageHeader
+        kicker="Solo dirección y administración pueden cambiar estos ajustes"
+        title="Configuración"
+        actions={
+          <>
+            {msg && (
+              <span role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-sm strong ink-green' : 'text-sm ink-orange'}>
+                {msg.text}
+              </span>
+            )}
+            <Button variant="primary" style={{ padding: '0 18px' }} disabled={!form || busy} onClick={() => save()}>
+              {busy ? 'Guardando…' : 'Guardar cambios'}
+            </Button>
+          </>
+        }
+      />
+
+      <Segmented
+        label="Secciones de configuración"
+        mode="tabs"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'inst', label: 'Institución' },
+          { value: 'mod', label: 'Módulos' },
+          { value: 'jor', label: 'Jornadas y horarios' },
+          { value: 'prof', label: 'Profesores y secciones' },
+          { value: 'esp', label: 'Horarios especiales' },
+          { value: 'exa', label: 'Horario de exámenes' },
+        ]}
+      />
+
+      {!form ? (
+        <p className="text-sm muted">Cargando…</p>
+      ) : (
+        <div role="tabpanel">
+          {tab === 'inst' && <InstitutionTab f={form} update={update} />}
+          {tab === 'mod' && <ModulesTab f={form} update={update} />}
+          {tab === 'jor' && <ShiftsTab f={form} update={update} />}
+          {tab === 'prof' && <RolesTab counts={counts} />}
+          {tab === 'esp' && <SpecialTab f={form} update={update} save={save} />}
+          {tab === 'exa' && <ExamsTab f={form} update={update} sections={sections} save={save} />}
+        </div>
+      )}
+    </AdminLayout>
+  );
+}
+
+interface TabProps {
+  f: Form;
+  update: (patch: Partial<Form>) => void;
+}
+
+function InstitutionTab({ f, update }: TabProps) {
+  // Name and phone live in their own columns; the rest in config.institucion.
+  const value = (id: string) => (id === 'c-nombre' ? f.nombre : id === 'c-tel' ? f.telefono : (f.institucion[id] ?? ''));
+  const set = (id: string, v: string) =>
+    id === 'c-nombre' ? update({ nombre: v }) : id === 'c-tel' ? update({ telefono: v }) : update({ institucion: { ...f.institucion, [id]: v } });
+
+  return (
+    <div className="split">
+      <section aria-labelledby="inst-t" className="card card--roomy split__main">
+        <h2 id="inst-t" className="title-section">
+          Datos de la institución
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+          {INSTITUTION_FIELDS.map((x) => (
+            <InputField key={x.id} id={x.id} type={x.type} label={x.label} placeholder={x.placeholder} value={value(x.id)} onChange={(e) => set(x.id, e.target.value)} />
+          ))}
+        </div>
+        <fieldset className="fieldset">
+          <legend>Tipo de institución</legend>
+          <div className="row wrap gap-8">
+            {INSTITUTION_KINDS.map((k, i) => (
+              <button key={k} type="button" className="chip" aria-pressed={i === f.tipo} onClick={() => update({ tipo: i })}>
+                {k}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      </section>
+
+      <aside className="split__side stack gap-16">
+        <section aria-labelledby="curso-t" className="card gap-10">
+          <h2 id="curso-t" style={{ fontSize: 16, fontWeight: 700 }}>
+            Curso lectivo {new Date().getFullYear()}
+          </h2>
+          {SCHOOL_CALENDAR.filter((c) => !c.label.startsWith('Feriados')).map((c, i) => (
+            <InputField
+              key={c.label}
+              id={`cal-${i}`}
+              label={c.label}
+              placeholder={c.value}
+              value={f.calendario[c.label] ?? ''}
+              onChange={(e) => update({ calendario: { ...f.calendario, [c.label]: e.target.value } })}
+            />
+          ))}
+          <span className="text-xs muted">Los feriados y asuetos se registran en Horarios especiales como suspensión de lecciones.</span>
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function ModulesTab({ f, update }: TabProps) {
+  return (
+    <div className="split">
+      <section aria-labelledby="mod-t" className="card card--roomy split__main">
+        <div className="stack gap-4">
+          <h2 id="mod-t" className="title-section">
+            Módulos
+          </h2>
+          <span className="text-sm muted">La app es gratuita para el colegio. Active solo lo que van a usar.</span>
+        </div>
+        <fieldset className="fieldset">
+          <legend>Tipo de centro educativo</legend>
+          <div className="row wrap gap-8">
+            {([
+              ['public', 'Público (MEP)'],
+              ['private', 'Privado o subvencionado'],
+            ] as const).map(([value, label]) => (
+              <button key={value} type="button" className="chip" aria-pressed={f.sector === value} onClick={() => update({ sector: value, modulos: moduleDefaults(value) })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="text-sm muted" style={{ display: 'block', marginTop: 8 }}>
+            Al cambiar el tipo se cargan los módulos recomendados. Puede ajustarlos después.
+          </span>
+        </fieldset>
+        <div className="stack">
+          {MODULES.map((m) => (
+            <SettingRow
+              key={m.id}
+              label={m.label}
+              help={m.id.startsWith('sms') ? `${m.help}. Se activa con la línea propia del colegio (próxima etapa).` : m.help}
+              checked={!!f.modulos[m.id] && (m.id !== 'smsUrgent' || !!f.modulos.sms)}
+              onChange={(v) => update({ modulos: { ...f.modulos, [m.id]: v } })}
+            />
+          ))}
+        </div>
+      </section>
+
+      {f.modulos.pay && (
+        <aside aria-labelledby="sinpe-t" className="card split__side gap-14">
+          <h2 id="sinpe-t" style={{ fontSize: 16, fontWeight: 700 }}>
+            Cuenta para recibir pagos
+          </h2>
+          <InputField id="m-sinpe" type="tel" label="Número SINPE Móvil" placeholder="8888-8888" value={f.sinpe.numero} onChange={(e) => update({ sinpe: { ...f.sinpe, numero: e.target.value } })} />
+          <InputField id="m-titular" label="A nombre de" placeholder="Junta administrativa" value={f.sinpe.titular} onChange={(e) => update({ sinpe: { ...f.sinpe, titular: e.target.value } })} />
+          <span className="text-sm muted">
+            Las familias ven este número al pagar. El dinero llega directo a esta cuenta; la app no cobra comisión ni
+            procesa el pago, solo registra el comprobante.
+          </span>
+        </aside>
+      )}
+    </div>
+  );
+}
+
+function ShiftsTab({ f, update }: TabProps) {
+  const j = f.jornada;
+  const setJ = (patch: Partial<Form['jornada']>) => update({ jornada: { ...j, ...patch } });
+  return (
+    <div className="split">
+      <section aria-labelledby="jor-t" className="card card--roomy split__main">
+        <div className="stack gap-4">
+          <h2 id="jor-t" className="title-section">
+            Horario de lecciones · jornada nocturna
+          </h2>
+          <span className="text-sm muted">Este es el horario que usan el pase de lista y la app de familias. Para cambiarlo, pídalo a soporte.</span>
+        </div>
+        <div className="table-wrap">
+          <table className="table table--dense" style={{ minWidth: 520 }}>
+            <thead>
+              <tr>
+                <th>Bloque</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Duración</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SHIFT_BLOCKS.noc.blocks.map(([name, start, end, minutes]) => (
+                <tr key={name} data-tone={/Recreo|Merienda/.test(name) ? 'rest' : undefined}>
+                  <td className="strong">{name}</td>
+                  <td>
+                    <span className="time-box">{start}</span>
+                  </td>
+                  <td>
+                    <span className="time-box">{end}</span>
+                  </td>
+                  <td className="muted">{minutes} min</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside className="card split__side gap-14">
+        <h2 style={{ fontSize: 16, fontWeight: 700 }}>Reglas de la jornada</h2>
+        <fieldset className="fieldset">
+          <legend>Días con lecciones</legend>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 6 }}>
+            {WEEKDAYS.map((d) => {
+              const on = j.dias.includes(d.short);
+              return (
+                <button
+                  key={d.short}
+                  type="button"
+                  className="choice choice--center"
+                  style={{ minHeight: 44, borderRadius: 'var(--radius-sm)', fontSize: 15 }}
+                  aria-pressed={on}
+                  aria-label={d.full}
+                  onClick={() => setJ({ dias: on ? j.dias.filter((x) => x !== d.short) : [...j.dias, d.short] })}
+                >
+                  {d.short}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+        <div className="grid-2">
+          <InputField id="j-tarde" type="number" label="Tarde después de (min)" value={String(j.tarde)} onChange={(e) => setJ({ tarde: Number(e.target.value) })} />
+          <InputField id="j-aus" type="number" label="Ausente después de (min)" value={String(j.ausencia)} onChange={(e) => setJ({ ausencia: Number(e.target.value) })} />
+        </div>
+        <div className="stack">
+          {SHIFT_RULES.map((r) => (
+            <SettingRow key={r.id} label={r.label} help={r.help} checked={j.reglas[r.id]} onChange={(v) => setJ({ reglas: { ...j.reglas, [r.id]: v } })} />
+          ))}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function RolesTab({ counts }: { counts: { teachers: number; sections: number; subjects: number } }) {
+  return (
+    <div className="stack gap-16">
+      <div className="grid-tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        {[
+          ['Profesores', counts.teachers],
+          ['Secciones', counts.sections],
+          ['Materias', counts.subjects],
+        ].map(([label, value]) => (
+          <div key={label} className="stat stat--compact" style={{ gap: 0 }}>
+            <span className="stat__label" style={{ fontSize: 13 }}>
+              {label}
+            </span>
+            <span className="stat__value" style={{ fontSize: 30 }}>
+              {value}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="card row wrap between gap-12">
+        <span style={{ fontSize: 15, color: 'var(--ink-2)' }}>Asigne profesores a cada materia y sección.</span>
+        <Link to={routes.admin.assignments} className="btn btn--dark" style={{ fontSize: 14 }}>
+          Abrir profesores y secciones
+        </Link>
+      </div>
+      <div className="card row wrap between gap-12">
+        <span className="stack gap-2">
+          <span className="title-section">Roles y permisos</span>
+          <span className="text-sm muted">Qué puede hacer cada rol y cada persona del personal.</span>
+        </span>
+        <Link to={routes.admin.users} className="btn btn--dark" style={{ fontSize: 14 }}>
+          Abrir usuarios y permisos
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Promise<string> }) {
+  const { school, session } = useAuth();
+  const [type, setType] = useState('early');
+  const [scope, setScope] = useState('all');
+  const [name, setName] = useState('');
+  const [date, setDate] = useState('');
+  const [detail, setDetail] = useState('');
+  const [error, setError] = useState('');
+  const t = SPECIAL_TYPES.find((x) => x.id === type)!;
+  const upcoming = [...f.eventos].filter((e) => e.fecha >= localDate()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  const add = async (notify: boolean) => {
+    if (!name.trim() || !date) return setError('Escriba el nombre del evento y la fecha.');
+    const ev: SpecialEvent = {
+      id: crypto.randomUUID(),
+      fecha: date,
+      nombre: name.trim(),
+      tipo: type,
+      alcance: SPECIAL_SCOPES.find((s) => s.id === scope)!.label,
+      detalle: detail.trim() || t.label,
+      programado: notify,
+    };
+    const next = { ...f, eventos: [...f.eventos, ev] };
+    update({ eventos: next.eventos });
+    const err = await save(next);
+    if (err) return setError(err);
+    if (notify) {
+      // Publish it right away as a notice for families.
+      const db = supabase!;
+      const { data: me } = await db.from('personal').select('id').eq('usuario_id', session!.user.id).maybeSingle();
+      await db.from('avisos').insert({
+        colegio_id: school!.id,
+        tipo: type === 'susp' ? 'sus' : 'urg',
+        titulo: `${shortDate(date)}: ${ev.nombre}`,
+        cuerpo: `${ev.detalle}. Afecta a: ${ev.alcance.toLowerCase()}.`,
+        destino: 'all',
+        enviado_por: me?.id ?? null,
+      });
+    }
+    setName('');
+    setDate('');
+    setDetail('');
+    setError('');
+  };
+
+  return (
+    <div className="split">
+      <section aria-labelledby="esp-t" className="stack gap-10" style={{ flex: '1 1 360px', minWidth: 0 }}>
+        <h2 id="esp-t" className="title-section">
+          Próximos horarios especiales
+        </h2>
+        {upcoming.length === 0 && <p className="text-sm muted">No hay horarios especiales programados.</p>}
+        {upcoming.map((e) => {
+          const d = new Date(e.fecha + 'T00:00:00');
+          return (
+            <div key={e.id} className="card row gap-14" style={{ borderRadius: 'var(--radius-lg)', padding: 14, alignItems: 'stretch' }}>
+              <div className="date-chip" data-tone={e.programado ? 'blue' : undefined}>
+                <span>{d.toLocaleDateString('es-CR', { month: 'short' })}</span>
+                <strong>{d.getDate()}</strong>
+              </div>
+              <div className="stack gap-4 grow">
+                <span className="row between gap-8">
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>{e.nombre}</span>
+                  <Badge tone={e.programado ? 'green' : 'neutral'}>{e.programado ? 'Avisado' : 'Borrador'}</Badge>
+                </span>
+                <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>
+                  {SPECIAL_TYPES.find((x) => x.id === e.tipo)?.label} · {e.detalle}
+                </span>
+                <span className="text-xs muted">{e.alcance}</span>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      <section aria-labelledby="nuevoesp-t" className="card card--roomy split__main" style={{ flexBasis: 480 }}>
+        <h2 id="nuevoesp-t" className="title-section">
+          Nuevo horario especial
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          <InputField id="e-nom" label="Evento o actividad" placeholder="Ej.: Festival deportivo" value={name} onChange={(e) => setName(e.target.value)} />
+          <InputField id="e-fecha" label="Fecha" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <fieldset className="fieldset">
+          <legend>¿Qué cambia?</legend>
+          <div className="row wrap gap-8">
+            {SPECIAL_TYPES.map((x) => (
+              <button key={x.id} type="button" className="chip" aria-pressed={x.id === type} onClick={() => setType(x.id)}>
+                {x.label}
+              </button>
+            ))}
+          </div>
+          <span style={{ display: 'block', marginTop: 10, fontSize: 14, color: 'var(--ink-2)' }}>{t.detail}</span>
+        </fieldset>
+        <InputField id="e-det" label="Detalle para las familias" placeholder={t.body} value={detail} onChange={(e) => setDetail(e.target.value)} />
+        <fieldset className="fieldset">
+          <legend>Afecta a</legend>
+          <div className="row wrap gap-8">
+            {SPECIAL_SCOPES.map((s) => (
+              <button key={s.id} type="button" className="chip chip--square" aria-pressed={s.id === scope} onClick={() => setScope(s.id)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <div className="stack">
+          {SPECIAL_RULES.map((r) => (
+            <SettingRow key={r.id} label={r.label} help={r.help} checked={f.reglasEspeciales[r.id]} onChange={(v) => update({ reglasEspeciales: { ...f.reglasEspeciales, [r.id]: v } })} />
+          ))}
+        </div>
+        {error && (
+          <span className="text-sm ink-orange" role="alert">
+            {error}
+          </span>
+        )}
+        <div className="row wrap gap-8" style={{ justifyContent: 'flex-end' }}>
+          <Button size="lg" onClick={() => add(false)}>
+            Guardar borrador
+          </Button>
+          <Button variant="primary" size="lg" style={{ padding: '0 18px' }} onClick={() => add(true)}>
+            Guardar y avisar a familias
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]; save: (next?: Form) => Promise<string> }) {
+  const [section, setSection] = useState('Todas');
+  const [draft, setDraft] = useState({ fecha: '', hora: '6:00 p. m.', materia: '', seccion: sections[0] ?? '', aula: '' });
+  const [error, setError] = useState('');
+  const exams = [...f.pruebas].filter((x) => section === 'Todas' || x.seccion === section).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const drafts = f.pruebas.filter((x) => !x.publicada).length;
+
+  const add = () => {
+    if (!draft.fecha || !draft.materia.trim() || !draft.seccion) return setError('Complete fecha, materia y sección.');
+    update({ pruebas: [...f.pruebas, { id: crypto.randomUUID(), ...draft, materia: draft.materia.trim(), publicada: false }] });
+    setDraft({ ...draft, materia: '', aula: '' });
+    setError('');
+  };
+
+  const publish = () => {
+    const pruebas = f.pruebas.map((x) => ({ ...x, publicada: true }));
+    update({ pruebas });
+    return save({ ...f, pruebas });
+  };
+
+  return (
+    <div className="split">
+      <section aria-labelledby="exa-t" className="card card--roomy split__main gap-14" style={{ flexBasis: 560 }}>
+        <div className="stack gap-2">
+          <h2 id="exa-t" className="title-section">
+            Calendario de pruebas
+          </h2>
+          <span className="text-sm muted">Las pruebas publicadas aparecen en el horario de la app de cada estudiante y su encargado.</span>
+        </div>
+        <div className="row wrap gap-6">
+          {['Todas', ...sections].map((s) => (
+            <button key={s} type="button" className="chip chip--sm" aria-pressed={s === section} onClick={() => setSection(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+        {exams.length === 0 ? (
+          <p className="text-sm muted">No hay pruebas registradas.</p>
+        ) : (
+          <div className="table-wrap">
+            <table className="table table--dense" style={{ minWidth: 620 }}>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Materia</th>
+                  <th>Sección</th>
+                  <th>Aula</th>
+                  <th>Estado</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {exams.map((x) => (
+                  <tr key={x.id}>
+                    <td className="strong">{shortDate(x.fecha)}</td>
+                    <td className="tabular">{x.hora}</td>
+                    <td>{x.materia}</td>
+                    <td>{x.seccion}</td>
+                    <td>{x.aula || '—'}</td>
+                    <td>
+                      <Badge tone={x.publicada ? 'green' : 'neutral'}>{x.publicada ? 'Publicada' : 'Borrador'}</Badge>
+                    </td>
+                    <td>
+                      <button type="button" className="link-button text-sm" onClick={() => update({ pruebas: f.pruebas.filter((p) => p.id !== x.id) })}>
+                        Quitar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="stack gap-10" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700 }}>Agregar prueba</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+            <InputField id="x-fecha" type="date" label="Fecha" value={draft.fecha} onChange={(e) => setDraft({ ...draft, fecha: e.target.value })} />
+            <InputField id="x-hora" label="Hora" value={draft.hora} onChange={(e) => setDraft({ ...draft, hora: e.target.value })} />
+            <InputField id="x-mat" label="Materia" value={draft.materia} onChange={(e) => setDraft({ ...draft, materia: e.target.value })} />
+            <div className="field">
+              <label htmlFor="x-sec" className="field__label">
+                Sección
+              </label>
+              <select id="x-sec" className="input" value={draft.seccion} onChange={(e) => setDraft({ ...draft, seccion: e.target.value })}>
+                {sections.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <InputField id="x-aula" label="Aula" hint="opcional" value={draft.aula} onChange={(e) => setDraft({ ...draft, aula: e.target.value })} />
+          </div>
+          {error && (
+            <span className="text-sm ink-orange" role="alert">
+              {error}
+            </span>
+          )}
+          <Button variant="dashed" size="md" style={{ alignSelf: 'flex-start' }} onClick={add}>
+            + Agregar a la lista
+          </Button>
+          <span className="text-xs muted">Recuerde presionar "Guardar cambios" o "Publicar calendario".</span>
+        </div>
+      </section>
+
+      <aside className="card split__side gap-4" style={{ flexBasis: 300 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Avisos de pruebas</h2>
+        {EXAM_RULES.map((r) => (
+          <SettingRow key={r.id} label={r.label} help={r.help} checked={f.reglasPruebas[r.id]} onChange={(v) => update({ reglasPruebas: { ...f.reglasPruebas, [r.id]: v } })} />
+        ))}
+        <Button variant="primary" style={{ marginTop: 8, height: 48 }} disabled={!f.pruebas.length} onClick={publish}>
+          {drafts ? `Publicar calendario (${drafts} en borrador)` : 'Calendario publicado'}
+        </Button>
+      </aside>
+    </div>
+  );
+}

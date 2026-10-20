@@ -4,7 +4,9 @@ import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileSc
 import { SHIFT_BLOCKS } from '../../data/settings';
 import { SCHOOL_DAYS, type DayId } from '../../data/schedule';
 import { sectionDay } from '../../lib/family';
-import { todayId } from '../../lib/schedule';
+import { localDate, todayId } from '../../lib/schedule';
+import { supabase } from '../../lib/supabase';
+import type { Exam } from '../admin/SettingsLive';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
 
 /** "8:00 p. m." → minutes since midnight. */
@@ -24,6 +26,21 @@ function Schedule({ f }: { f: FamilyCtx }) {
   const today = todayId();
   const [day, setDay] = useState<DayId>(today ?? 'L');
   const [plan, setPlan] = useState<Awaited<ReturnType<typeof sectionDay>> | null>(null);
+  const [exams, setExams] = useState<Exam[]>([]);
+
+  useEffect(() => {
+    supabase!
+      .from('colegios')
+      .select('config')
+      .maybeSingle()
+      .then(({ data }) =>
+        setExams(
+          ((data?.config?.pruebas ?? []) as Exam[])
+            .filter((x) => x.publicada && x.seccion === kid.section && x.fecha >= localDate())
+            .sort((a, b) => a.fecha.localeCompare(b.fecha)),
+        ),
+      );
+  }, [kid]);
 
   useEffect(() => {
     setPlan(null);
@@ -83,6 +100,28 @@ function Schedule({ f }: { f: FamilyCtx }) {
                 </div>
               ),
             )
+          )}
+        </section>
+
+        <section className="card card--mobile gap-8" aria-labelledby="pruebas-t">
+          <h2 id="pruebas-t" style={{ fontSize: 16, fontWeight: 700 }}>
+            Próximas pruebas
+          </h2>
+          {exams.length === 0 ? (
+            <span className="text-sm muted">No hay pruebas publicadas para la sección {kid.section}.</span>
+          ) : (
+            exams.map((x) => (
+              <div key={x.id} className="list-row" style={{ padding: '8px 0' }}>
+                <span className="stack grow">
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>{x.materia}</span>
+                  {x.aula && <span className="text-xs muted">{x.aula}</span>}
+                </span>
+                <span className="stack" style={{ textAlign: 'right' }}>
+                  <span className="text-sm strong">{new Date(x.fecha + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                  <span className="text-xs muted tabular">{x.hora}</span>
+                </span>
+              </div>
+            ))
           )}
         </section>
       </div>

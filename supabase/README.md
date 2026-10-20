@@ -16,6 +16,8 @@
 Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrations/`:
 
 - `0002_asistencia_mes.sql`: totales de ausencias y tardías del mes.
+- `0003_familias_y_modulos.sql`: app de familias, portón, giras, salidas, avisos, alerta temprana,
+  configuración y archivos (comprobantes).
 
 ## Primer ingreso del director
 
@@ -36,7 +38,8 @@ Cuando esa persona crea su cuenta con el mismo dato, queda unida automáticament
 
 1. Base de datos ✔
 2. Inicio de sesión ✔ y datos reales en la app ← **aquí** (hecho: Usuarios y permisos, Estudiantes,
-   horarios, pase de lista, Hoy y Justificaciones; faltan app de familias, portón y el resto)
+   horarios, pase de lista, Hoy, Justificaciones, app de familias, portón, giras, avisos,
+   alerta temprana, reportes y configuración; falta docentes ausentes)
 3. Portón, comprobantes SINPE y bitácora
 4. Avisos push y SMS con línea propia (teléfono Android como enviador)
 5. Copias de seguridad, dominio y piloto

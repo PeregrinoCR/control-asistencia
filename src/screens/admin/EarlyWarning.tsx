@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import { Badge, Button, Icon, Segmented, Stat, StatusBadge, Switch } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { supabase } from '../../lib/supabase';
+import { EarlyWarningLive } from './EarlyWarningLive';
 import { CASES, CRITERIA, LEVEL_FILTERS, RISK, type RiskLevel } from '../../data/earlyWarning';
 import { ruleState } from '../../data/school';
 
 /** Dirección · Alerta temprana */
 export function EarlyWarning() {
+  return supabase ? <EarlyWarningLive /> : <EarlyWarningSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function EarlyWarningSample() {
   const [filter, setFilter] = useState<'all' | RiskLevel>('all');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [plans, setPlans] = useState<Record<number, boolean[]>>({});

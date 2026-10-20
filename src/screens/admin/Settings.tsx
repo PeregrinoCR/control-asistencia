@@ -23,12 +23,19 @@ import {
   type ShiftId,
 } from '../../data/settings';
 import { ruleState } from '../../data/school';
+import { supabase } from '../../lib/supabase';
 import { routes } from '../../routes';
+import { SettingsLive } from './SettingsLive';
 
 type Tab = 'inst' | 'mod' | 'jor' | 'prof' | 'esp' | 'exa';
 
 /** Dirección · Configuración */
 export function Settings() {
+  return supabase ? <SettingsLive /> : <SettingsSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function SettingsSample() {
   const [tab, setTab] = useState<Tab>('inst');
   const [saved, setSaved] = useState(false);
 

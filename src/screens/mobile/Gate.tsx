@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Avatar, Badge, Button, Icon, QrScanner, Segmented, type IconName } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
+import { supabase } from '../../lib/supabase';
+import { GateLive } from './GateLive';
 import { CARDS, DEMO_NOW, DEMO_NOW_LABEL, cardPayload, checkCard, type GateMode, type GateResult } from '../../data/gate';
 
 const RESULT_ICON: Record<GateResult['kind'], IconName> = { ok: 'check', warn: 'alert', deny: 'x' };
@@ -14,6 +16,11 @@ interface LogEntry {
 
 /** Guarda · Portón: scan the student card on the way in or out. */
 export function Gate() {
+  return supabase ? <GateLive /> : <GateSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function GateSample() {
   const [mode, setMode] = useState<GateMode>('out');
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState('');

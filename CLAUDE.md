@@ -43,7 +43,10 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   horario por sección (`src/lib/schedule.ts`, tabla `horario`), pase de lista (`RollCallLive.tsx`), Hoy y
   Justificaciones. Al entrar, cada rol va a su pantalla (`homeFor` en `src/lib/auth.tsx`).
   Cada pantalla real vive en `*Live.tsx`; sin servidor se muestra la de ejemplo.
-  Faltan: el resto de pantallas con datos reales, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
+  Migración 0003: app de familias (`src/lib/family.ts`, `FamilyGate.tsx`), portón, giras, avisos,
+  alerta temprana, reportes y configuración (`colegios.config`) con datos reales. Archivos en Storage
+  (`comprobantes/<colegio>/…`). `supabase/armar-instalar.sh` regenera `instalar.sql`.
+  Faltan: docentes ausentes/sustitutos, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Imprimir carnés en lote; guardar registros del portón.
 - Horario familiar (`src/data/schedule.ts`) aún es de ejemplo; con servidor debe leer la tabla `horario`.

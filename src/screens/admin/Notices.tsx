@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Button, Icon, InputField, Meter, SettingRow, StatusBadge, TextareaField } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { supabase } from '../../lib/supabase';
+import { NoticesLive } from './NoticesLive';
 import { AUDIENCES, AUTO_RULES, CHANNELS, NOTICE_TONE, NOTICE_TYPES, SENT_NOTICES, type NoticeType } from '../../data/notices';
 import { SCHOOL_NAME, ruleState } from '../../data/school';
 
@@ -13,6 +15,11 @@ const toneVars = {
 
 /** Dirección · Avisos a familias */
 export function Notices() {
+  return supabase ? <NoticesLive /> : <NoticesSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function NoticesSample() {
   const [type, setType] = useState<NoticeType>('info');
   const [audience, setAudience] = useState<Record<string, boolean>>({ enc: true, adu: true });
   const [channels, setChannels] = useState<Record<string, boolean>>({ app: true, sms: true, mail: false });
