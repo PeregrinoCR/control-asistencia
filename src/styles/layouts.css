@@ -191,6 +191,20 @@ button.admin__link {
   color: #fff;
   font-weight: 600;
 }
+.admin__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin__group-title {
+  padding: 14px 12px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--night-ink-2);
+  opacity: 0.7;
+}
 .admin__link--bottom {
   margin-top: auto;
   border-top: 1px solid var(--night-line);

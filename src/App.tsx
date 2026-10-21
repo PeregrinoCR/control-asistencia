@@ -76,7 +76,7 @@ export function App() {
         <Route path={routes.guard.gate} element={<Gate />} />
 
         <Route path={routes.admin.today} element={<Today />} />
-        <Route path={routes.admin.assignments} element={<Assignments />} />
+        <Route path={routes.admin.schedules} element={<Assignments />} />
         <Route path={routes.admin.teacherAbsences} element={<TeacherAbsences />} />
         <Route path={routes.admin.trips} element={<Trips />} />
         <Route path={routes.admin.students} element={<Students />} />

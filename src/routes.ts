@@ -20,7 +20,7 @@ export const routes = {
   },
   admin: {
     today: '/direccion',
-    assignments: '/direccion/asignaciones',
+    schedules: '/direccion/horarios',
     teacherAbsences: '/direccion/docentes-ausentes',
     examCare: '/direccion/cuidos',
     trips: '/direccion/giras',

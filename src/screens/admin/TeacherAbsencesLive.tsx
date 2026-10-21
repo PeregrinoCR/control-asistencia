@@ -179,7 +179,7 @@ export function TeacherAbsencesLive() {
           <div className="stack gap-10">
             <h3 style={{ fontSize: 14, fontWeight: 700 }}>Lecciones de ese día</h3>
             {!slots && <span className="text-sm muted">Cargando…</span>}
-            {slots && lessons.length === 0 && <span className="text-sm muted">Cargue el horario en Profesores y secciones para ver sus lecciones.</span>}
+            {slots && lessons.length === 0 && <span className="text-sm muted">Cargue el horario en Horarios y cargas para ver sus lecciones.</span>}
             {lessons.map((s) => {
               const p = planOf(s);
               const options = freeAt(s.lesson);

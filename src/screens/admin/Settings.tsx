@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Badge, Button, Icon, InputField, Segmented, SettingRow } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import {
@@ -24,10 +23,9 @@ import {
 } from '../../data/settings';
 import { ruleState } from '../../data/school';
 import { supabase } from '../../lib/supabase';
-import { routes } from '../../routes';
 import { SettingsLive } from './SettingsLive';
 
-type Tab = 'inst' | 'mod' | 'jor' | 'prof' | 'esp' | 'exa';
+type Tab = 'inst' | 'mod' | 'jor' | 'esp' | 'exa';
 
 /** Dirección · Configuración */
 export function Settings() {
@@ -70,7 +68,6 @@ function SettingsSample() {
           { value: 'inst', label: 'Institución' },
           { value: 'mod', label: 'Módulos' },
           { value: 'jor', label: 'Jornadas y horarios' },
-          { value: 'prof', label: 'Profesores y secciones' },
           { value: 'esp', label: 'Horarios especiales' },
           { value: 'exa', label: 'Horario de exámenes' },
         ]}
@@ -80,7 +77,6 @@ function SettingsSample() {
         {tab === 'inst' && <InstitutionTab />}
         {tab === 'mod' && <ModulesTab />}
         {tab === 'jor' && <ShiftsTab />}
-        {tab === 'prof' && <RolesTab />}
         {tab === 'esp' && <SpecialTab />}
         {tab === 'exa' && <ExamsTab />}
       </div>
@@ -319,52 +315,6 @@ function ShiftsTab() {
           ))}
         </div>
       </aside>
-    </div>
-  );
-}
-
-function RolesTab() {
-  return (
-    <div className="stack gap-16">
-      <div className="grid-tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-        <SmallStat label="Profesores" value="24" />
-        <SmallStat label="Secciones" value="8" />
-        <SmallStat label="Materias" value="9" />
-        <SmallStat label="Materias sin profesor" value="2" orange />
-      </div>
-      <div className="card row wrap between gap-12">
-        <span style={{ fontSize: 15, color: 'var(--ink-2)' }}>
-          Asigne profesores a cada materia y sección, y elija al profesor guía.
-        </span>
-        <div className="row wrap gap-8">
-          <Button style={{ fontSize: 14, padding: '0 14px' }}>Importar desde Excel</Button>
-          <Link to={routes.admin.assignments} className="btn btn--dark" style={{ fontSize: 14 }}>
-            Abrir profesores y secciones
-          </Link>
-        </div>
-      </div>
-      <div className="card row wrap between gap-12">
-        <span className="stack gap-2">
-          <span className="title-section">Roles y permisos</span>
-          <span className="text-sm muted">Qué puede hacer cada rol y cada persona del personal.</span>
-        </span>
-        <Link to={routes.admin.users} className="btn btn--dark" style={{ fontSize: 14 }}>
-          Abrir usuarios y permisos
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function SmallStat({ label, value, orange }: { label: string; value: string; orange?: boolean }) {
-  return (
-    <div className="stat stat--compact" style={{ gap: 0 }}>
-      <span className="stat__label" style={{ fontSize: 13 }}>
-        {label}
-      </span>
-      <span className={orange ? 'stat__value ink-orange' : 'stat__value'} style={{ fontSize: 30 }}>
-        {value}
-      </span>
     </div>
   );
 }

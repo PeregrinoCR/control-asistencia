@@ -6,18 +6,41 @@ import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
-const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue' | 'orange' } }> = [
-  { to: routes.admin.today, label: 'Hoy' },
-  { to: routes.admin.assignments, label: 'Profesores y secciones' },
-  { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
-  { to: routes.admin.trips, label: 'Giras y salidas', count: { n: navCounts.trips, tone: 'blue' } },
-  { to: routes.admin.students, label: 'Estudiantes' },
-  { to: routes.admin.justifications, label: 'Justificaciones', count: { n: navCounts.justifications, tone: 'orange' } },
-  { to: routes.admin.notices, label: 'Avisos a familias' },
-  { to: routes.admin.earlyWarning, label: 'Alerta temprana', count: { n: navCounts.earlyWarning, tone: 'orange' } },
-  { to: routes.admin.examCare, label: 'Cuido de exámenes' },
-  { to: routes.admin.reports, label: 'Reportes' },
-  { to: routes.admin.users, label: 'Usuarios y permisos' },
+type MenuLink = { to: string; label: string; count?: { n: number; tone: 'blue' | 'orange' } };
+
+/** The menu, by what the staff does with each page: day to day, the school year, families, administration. */
+const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
+  {
+    title: 'Día a día',
+    links: [
+      { to: routes.admin.today, label: 'Hoy' },
+      { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
+      { to: routes.admin.justifications, label: 'Justificaciones', count: { n: navCounts.justifications, tone: 'orange' } },
+      { to: routes.admin.trips, label: 'Giras y salidas', count: { n: navCounts.trips, tone: 'blue' } },
+    ],
+  },
+  {
+    title: 'Académico',
+    links: [
+      { to: routes.admin.schedules, label: 'Horarios y cargas' },
+      { to: routes.admin.students, label: 'Estudiantes' },
+      { to: routes.admin.examCare, label: 'Cuido de exámenes' },
+    ],
+  },
+  {
+    title: 'Familias',
+    links: [
+      { to: routes.admin.notices, label: 'Avisos a familias' },
+      { to: routes.admin.earlyWarning, label: 'Alerta temprana', count: { n: navCounts.earlyWarning, tone: 'orange' } },
+    ],
+  },
+  {
+    title: 'Administración',
+    links: [
+      { to: routes.admin.reports, label: 'Reportes' },
+      { to: routes.admin.users, label: 'Usuarios y permisos' },
+    ],
+  },
 ];
 
 /** Most used pages, one tap away in the phone's bottom bar. */
@@ -78,11 +101,16 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       {open && <button type="button" className="admin__scrim" aria-label="Cerrar menú" onClick={() => setOpen(false)} />}
       <nav id="menu-direccion" aria-label="Menú de dirección" className="admin__nav">
         {brand}
-        {LINKS.map((l) => (
-          <NavLink key={l.to} to={l.to} end className="admin__link">
-            {l.label}
-            {l.count && !supabase && <span className={cx('count', `count--${l.count.tone}`)}>{l.count.n}</span>}
-          </NavLink>
+        {GROUPS.map((g) => (
+          <div key={g.title} className="admin__group">
+            <span className="admin__group-title">{g.title}</span>
+            {g.links.map((l) => (
+              <NavLink key={l.to} to={l.to} end className="admin__link">
+                {l.label}
+                {l.count && !supabase && <span className={cx('count', `count--${l.count.tone}`)}>{l.count.n}</span>}
+              </NavLink>
+            ))}
+          </div>
         ))}
         <NavLink to={routes.admin.settings} className="admin__link admin__link--bottom">
           Configuración

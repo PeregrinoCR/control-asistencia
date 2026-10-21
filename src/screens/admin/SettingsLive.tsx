@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import {
@@ -21,9 +20,8 @@ import { ruleState } from '../../data/school';
 import { useAuth } from '../../lib/auth';
 import { LESSONS, localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
-import { routes } from '../../routes';
 
-type Tab = 'inst' | 'mod' | 'jor' | 'prof' | 'esp' | 'exa';
+type Tab = 'inst' | 'mod' | 'jor' | 'esp' | 'exa';
 
 export interface SpecialEvent {
   id: string;
@@ -75,7 +73,6 @@ export function SettingsLive() {
   const { school } = useAuth();
   const [tab, setTab] = useState<Tab>('inst');
   const [form, setForm] = useState<Form | null>(null);
-  const [counts, setCounts] = useState({ teachers: 0, sections: 0, subjects: 0 });
   const [sections, setSections] = useState<string[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -83,11 +80,9 @@ export function SettingsLive() {
   useEffect(() => {
     const db = supabase!;
     (async () => {
-      const [c, t, s, m] = await Promise.all([
+      const [c, s] = await Promise.all([
         db.from('colegios').select('nombre, sector, telefono, modulos, config').maybeSingle(),
-        db.from('docentes').select('id'),
         db.from('secciones').select('nombre').order('nombre'),
-        db.from('materias').select('id'),
       ]);
       const r = c.data;
       if (!r) return;
@@ -111,7 +106,6 @@ export function SettingsLive() {
         aulas: cfg.aulas ?? [],
         aulasAdecuacion: cfg.aulasAdecuacion ?? {},
       });
-      setCounts({ teachers: t.data?.length ?? 0, sections: s.data?.length ?? 0, subjects: m.data?.length ?? 0 });
       setSections((s.data ?? []).map((x) => x.nombre));
     })();
   }, []);
@@ -165,7 +159,6 @@ export function SettingsLive() {
           { value: 'inst', label: 'Institución' },
           { value: 'mod', label: 'Módulos' },
           { value: 'jor', label: 'Jornadas y horarios' },
-          { value: 'prof', label: 'Profesores y secciones' },
           { value: 'esp', label: 'Horarios especiales' },
           { value: 'exa', label: 'Horario de exámenes' },
         ]}
@@ -178,7 +171,6 @@ export function SettingsLive() {
           {tab === 'inst' && <InstitutionTab f={form} update={update} />}
           {tab === 'mod' && <ModulesTab f={form} update={update} />}
           {tab === 'jor' && <ShiftsTab f={form} update={update} />}
-          {tab === 'prof' && <RolesTab counts={counts} />}
           {tab === 'esp' && <SpecialTab f={form} update={update} save={save} />}
           {tab === 'exa' && <ExamsTab f={form} update={update} sections={sections} save={save} />}
         </div>
@@ -548,44 +540,6 @@ function ShiftsTab({ f, update }: TabProps) {
           ))}
         </div>
       </aside>
-    </div>
-  );
-}
-
-function RolesTab({ counts }: { counts: { teachers: number; sections: number; subjects: number } }) {
-  return (
-    <div className="stack gap-16">
-      <div className="grid-tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-        {[
-          ['Profesores', counts.teachers],
-          ['Secciones', counts.sections],
-          ['Materias', counts.subjects],
-        ].map(([label, value]) => (
-          <div key={label} className="stat stat--compact" style={{ gap: 0 }}>
-            <span className="stat__label" style={{ fontSize: 13 }}>
-              {label}
-            </span>
-            <span className="stat__value" style={{ fontSize: 30 }}>
-              {value}
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="card row wrap between gap-12">
-        <span style={{ fontSize: 15, color: 'var(--ink-2)' }}>Asigne profesores a cada materia y sección.</span>
-        <Link to={routes.admin.assignments} className="btn btn--dark" style={{ fontSize: 14 }}>
-          Abrir profesores y secciones
-        </Link>
-      </div>
-      <div className="card row wrap between gap-12">
-        <span className="stack gap-2">
-          <span className="title-section">Roles y permisos</span>
-          <span className="text-sm muted">Qué puede hacer cada rol y cada persona del personal.</span>
-        </span>
-        <Link to={routes.admin.users} className="btn btn--dark" style={{ fontSize: 14 }}>
-          Abrir usuarios y permisos
-        </Link>
-      </div>
     </div>
   );
 }

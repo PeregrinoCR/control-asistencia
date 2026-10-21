@@ -126,7 +126,7 @@ export function TodayLive() {
               </h2>
               {data.sections.length === 0 ? (
                 <p className="text-sm muted">
-                  {day ? 'Ninguna sección tiene lecciones hoy. Cargue los horarios en Profesores y secciones.' : 'Hoy no hay lecciones.'}
+                  {day ? 'Ninguna sección tiene lecciones hoy. Cargue los horarios en Horarios y cargas.' : 'Hoy no hay lecciones.'}
                 </p>
               ) : (
                 <div className="table-wrap">

@@ -24,7 +24,7 @@ npm run build      # type-checks, then builds to dist/
 | `/familia/horario` | Padre · Horario semanal |
 | `/porton` | Guarda · Control de portón |
 | `/direccion` | Dirección · Panel del día |
-| `/direccion/asignaciones` | Dirección · Profesores, secciones y horarios |
+| `/direccion/horarios` | Dirección · Horarios y cargas |
 | `/direccion/docentes-ausentes` | Dirección · Ausencias de docentes |
 | `/direccion/giras` | Dirección · Giras y salidas tempranas |
 | `/direccion/estudiantes` | Dirección · Estudiantes |

@@ -5,7 +5,7 @@ import { SECTIONS, SHIFTS, SUBJECT_SCHEDULE, TEACHERS, sectionPlan } from '../..
 import { supabase } from '../../lib/supabase';
 import { AssignmentsLive } from './AssignmentsLive';
 
-/** Dirección · Profesores, secciones y horarios */
+/** Dirección · Horarios y cargas */
 export function Assignments() {
   return supabase ? <AssignmentsLive /> : <AssignmentsSample />;
 }
@@ -21,7 +21,7 @@ function AssignmentsSample() {
     <AdminLayout>
       <PageHeader
         kicker="Curso lectivo 2026"
-        title="Profesores, secciones y horarios"
+        title="Horarios y cargas"
         actions={
           <>
             <Button regular>Importar desde Excel</Button>

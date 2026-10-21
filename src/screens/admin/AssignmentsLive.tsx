@@ -39,7 +39,7 @@ const CELL: Record<'fill' | 'mine' | 'ok' | 'busy' | 'empty', CSSProperties> = {
   empty: { ...cellBase, background: 'var(--bg)', color: 'var(--muted)', border: '1.5px dashed var(--border-input)' },
 };
 
-/** Dirección · Profesores, secciones y horarios: a board where each section's load is placed as cards. */
+/** Dirección · Horarios y cargas: a board where each section's load is placed as cards. */
 export function AssignmentsLive() {
   const data = useSchedule();
   const sections = data.sections ?? [];
@@ -165,7 +165,7 @@ export function AssignmentsLive() {
     <AdminLayout>
       <PageHeader
         kicker="Jornada nocturna · arrastre cada tarjeta a una casilla, o tóquela y luego toque la casilla"
-        title="Profesores, secciones y horarios"
+        title="Horarios y cargas"
         actions={
           <Button variant="primary" onClick={save} disabled={busy || !sectionId}>
             {busy ? 'Guardando…' : dirty ? 'Guardar cambios' : 'Guardado'}
