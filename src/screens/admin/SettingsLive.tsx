@@ -3,6 +3,7 @@ import { Badge, Button, InputField, Segmented, SettingRow } from '../../componen
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
+import { levelOf } from '../../lib/cuidos';
 import {
   EXAM_RULES,
   INSTITUTION_FIELDS,
@@ -33,6 +34,11 @@ export interface SpecialEvent {
   alcance: string;
   detalle: string;
   programado: boolean;
+  /** Early exit: the time lessons end. */
+  hora?: string;
+  /** Sections or level the change applies to (when `alcance` is not the whole school). */
+  secciones?: string[];
+  nivel?: string;
 }
 
 export interface Exam {
@@ -180,7 +186,7 @@ export function SettingsLive() {
           {tab === 'inst' && <InstitutionTab f={form} update={update} />}
           {tab === 'mod' && <ModulesTab f={form} update={update} />}
           {tab === 'jor' && <ShiftsTab f={form} update={update} />}
-          {tab === 'esp' && <SpecialTab f={form} update={update} save={save} />}
+          {tab === 'esp' && <SpecialTab f={form} update={update} save={save} sections={sections} />}
           {tab === 'exa' && <ExamsTab f={form} update={update} sections={sections} save={save} />}
           {tab === 'dev' && school && <DevTab colegioId={school.id} />}
         </div>
@@ -500,27 +506,45 @@ function ShiftsTab({ f, update }: TabProps) {
   );
 }
 
-function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Promise<string> }) {
+function SpecialTab({ f, update, save, sections }: TabProps & { save: (next?: Form) => Promise<string>; sections: string[] }) {
   const { school, session } = useAuth();
   const [type, setType] = useState('early');
   const [scope, setScope] = useState('all');
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [detail, setDetail] = useState('');
+  const [hora, setHora] = useState('');
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [nivel, setNivel] = useState('');
   const [error, setError] = useState('');
   const t = SPECIAL_TYPES.find((x) => x.id === type)!;
   const upcoming = [...f.eventos].filter((e) => e.fecha >= localDate()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const horas = [...new Set(LESSONS.map((l) => l.end))];
+  const niveles = [...new Set(sections.map(levelOf))].sort((a, b) => Number(a) - Number(b));
+  // The lesson end time, when the type has one; a manual time is allowed too.
+  const horaFinal = hora || horas[horas.length - 1];
+
+  const alcanceTexto = () => {
+    if (scope === 'secs') return `Secciones: ${chosen.join(', ')}`;
+    if (scope === 'lvl') return `Nivel ${nivel}.º`;
+    return 'Toda la jornada';
+  };
 
   const add = async (notify: boolean) => {
     if (!name.trim() || !date) return setError('Escriba el nombre del evento y la fecha.');
+    if (scope === 'secs' && chosen.length === 0) return setError('Elija al menos una sección.');
+    if (scope === 'lvl' && !nivel) return setError('Elija el nivel.');
     const ev: SpecialEvent = {
       id: crypto.randomUUID(),
       fecha: date,
       nombre: name.trim(),
       tipo: type,
-      alcance: SPECIAL_SCOPES.find((s) => s.id === scope)!.label,
-      detalle: detail.trim() || t.label,
+      alcance: alcanceTexto(),
+      detalle: (detail.trim() || t.detail.replace('[HORA]', horaFinal) || t.label).replace('[HORA]', horaFinal),
       programado: notify,
+      ...(type === 'early' ? { hora: horaFinal } : {}),
+      ...(scope === 'secs' ? { secciones: chosen } : {}),
+      ...(scope === 'lvl' ? { nivel } : {}),
     };
     const next = { ...f, eventos: [...f.eventos, ev] };
     update({ eventos: next.eventos });
@@ -542,6 +566,9 @@ function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Pro
     setName('');
     setDate('');
     setDetail('');
+    setHora('');
+    setChosen([]);
+    setNivel('');
     setError('');
   };
 
@@ -594,6 +621,18 @@ function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Pro
           </div>
           <span style={{ display: 'block', marginTop: 10, fontSize: 14, color: 'var(--ink-2)' }}>{t.detail}</span>
         </fieldset>
+        {type === 'early' && (
+          <div className="field" style={{ maxWidth: 260 }}>
+            <label htmlFor="e-hora" className="field__label">
+              Las lecciones terminan a las
+            </label>
+            <select id="e-hora" className="input" value={horaFinal} onChange={(e) => setHora(e.target.value)}>
+              {horas.map((h) => (
+                <option key={h}>{h}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <InputField id="e-det" label="Detalle para las familias" placeholder={t.body} value={detail} onChange={(e) => setDetail(e.target.value)} />
         <fieldset className="fieldset">
           <legend>Afecta a</legend>
@@ -604,6 +643,37 @@ function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Pro
               </button>
             ))}
           </div>
+          {scope === 'secs' && (
+            <div className="row wrap gap-6" style={{ marginTop: 10 }}>
+              {sections.map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  className="chip chip--sm"
+                  aria-pressed={chosen.includes(x)}
+                  onClick={() => setChosen(chosen.includes(x) ? chosen.filter((c) => c !== x) : [...chosen, x])}
+                >
+                  {chosen.includes(x) ? '✓ ' : ''}
+                  {x}
+                </button>
+              ))}
+            </div>
+          )}
+          {scope === 'lvl' && (
+            <div className="field" style={{ maxWidth: 220, marginTop: 10 }}>
+              <label htmlFor="e-nivel" className="field__label">
+                Nivel
+              </label>
+              <select id="e-nivel" className="input" value={nivel} onChange={(e) => setNivel(e.target.value)}>
+                <option value="">Elija…</option>
+                {niveles.map((n) => (
+                  <option key={n} value={n}>
+                    {n}.º
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </fieldset>
         <div className="stack">
           {SPECIAL_RULES.map((r) => (

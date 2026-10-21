@@ -7,7 +7,8 @@ import { aulaDe, proximaFecha, SIN_CONFIG, type AulasConfig } from '../../lib/au
 import { sectionDay } from '../../lib/family';
 import { localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
-import type { Exam } from '../admin/SettingsLive';
+import type { Exam, SpecialEvent } from '../admin/SettingsLive';
+import { levelOf } from '../../lib/cuidos';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
 import { LESSONS } from '../../lib/schedule';
 
@@ -37,6 +38,7 @@ function Schedule({ f }: { f: FamilyCtx }) {
   const [plan, setPlan] = useState<Awaited<ReturnType<typeof sectionDay>> | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
   const [rooms, setRooms] = useState<AulasConfig>(SIN_CONFIG);
+  const [eventos, setEventos] = useState<SpecialEvent[]>([]);
 
   useEffect(() => {
     supabase!
@@ -51,6 +53,7 @@ function Schedule({ f }: { f: FamilyCtx }) {
             .sort((a, b) => a.fecha.localeCompare(b.fecha)),
         );
         setRooms({ ...SIN_CONFIG, aulasGrupo: cfg.aulasGrupo ?? {}, eventosAula: cfg.eventosAula ?? [] });
+        setEventos((cfg.eventos ?? []) as SpecialEvent[]);
       });
   }, [kid]);
 
@@ -59,6 +62,15 @@ function Schedule({ f }: { f: FamilyCtx }) {
     if (kid.sectionId) sectionDay(kid.sectionId, day).then(setPlan);
     else setPlan([]);
   }, [kid, day]);
+
+  // Early exit on this day for this student: a schedule change with an end time that reaches the section.
+  const fechaDia = proximaFecha(day);
+  const salida = eventos.find(
+    (e) =>
+      e.fecha === fechaDia &&
+      !!e.hora &&
+      (e.secciones ? e.secciones.includes(kid.section) : e.nivel ? e.nivel === levelOf(kid.section) : true),
+  );
 
   const now = new Date().getHours() * 60 + new Date().getMinutes();
   let lesson = 0;
@@ -90,6 +102,12 @@ function Schedule({ f }: { f: FamilyCtx }) {
           ))}
         </div>
 
+        {salida && (
+          <div className="card card--mobile" role="status">
+            <span className="text-sm strong">{salida.nombre}</span>
+            <span className="text-sm">Las lecciones terminan a las {salida.hora}.</span>
+          </div>
+        )}
         <section className="card card--mobile" style={{ padding: '6px 16px', gap: 0 }} aria-label={`Horario del ${SCHOOL_DAYS.find((d) => d.id === day)!.full}`}>
           {!plan ? (
             <p className="text-sm muted" style={{ padding: '12px 0' }}>
