@@ -6,6 +6,7 @@ import { Login } from './screens/Login';
 import { ScreenIndex } from './screens/ScreenIndex';
 import { Assignments } from './screens/admin/Assignments';
 import { Rooms } from './screens/admin/Rooms';
+import { Exits } from './screens/admin/Exits';
 import { TeacherAbsences } from './screens/admin/TeacherAbsences';
 import { UsersPermissions } from './screens/admin/UsersPermissions';
 import { EarlyWarning } from './screens/admin/EarlyWarning';
@@ -79,6 +80,7 @@ export function App() {
         <Route path={routes.admin.today} element={<Today />} />
         <Route path={routes.admin.schedules} element={<Assignments />} />
         <Route path={routes.admin.rooms} element={<Rooms />} />
+        <Route path={routes.admin.exits} element={<Exits />} />
         <Route path={routes.admin.teacherAbsences} element={<TeacherAbsences />} />
         <Route path={routes.admin.trips} element={<Trips />} />
         <Route path={routes.admin.students} element={<Students />} />

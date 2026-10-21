@@ -23,6 +23,7 @@ const GROUPS = [
       { to: routes.admin.today, role: 'Dirección', label: 'Panel del día' },
       { to: routes.admin.schedules, role: 'Dirección', label: 'Horarios y cargas' },
       { to: routes.admin.rooms, role: 'Dirección', label: 'Aulas y grupos' },
+      { to: routes.admin.exits, role: 'Dirección', label: 'Salidas tempranas' },
       { to: routes.admin.teacherAbsences, role: 'Dirección', label: 'Ausencias de docentes' },
       { to: routes.admin.trips, role: 'Dirección', label: 'Giras y salidas tempranas' },
       { to: routes.admin.students, role: 'Dirección', label: 'Estudiantes' },

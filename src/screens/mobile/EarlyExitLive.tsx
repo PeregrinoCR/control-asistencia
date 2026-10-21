@@ -24,6 +24,8 @@ interface Saved {
   modo: ExitWay;
   comprobante: string;
   salio: string | null;
+  estado: 'pendiente' | 'aprobada' | 'rechazada';
+  motivo_rechazo: string | null;
 }
 
 function EarlyExit({ f }: { f: FamilyCtx }) {
@@ -47,7 +49,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
     setSaved(undefined);
     supabase!
       .from('salidas')
-      .select('id, hora, modo, comprobante, salio')
+      .select('id, hora, modo, comprobante, salio, estado, motivo_rechazo')
       .eq('estudiante_id', kid.id)
       .eq('fecha', date)
       .maybeSingle()
@@ -72,12 +74,13 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
           motivo: reason.trim() || null,
           retira_nombre: way === 'pickup' ? pickupName.trim() : null,
           firma,
+          estado: 'pendiente',
           retira_cedula: way === 'pickup' ? pickupId.trim() : null,
           autorizado_por: session!.user.id,
         },
         { onConflict: 'estudiante_id,fecha' },
       )
-      .select('id, hora, modo, comprobante, salio')
+      .select('id, hora, modo, comprobante, salio, estado, motivo_rechazo')
       .single();
     setBusy(false);
     if (error) return setError('No se guardó: ' + error.message);
@@ -107,11 +110,23 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
       <ScreenHeader title="Salida temprana" subtitle={`${kid.name} · ${kid.section} · hoy, ${longDay(date)}`} />
       {saved ? (
         <DoneState
-          title={saved.salio ? 'Ya salió del colegio' : 'Salida autorizada'}
+          title={
+            saved.estado === 'pendiente'
+              ? 'Solicitud enviada'
+              : saved.estado === 'rechazada'
+                ? 'Salida no autorizada'
+                : saved.salio
+                  ? 'Ya salió del colegio'
+                  : 'Salida autorizada'
+          }
           actions={
             <>
               <div className="card" style={{ width: '100%', borderRadius: 'var(--radius-lg)', padding: '12px 14px', fontSize: 13, color: 'var(--ink-3)', textAlign: 'left' }}>
-                Comprobante n.º {saved.comprobante} · descargo firmado y guardado.
+                {saved.estado === 'pendiente'
+                  ? 'Dirección revisará la solicitud y le avisaremos la decisión.'
+                  : saved.estado === 'rechazada'
+                    ? `Motivo: ${saved.motivo_rechazo ?? 'sin detalle'}.`
+                    : `Comprobante n.º ${saved.comprobante} · descargo firmado y guardado.`}
               </div>
               <ButtonLink variant="dark" size="lg" to={routes.family.home}>
                 Volver al inicio

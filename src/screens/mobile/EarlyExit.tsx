@@ -18,7 +18,7 @@ export function EarlyExit() {
 }
 
 /** The sample screen, shown while no server is configured. */
-function EarlyExitSample() {
+export function EarlyExitSample() {
   // Opening from a free-lesson notice preselects that lesson's change time.
   const preset = (useLocation().state as { hour?: number } | null)?.hour;
   const [hour, setHour] = useState(preset ?? 2);

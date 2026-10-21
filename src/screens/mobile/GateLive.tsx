@@ -51,7 +51,7 @@ export function GateLive() {
     const start = new Date(today + 'T00:00:00').toISOString();
     const [p, s] = await Promise.all([
       db.from('porton').select('tipo, cuando, estudiantes(nombre, secciones(nombre))').gte('cuando', start).order('cuando', { ascending: false }).limit(20),
-      db.from('salidas').select('id, estudiante_id, hora, modo, retira_nombre, salio, estudiantes(nombre, secciones(nombre))').eq('fecha', today).order('hora'),
+      db.from('salidas').select('id, estudiante_id, hora, modo, retira_nombre, salio, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
     ]);
     setLog(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,7 +107,7 @@ export function GateLive() {
     let card: StudentCard | undefined;
     let exitId: string | undefined;
     if (c && st) {
-      const { data: ex } = await db.from('salidas').select('id, hora, modo, retira_nombre, retira_cedula, comprobante').eq('estudiante_id', st.id).eq('fecha', today).maybeSingle();
+      const { data: ex } = await db.from('salidas').select('id, hora, modo, retira_nombre, retira_cedula, comprobante').eq('estudiante_id', st.id).eq('fecha', today).eq('estado', 'aprobada').maybeSingle();
       exitId = ex?.id;
       card = {
         code: c.codigo,
