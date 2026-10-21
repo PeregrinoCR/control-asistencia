@@ -31,7 +31,6 @@ export function ExitsLive() {
   const [rows, setRows] = useState<Exit[] | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
   const today = localDate();
 
   const load = async () => {
@@ -114,18 +113,13 @@ export function ExitsLive() {
       </section>
 
       <section aria-labelledby="prev-t" className="card stack gap-8" style={{ marginTop: 8 }}>
-        <div className="row between wrap gap-8">
-          <h2 id="prev-t" style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
-            Formulario de la familia (vista previa)
-          </h2>
-          <Button onClick={() => setShowPreview(!showPreview)}>{showPreview ? 'Ocultar' : 'Ver formulario'}</Button>
+        <h2 id="prev-t" style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
+          Formulario de la familia
+        </h2>
+        <span className="text-xs muted">Así lo llena la familia en su app (vista previa, no se puede enviar desde aquí).</span>
+        <div inert aria-label="Vista previa del formulario de la familia" style={{ maxWidth: 420, pointerEvents: 'none' }}>
+          <EarlyExitSample />
         </div>
-        <span className="text-xs muted">Así lo llena la familia en su app. Solo para revisar; no se puede enviar desde aquí.</span>
-        {showPreview && (
-          <div inert aria-label="Vista previa del formulario de la familia" style={{ maxWidth: 420, pointerEvents: 'none' }}>
-            <EarlyExitSample />
-          </div>
-        )}
       </section>
     </AdminLayout>
   );
