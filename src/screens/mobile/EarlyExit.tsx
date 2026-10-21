@@ -24,7 +24,8 @@ function EarlyExitSample() {
   const [hour, setHour] = useState(preset ?? 2);
   const [way, setWay] = useState<ExitWay>('pickup');
   const [accepted, setAccepted] = useState(false);
-  const [signed, setSigned] = useState(false);
+  const [firma, setFirma] = useState<string | null>(null);
+  const signed = !!firma;
   const [error, setError] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -138,14 +139,13 @@ function EarlyExitSample() {
               <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>
               <SignaturePad
                 height={100}
-                signed={signed}
+                value={firma}
                 signer={GUARDIAN.full}
                 signedAt="19/10/2026 7:05 p. m."
-                onSign={() => {
-                  setSigned(true);
+                onChange={(v) => {
+                  setFirma(v);
                   setError(false);
                 }}
-                onClear={() => setSigned(false)}
               />
             </div>
           </div>

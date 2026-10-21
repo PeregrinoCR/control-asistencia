@@ -197,7 +197,7 @@ export function ReportsLive() {
             r.estado === 'ok' ? 'Autorizó' : 'No autorizó',
             r.salud ?? '',
             r.telefono ?? '',
-            r.firma ?? '',
+            r.firma ? 'Sí' : '',
             { none: 'Pendiente', review: 'En revisión', paid: 'Pagado' }[r.pago as string] ?? '',
           ]),
         };

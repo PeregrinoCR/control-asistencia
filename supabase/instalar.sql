@@ -991,6 +991,10 @@ begin
 end
 $$;
 
+-- Firma dibujada en las salidas anticipadas: la imagen de la firma (PNG en data URL).
+-- Las giras ya tienen la columna gira_autorizaciones.firma. Se puede correr más de una vez.
+alter table salidas add column if not exists firma text;
+
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 
 insert into roles (id, nombre, permisos, limitado_a_seccion) values

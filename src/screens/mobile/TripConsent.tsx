@@ -25,7 +25,8 @@ export function TripConsent() {
 /** The sample screen, shown while no server is configured. */
 function TripConsentSample() {
   const [checks, setChecks] = useState(TRIP_DECLARATIONS.map(() => false));
-  const [signed, setSigned] = useState(false);
+  const [firma, setFirma] = useState<string | null>(null);
+  const signed = !!firma;
   const [error, setError] = useState(false);
   const [mode, setMode] = useState<Mode>('form');
   const [receipt, setReceipt] = useState<string | null>(null);
@@ -130,14 +131,13 @@ function TripConsentSample() {
             <div className="stack gap-8">
               <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>
               <SignaturePad
-                signed={signed}
+                value={firma}
                 signer={GUARDIAN.full}
                 signedAt="19/10/2026 7:32 p. m."
-                onSign={() => {
-                  setSigned(true);
+                onChange={(v) => {
+                  setFirma(v);
                   setError(false);
                 }}
-                onClear={() => setSigned(false)}
               />
               <InputField
                 id="g-cedula"

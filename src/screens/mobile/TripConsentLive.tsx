@@ -129,7 +129,8 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
   const [health, setHealth] = useState('');
   const [phone, setPhone] = useState(me.phone);
   const [idNumber, setIdNumber] = useState(me.idNumber);
-  const [signed, setSigned] = useState(false);
+  const [firma, setFirma] = useState<string | null>(null);
+  const signed = !!firma;
   const [receipt, setReceipt] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [error, setError] = useState('');
@@ -153,7 +154,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
           estado,
           salud: health.trim() || null,
           telefono: phone.trim() || null,
-          firma: estado === 'ok' ? `Firmado por ${me.name}, cédula ${idNumber.trim()}, ${signedAt}` : null,
+          firma: estado === 'ok' ? firma : null,
           firmado_por: session!.user.id,
           firmado: new Date().toISOString(),
           pago,
@@ -278,14 +279,13 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
             <div className="stack gap-8">
               <span style={{ fontSize: 16, fontWeight: 700 }}>Firma</span>
               <SignaturePad
-                signed={signed}
+                value={firma}
                 signer={me.name}
                 signedAt={signedAt}
-                onSign={() => {
-                  setSigned(true);
+                onChange={(v) => {
+                  setFirma(v);
                   setError('');
                 }}
-                onClear={() => setSigned(false)}
               />
               <InputField id="g-cedula" touch inputMode="numeric" label={label('Número de cédula de quien firma')} value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
             </div>

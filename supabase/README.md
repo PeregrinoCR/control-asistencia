@@ -22,6 +22,7 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
   con sustitutos y logo del colegio.
 - `0005_cuido_examenes.sql`: cuido de exámenes (horario de trabajo, adecuación, cuidos).
 - `0006_desarrollo.sql`: botón de desarrollo para borrar los datos del colegio (Configuración › Desarrollo).
+- `0007_firmas.sql`: firma dibujada en las salidas anticipadas.
   Se quita antes de la versión final.
 
 ## Notificaciones y SMS (una sola vez)

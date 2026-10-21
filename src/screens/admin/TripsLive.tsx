@@ -31,6 +31,8 @@ interface RosterRow {
   state: ConsentState;
   health: string;
   signed: string;
+  /** The drawn signature (PNG data URL), when there is one. */
+  firma: string | null;
   payment: PaymentState;
   receipt: string | null;
 }
@@ -234,6 +236,7 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
           state: a ? (a.estado as ConsentState) : 'wait',
           health: a?.salud ?? '',
           signed: a ? new Date(a.firmado).toLocaleString('es-CR', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '',
+          firma: a?.firma?.startsWith('data:image') ? a.firma : null,
           payment: a ? (a.pago as PaymentState) : 'none',
           receipt: a?.comprobante ?? null,
         };
@@ -348,7 +351,10 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
                       <StatusBadge status={CONSENT_STATUS[r.state]} size="md" />
                     </td>
                     <td style={{ color: 'var(--ink-2)' }}>{r.health || '—'}</td>
-                    <td className="text-sm muted">{r.signed || '—'}</td>
+                    <td className="text-sm muted">
+                      {r.firma && <img src={r.firma} alt="Firma dibujada" style={{ height: 28, verticalAlign: 'middle', marginRight: 8 }} />}
+                      {r.signed || '—'}
+                    </td>
                     {trip.costo && (
                       <td>
                         <span className="row wrap gap-8">

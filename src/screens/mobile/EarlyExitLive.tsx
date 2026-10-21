@@ -36,7 +36,8 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
   const [pickupName, setPickupName] = useState(me.name);
   const [pickupId, setPickupId] = useState(me.idNumber);
   const [accepted, setAccepted] = useState(false);
-  const [signed, setSigned] = useState(false);
+  const [firma, setFirma] = useState<string | null>(null);
+  const signed = !!firma;
   const [error, setError] = useState('');
   const [saved, setSaved] = useState<Saved | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -70,6 +71,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
           modo: way,
           motivo: reason.trim() || null,
           retira_nombre: way === 'pickup' ? pickupName.trim() : null,
+          firma,
           retira_cedula: way === 'pickup' ? pickupId.trim() : null,
           autorizado_por: session!.user.id,
         },
@@ -86,7 +88,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
     const { error } = await supabase!.from('salidas').delete().eq('id', saved!.id);
     if (error) return setError('No se pudo cancelar: ' + error.message);
     setSaved(null);
-    setSigned(false);
+    setFirma(null);
     setAccepted(false);
   };
 
@@ -214,14 +216,13 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
               <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>
               <SignaturePad
                 height={100}
-                signed={signed}
+                value={firma}
                 signer={me.name}
                 signedAt={signedAt}
-                onSign={() => {
-                  setSigned(true);
+                onChange={(v) => {
+                  setFirma(v);
                   setError('');
                 }}
-                onClear={() => setSigned(false)}
               />
             </div>
           </div>
