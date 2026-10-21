@@ -13,6 +13,8 @@ export interface Kid {
   section: string;
   sectionId: string | null;
   adult: boolean;
+  /** Has an accommodation (adecuación): exams can last more lessons for this student. */
+  accommodation: boolean;
 }
 
 export interface Me {
@@ -47,15 +49,16 @@ export function useFamily() {
     const db = supabase!;
     const uid = session.user.id;
     (async () => {
-      const toKid = (s: { id: string; nombre: string; nacimiento: string | null; seccion_id: string | null; secciones: { nombre: string } | null }): Kid => ({
+      const toKid = (s: { id: string; nombre: string; nacimiento: string | null; seccion_id: string | null; adecuacion: boolean; secciones: { nombre: string } | null }): Kid => ({
         id: s.id,
         name: s.nombre,
         short: s.nombre.split(' ')[0],
         section: s.secciones?.nombre ?? '—',
         sectionId: s.seccion_id,
         adult: (ageOn(s.nacimiento) ?? 0) >= 18,
+        accommodation: s.adecuacion,
       });
-      const fields = 'id, nombre, nacimiento, seccion_id, secciones(nombre)';
+      const fields = 'id, nombre, nacimiento, seccion_id, adecuacion, secciones(nombre)';
       const { data: g, error: ge } = await db
         .from('encargados')
         .select(`nombre, cedula, telefono, estudiante_encargado(estudiantes(${fields}))`)

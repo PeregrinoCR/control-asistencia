@@ -9,12 +9,20 @@ import { localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 import type { Exam } from '../admin/SettingsLive';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
+import { LESSONS } from '../../lib/schedule';
 
 /** "8:00 p. m." → minutes since midnight. */
 function toMinutes(t: string) {
   const m = t.match(/(\d+):(\d+)\s*([ap])/);
   if (!m) return 0;
   return ((Number(m[1]) % 12) + (m[3] === 'p' ? 12 : 0)) * 60 + Number(m[2]);
+}
+
+/** When this student's exam ends: students with an accommodation may have more lessons. */
+function examEnd(x: Exam, accommodation: boolean) {
+  const lessons = accommodation ? (x.leccionesAdecuacion ?? x.lecciones ?? 1) : (x.lecciones ?? 1);
+  const last = (x.desde ?? 4) + lessons - 1;
+  return LESSONS[last - 1]?.end ?? '';
 }
 
 /** Familia · Horario semanal, from the school's real timetable. */
@@ -131,7 +139,9 @@ function Schedule({ f }: { f: FamilyCtx }) {
                 </span>
                 <span className="stack" style={{ textAlign: 'right' }}>
                   <span className="text-sm strong">{new Date(x.fecha + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                  <span className="text-xs muted tabular">{x.hora}</span>
+                  <span className="text-xs muted tabular">
+                    {x.hora} – {examEnd(x, kid.accommodation)}
+                  </span>
                 </span>
               </div>
             ))
