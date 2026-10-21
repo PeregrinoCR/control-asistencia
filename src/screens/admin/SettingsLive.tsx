@@ -75,6 +75,7 @@ interface Form {
   reglasPruebas: Record<string, boolean>;
   /** Rooms of the school (managed in Académico › Aulas y grupos); the exam calendar suggests from them. */
   aulas: string[];
+  aulasAdecuacion: Record<string, string>;
   aulasGrupo: Record<string, string>;
   eventosAula: EventoAula[];
 }
@@ -117,6 +118,7 @@ export function SettingsLive() {
         pruebas: cfg.pruebas ?? [],
         reglasPruebas: { ...ruleState(EXAM_RULES), ...(cfg.reglasPruebas ?? {}) },
         aulas: cfg.aulas ?? [],
+        aulasAdecuacion: cfg.aulasAdecuacion ?? {},
         aulasGrupo: cfg.aulasGrupo ?? {},
         eventosAula: cfg.eventosAula ?? [],
       });
@@ -916,6 +918,34 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
               Traslado activo ese día: {trasladadas.map((x) => `${x.s} → ${x.ev!.aulas[x.s]} (${x.ev!.nombre})`).join(', ')}.
             </span>
           )}
+          {levelsOf(sections).length > 0 && (
+            <div className="stack gap-6">
+              <span className="text-sm" style={{ fontWeight: 600 }}>
+                Aula de adecuación por nivel
+              </span>
+              <span className="text-xs muted">Estudiantes con adecuación rinden la prueba aquí. Se administra también en Académico › Aulas y grupos.</span>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+                {levelsOf(sections).map((lv) => (
+                  <div key={lv} className="field">
+                    <label htmlFor={`exa-adec-${lv}`} className="field__label">
+                      {lv}.°
+                    </label>
+                    <select
+                      id={`exa-adec-${lv}`}
+                      className="input"
+                      value={f.aulasAdecuacion[lv] ?? ''}
+                      onChange={(e) => update({ aulasAdecuacion: { ...f.aulasAdecuacion, [lv]: e.target.value } })}
+                    >
+                      <option value="">Automática</option>
+                      {f.aulas.map((a) => (
+                        <option key={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <datalist id="x-aulas">
             {f.aulas.map((a) => (
               <option key={a} value={a} />
@@ -944,6 +974,11 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
       </aside>
     </div>
   );
+}
+
+/** Grade levels of the sections, e.g. ['7', '10'] for 7-1 and 10-2. */
+function levelsOf(sections: string[]) {
+  return [...new Set(sections.map(levelOf))].sort((a, b) => Number(a) - Number(b));
 }
 
 /** Temporary, for the development phase: empty the school's data, or load sample data into an empty school. */
