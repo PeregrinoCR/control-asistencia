@@ -343,16 +343,22 @@ export function ExamCareLive() {
                       <strong style={{ fontSize: 15 }}>{first.room}</strong>
                       {first.kind === 'adecuacion' && <Badge tone="blue">Adecuación</Badge>}
                       {first.published && !dirty && <Badge tone="green">Publicado</Badge>}
+                      {idx.length > 1 && <Badge tone="amber">Relevo a las {LESSONS[rows[idx[1]].from - 1]?.start}</Badge>}
                     </span>
                     <span className="text-sm muted">{first.detail}</span>
                     {choque && <span className="text-xs strong ink-orange">Choque: esta aula también aparece como aula normal a esa hora.</span>}
                     {idx.map((i, k) => {
                       const r = rows[i];
                       return (
-                        <div key={i} className="row wrap between gap-10" style={{ paddingTop: k ? 8 : 0, borderTop: k ? '1px solid var(--border-soft)' : undefined }}>
+                        <div
+                          key={i}
+                          className="row wrap between gap-10"
+                          style={{ padding: '8px 0 8px 12px', borderLeft: `3px solid ${k ? 'var(--orange)' : 'var(--blue-ink)'}` }}
+                        >
                           <span className="stack" style={{ minWidth: 200 }}>
                             <span className="text-sm">
-                              {k > 0 && <strong>Relevo · </strong>}
+                              <strong style={{ color: k ? 'var(--orange)' : 'var(--blue-ink)' }}>{k ? 'Relevo' : idx.length > 1 ? 'Cuidador inicial' : 'Cuidador'}</strong>
+                              {' · '}
                               {r.from}.ª a {r.to}.ª · {hours(r.from, r.to)}
                             </span>
                           </span>
