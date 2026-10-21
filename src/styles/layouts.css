@@ -206,11 +206,117 @@ button.admin__link {
   flex-direction: column;
   gap: 20px;
 }
-/* When the panel is narrow the sidebar becomes a full-width top bar. */
-@media (max-width: 780px) {
+.admin__school {
+  color: var(--night-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Phone-only pieces, hidden on wide screens. */
+.admin__topbar,
+.admin__tabs,
+.admin__scrim {
+  display: none;
+}
+
+/* Phones and small tablets: slim top bar, the menu as a drawer, quick links at the bottom. */
+@media (max-width: 900px) {
+  .admin {
+    display: block;
+    padding-top: 56px;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  .admin__topbar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 30;
+    height: 56px;
+    padding: 0 8px 0 12px;
+    background: var(--night);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .admin__topbar .admin__brand {
+    padding: 0;
+    min-width: 0;
+  }
+  .admin__menu-btn {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--night-2);
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
   .admin__nav {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 85vw);
     max-width: none;
-    flex-basis: 100%;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.3);
+  }
+  .admin[data-menu='open'] .admin__nav {
+    transform: none;
+  }
+  .admin__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    border: 0;
+    background: rgba(10, 14, 22, 0.45);
+  }
+  .admin__main {
+    padding: 20px 16px 24px;
+  }
+  .admin__tabs {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .admin__tab {
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .admin__tab[aria-current='page'] {
+    color: var(--blue);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin__nav {
+    transition: none;
   }
 }
 

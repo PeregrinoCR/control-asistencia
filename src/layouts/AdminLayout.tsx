@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { NavLink, Navigate } from 'react-router-dom';
-import { Icon, cx } from '../components';
+import { useEffect, useState, type ReactNode } from 'react';
+import { NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Icon, cx, type IconName } from '../components';
 import { SCHOOL_NAME, navCounts } from '../data/school';
 import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -19,32 +19,64 @@ const LINKS: Array<{ to: string; label: string; count?: { n: number; tone: 'blue
   { to: routes.admin.users, label: 'Usuarios y permisos' },
 ];
 
-/** Shell for every page of the administration panel: dark sidebar + main column. */
+/** Most used pages, one tap away in the phone's bottom bar. */
+const QUICK: Array<{ to: string; label: string; icon: IconName }> = [
+  { to: routes.admin.today, label: 'Hoy', icon: 'home' },
+  { to: routes.admin.students, label: 'Estudiantes', icon: 'users' },
+  { to: routes.admin.justifications, label: 'Justificaciones', icon: 'fileCheck' },
+];
+
+/**
+ * Shell for every page of the administration panel. Wide screens: dark sidebar + main column.
+ * Phones: a slim top bar, the menu as a drawer, and a bottom bar with the most used pages.
+ */
 export function AdminLayout({ children }: { children: ReactNode }) {
   const { ready, session, school, roles, family } = useAuth();
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  // Close the drawer on navigation and with Escape.
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
   // With a server configured, the panel needs a signed-in account.
   if (supabase && ready && !session) return <Navigate to={routes.login} replace />;
   if (supabase && !ready) return null;
   if (supabase && school && !hasPanel(roles)) return <Navigate to={homeFor(roles, family)} replace />;
 
-  return (
-    <div className="admin">
-      <nav aria-label="Menú de dirección" className="admin__nav">
-        <div className="admin__brand">
-          {school?.logo ? (
-            <img src={school.logo} alt="" className="admin__logo" style={{ objectFit: 'contain', background: '#fff' }} />
-          ) : (
-            <div className="admin__logo">
-              <Icon name="checkSquare" strokeWidth={2.2} />
-            </div>
-          )}
-          <div className="stack">
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Asistencia</span>
-            <span className="text-xs" style={{ color: 'var(--night-ink-3)' }}>
-              {school?.nombre ?? SCHOOL_NAME}
-            </span>
-          </div>
+  const brand = (
+    <div className="admin__brand">
+      {school?.logo ? (
+        <img src={school.logo} alt="" className="admin__logo" style={{ objectFit: 'contain', background: '#fff' }} />
+      ) : (
+        <div className="admin__logo">
+          <Icon name="checkSquare" strokeWidth={2.2} />
         </div>
+      )}
+      <div className="stack" style={{ minWidth: 0 }}>
+        <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Asistencia</span>
+        <span className="text-xs admin__school">{school?.nombre ?? SCHOOL_NAME}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="admin" data-menu={open ? 'open' : undefined}>
+      <header className="admin__topbar">
+        {brand}
+        <button type="button" className="admin__menu-btn" aria-expanded={open} aria-controls="menu-direccion" onClick={() => setOpen(!open)}>
+          <Icon name={open ? 'x' : 'menu'} size={22} />
+          <span>Menú</span>
+        </button>
+      </header>
+      {open && <button type="button" className="admin__scrim" aria-label="Cerrar menú" onClick={() => setOpen(false)} />}
+      <nav id="menu-direccion" aria-label="Menú de dirección" className="admin__nav">
+        {brand}
         {LINKS.map((l) => (
           <NavLink key={l.to} to={l.to} end className="admin__link">
             {l.label}
@@ -69,6 +101,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         )}
         {children}
       </main>
+      <nav aria-label="Accesos rápidos" className="admin__tabs">
+        {QUICK.map((q) => (
+          <NavLink key={q.to} to={q.to} end className="admin__tab">
+            <Icon name={q.icon} size={22} />
+            {q.label}
+          </NavLink>
+        ))}
+        <button type="button" className="admin__tab" aria-expanded={open} aria-controls="menu-direccion" onClick={() => setOpen(!open)}>
+          <Icon name="menu" size={22} />
+          Más
+        </button>
+      </nav>
     </div>
   );
 }

@@ -16,6 +16,13 @@ const ICONS = {
     </>
   ),
   check: <path d="M20 6L9 17l-5-5" />,
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M18 14.5a6.5 6.5 0 013.5 5.5" />
+    </>
+  ),
   x: <path d="M18 6L6 18M6 6l12 12" />,
   checkSquare: (
     <>
