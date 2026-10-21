@@ -176,7 +176,66 @@ export function useStudents() {
     return { added, problems };
   };
 
-  return { live: !!supabase, students, sections: sections.map((s) => s.nombre), error, add };
+  /** Saves a student's own data. Returns an error message, or '' when saved. */
+  const updateStudent = async (id: string, row: Omit<NewStudent, 'guardian'>) => {
+    const section = sections.find((x) => x.nombre === row.section);
+    const { error } = await supabase!
+      .from('estudiantes')
+      .update({
+        nombre: row.name.trim(),
+        cedula: row.idNumber.trim() || null,
+        nacimiento: row.birth || null,
+        seccion_id: section?.id ?? null,
+        telefono: row.phone.trim() || null,
+      })
+      .eq('id', id);
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
+  /** Withdraws a student: they leave the lists but their history stays. */
+  const deactivate = async (id: string) => {
+    const { error } = await supabase!.from('estudiantes').update({ activo: false }).eq('id', id);
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
+  /**
+   * Saves a guardian of a student. With `guardianId` it edits that guardian; without it, it adds one,
+   * reusing a guardian already registered with the same cédula or phone (a sibling's, for example).
+   */
+  const saveGuardian = async (studentId: string, guardianId: string | null, g: NonNullable<NewStudent['guardian']>) => {
+    const db = supabase!;
+    const row = { nombre: g.name.trim(), cedula: g.idNumber.trim() || null, telefono: g.phone.trim() || null, correo: g.email.trim().toLowerCase() || null };
+    let id = guardianId;
+    if (id) {
+      const { error } = await db.from('encargados').update(row).eq('id', id);
+      if (error) return error.message;
+    } else {
+      const { data: known } = await db.from('encargados').select('id, cedula, telefono');
+      id =
+        (known ?? []).find((x) => (row.cedula && x.cedula === row.cedula) || (row.telefono && x.telefono && digits(x.telefono) === digits(row.telefono)))?.id ?? null;
+      if (!id) {
+        const { data, error } = await db.from('encargados').insert({ ...row, colegio_id: school!.id }).select('id').single();
+        if (error) return error.message;
+        id = data.id;
+      }
+    }
+    const { error } = await db
+      .from('estudiante_encargado')
+      .upsert({ estudiante_id: studentId, encargado_id: id, parentesco: g.relation.trim() || null }, { onConflict: 'estudiante_id,encargado_id' });
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
+  /** Removes a guardian from one student only; they stay linked to their other children. */
+  const unlinkGuardian = async (studentId: string, guardianId: string) => {
+    const { error } = await supabase!.from('estudiante_encargado').delete().eq('estudiante_id', studentId).eq('encargado_id', guardianId);
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
+  return { live: !!supabase, students, sections: sections.map((s) => s.nombre), error, add, updateStudent, deactivate, saveGuardian, unlinkGuardian };
 }
 
 /** Columns of the enrollment file, in order. */

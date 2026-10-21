@@ -203,7 +203,7 @@ export function StudentsLive() {
 
             {panel?.kind === 'add' && <AddPanel data={data} onClose={() => setPanel(null)} />}
             {panel?.kind === 'import' && <ImportPanel data={data} onClose={() => setPanel(null)} />}
-            {selected && <StudentPanel s={selected} />}
+            {selected && <StudentPanel key={selected.id} s={selected} data={data} onClose={() => setPanel(null)} />}
           </div>
         </>
       )}
@@ -211,13 +211,26 @@ export function StudentsLive() {
   );
 }
 
-function StudentPanel({ s }: { s: LiveStudent }) {
+type Editing = null | 'student' | 'withdraw' | { guardian: string | 'new' };
+
+function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; onClose: () => void }) {
   const adult = isAdult(s);
+  const [editing, setEditing] = useState<Editing>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const done = (error: string, ok: string) => {
+    setMsg(error ? { ok: false, text: 'No se guardó: ' + error } : { ok: true, text: ok });
+    if (!error) setEditing(null);
+  };
+
+  const guardianId = editing && typeof editing === 'object' ? editing.guardian : null;
+  const guardian = s.guardians.find((g) => g.id === guardianId);
+
   return (
     <aside aria-labelledby="ficha-t" className="card split__side gap-16" style={{ padding: 20 }}>
       <div className="row gap-14">
         <Avatar name={s.name} size="lg" tone="blue" />
-        <div className="stack">
+        <div className="stack grow">
           <h2 id="ficha-t" className="display" style={{ fontSize: 22 }}>
             {s.name}
           </h2>
@@ -228,40 +241,183 @@ function StudentPanel({ s }: { s: LiveStudent }) {
           {s.idNumber && <span className="text-sm muted">Cédula {s.idNumber}</span>}
         </div>
       </div>
-      <div className="grid-2">
-        <MiniStat look="inset" label="Ausencias este mes" value={s.absences} ink="orange" />
-        <MiniStat look="inset" label="Tardías este mes" value={s.lates} ink="amber" />
-      </div>
-      {adult && (
-        <div className="stack gap-4">
-          <h3 className="eyebrow" style={{ fontSize: 14 }}>
-            Contacto (el propio estudiante)
-          </h3>
-          <span style={{ fontSize: 14 }}>{s.phone || 'Sin teléfono'}</span>
-          <span className={s.hasAccount ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>
-            {s.hasAccount ? 'Usa la app' : 'Aún no crea su cuenta'}
-          </span>
-        </div>
+
+      {msg && (
+        <span role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-sm strong ink-green' : 'text-sm ink-orange'}>
+          {msg.text}
+        </span>
       )}
-      <div className="stack gap-8">
-        <h3 className="eyebrow" style={{ fontSize: 14 }}>
-          {s.guardians.length > 1 ? 'Encargados' : 'Encargado legal'}
-        </h3>
-        {s.guardians.length === 0 && <span className="text-sm ink-orange">Sin encargado registrado.</span>}
-        {s.guardians.map((g) => (
-          <div key={g.id} className="stack gap-4" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
-            <span style={{ fontSize: 15, fontWeight: 700 }}>
-              {g.name}
-              {g.relation && <span className="muted" style={{ fontWeight: 400 }}> · {g.relation}</span>}
-            </span>
-            <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>{[g.phone, g.email].filter(Boolean).join(' · ') || 'Sin contacto'}</span>
-            <span className={g.hasAccount ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>
-              {g.hasAccount ? 'Usa la app' : 'Aún no crea su cuenta'}
-            </span>
+
+      {editing === 'student' ? (
+        <StudentForm
+          s={s}
+          sections={data.sections}
+          onCancel={() => setEditing(null)}
+          onSave={async (row) => done(await data.updateStudent(s.id, row), 'Datos del estudiante guardados.')}
+        />
+      ) : guardianId ? (
+        <GuardianForm
+          g={guardian}
+          onCancel={() => setEditing(null)}
+          onSave={async (g) => done(await data.saveGuardian(s.id, guardian?.id ?? null, g), guardian ? 'Encargado actualizado.' : 'Encargado agregado.')}
+        />
+      ) : editing === 'withdraw' ? (
+        <div className="stack gap-10">
+          <p style={{ fontSize: 14, lineHeight: 1.45 }}>
+            {s.name} dejará de aparecer en las listas y en el pase de lista. Su historial de asistencia se conserva.
+          </p>
+          <div className="grid-2">
+            <Button onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                const error = await data.deactivate(s.id);
+                if (error) return done(error, '');
+                onClose();
+              }}
+            >
+              Sí, dar de baja
+            </Button>
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid-2">
+            <MiniStat look="inset" label="Ausencias este mes" value={s.absences} ink="orange" />
+            <MiniStat look="inset" label="Tardías este mes" value={s.lates} ink="amber" />
+          </div>
+          {adult && (
+            <div className="stack gap-4">
+              <h3 className="eyebrow" style={{ fontSize: 14 }}>
+                Contacto (el propio estudiante)
+              </h3>
+              <span style={{ fontSize: 14 }}>{s.phone || 'Sin teléfono'}</span>
+              <span className={s.hasAccount ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>
+                {s.hasAccount ? 'Usa la app' : 'Aún no crea su cuenta'}
+              </span>
+            </div>
+          )}
+          <div className="stack gap-8">
+            <h3 className="eyebrow" style={{ fontSize: 14 }}>
+              {s.guardians.length > 1 ? 'Encargados' : 'Encargado legal'}
+            </h3>
+            {s.guardians.length === 0 && <span className="text-sm ink-orange">Sin encargado registrado.</span>}
+            {s.guardians.map((g) => (
+              <div key={g.id} className="stack gap-4" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>
+                  {g.name}
+                  {g.relation && <span className="muted" style={{ fontWeight: 400 }}> · {g.relation}</span>}
+                </span>
+                <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>{[g.idNumber && `Céd. ${g.idNumber}`, g.phone, g.email].filter(Boolean).join(' · ') || 'Sin contacto'}</span>
+                <span className={g.hasAccount ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>{g.hasAccount ? 'Usa la app' : 'Aún no crea su cuenta'}</span>
+                <span className="row gap-12">
+                  <button type="button" className="link-button text-sm" onClick={() => (setMsg(null), setEditing({ guardian: g.id }))}>
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="link-button text-sm"
+                    style={{ color: 'var(--orange-ink)' }}
+                    onClick={async () => done(await data.unlinkGuardian(s.id, g.id), `${g.name} ya no es encargado de ${s.name}.`)}
+                  >
+                    Quitar
+                  </button>
+                </span>
+              </div>
+            ))}
+            <Button size="md" variant="dashed" onClick={() => (setMsg(null), setEditing({ guardian: 'new' }))}>
+              + Agregar encargado
+            </Button>
+          </div>
+          <div className="grid-2">
+            <Button onClick={() => (setMsg(null), setEditing('student'))}>Editar datos</Button>
+            <Button variant="danger-outline" onClick={() => (setMsg(null), setEditing('withdraw'))}>
+              Dar de baja
+            </Button>
+          </div>
+        </>
+      )}
     </aside>
+  );
+}
+
+function StudentForm({ s, sections, onSave, onCancel }: { s: LiveStudent; sections: string[]; onSave: (row: Omit<NewStudent, 'guardian'>) => void; onCancel: () => void }) {
+  const [f, setF] = useState({ name: s.name, idNumber: s.idNumber, birth: s.birth ?? '', section: s.section === '—' ? '' : s.section, phone: s.phone });
+  return (
+    <form
+      className="stack gap-12"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (f.name.trim()) onSave(f);
+      }}
+    >
+      <h3 className="title-section">Editar estudiante</h3>
+      <InputField id="ed-nombre" label="Nombre completo" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+      <div className="grid-2">
+        <InputField id="ed-cedula" label="Cédula" value={f.idNumber} onChange={(e) => setF({ ...f, idNumber: e.target.value })} />
+        <InputField id="ed-nac" label="Nacimiento" type="date" value={f.birth} onChange={(e) => setF({ ...f, birth: e.target.value })} />
+      </div>
+      <div className="grid-2">
+        <div className="field">
+          <label htmlFor="ed-seccion" className="field__label">
+            Sección
+          </label>
+          <select id="ed-seccion" className="input" value={f.section} onChange={(e) => setF({ ...f, section: e.target.value })}>
+            <option value="">Sin sección</option>
+            {sections.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        </div>
+        <InputField id="ed-tel" label="Teléfono" hint="si es mayor" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
+      </div>
+      <div className="grid-2">
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button type="submit" variant="primary">
+          Guardar
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function GuardianForm({ g, onSave, onCancel }: { g?: LiveStudent['guardians'][number]; onSave: (g: NonNullable<NewStudent['guardian']>) => void; onCancel: () => void }) {
+  const [f, setF] = useState({ name: g?.name ?? '', idNumber: g?.idNumber ?? '', relation: g?.relation ?? '', phone: g?.phone ?? '', email: g?.email ?? '' });
+  const [error, setError] = useState('');
+  return (
+    <form
+      className="stack gap-12"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!f.name.trim()) return setError('Escriba el nombre.');
+        if (!f.phone.trim() && !f.email.trim()) return setError('Escriba al menos un teléfono o un correo, para que pueda crear su cuenta y recibir avisos.');
+        onSave(f);
+      }}
+    >
+      <h3 className="title-section">{g ? 'Editar encargado' : 'Agregar encargado'}</h3>
+      {!g && <span className="text-xs muted">Si ya está registrado (por ejemplo, por un hermano), se reutiliza por su cédula o teléfono.</span>}
+      <InputField id="g-nombre" label="Nombre completo" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+      <div className="grid-2">
+        <InputField id="g-cedula" label="Cédula" value={f.idNumber} onChange={(e) => setF({ ...f, idNumber: e.target.value })} />
+        <InputField id="g-par" label="Parentesco" placeholder="madre, padre…" value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })} />
+      </div>
+      <div className="grid-2">
+        <InputField id="g-tel" label="Teléfono" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
+        <InputField id="g-correo" label="Correo" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+      </div>
+      {g?.hasAccount && <span className="text-xs muted">Ya usa la app: si cambia el correo aquí, sigue entrando con el correo de su cuenta.</span>}
+      {error && (
+        <span className="text-sm ink-orange" role="alert">
+          {error}
+        </span>
+      )}
+      <div className="grid-2">
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button type="submit" variant="primary">
+          Guardar
+        </Button>
+      </div>
+    </form>
   );
 }
 
