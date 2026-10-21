@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Avatar, Button, Icon, InputField, MiniStat, Segmented } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import QRCode from 'qrcode';
+import { CARD_PREFIX } from '../../data/gate';
+import { useAuth } from '../../lib/auth';
+import { esc, printDocument } from '../../lib/print';
 import { IMPORT_COLUMNS, parseEnrollment, useStudents, type LiveStudent, type NewStudent } from '../../lib/students';
+import { supabase } from '../../lib/supabase';
 
 type AgeFilter = 'all' | 'min' | 'adu';
 type Panel = { kind: 'student'; id: string } | { kind: 'add' } | { kind: 'import' } | null;
@@ -17,8 +22,45 @@ function contactOf(s: LiveStudent) {
 }
 
 /** Dirección · Estudiantes, with the school's real enrollment. */
+/** Prints the student cards (85 × 54 mm, ten per page) with their opaque QR codes. */
+function printCards(list: LiveStudent[], school: { nombre: string; logo: string | null }) {
+  printDocument('Carnés estudiantiles', cardsHtml(list, school), {
+    school: `${school.nombre} · ${list.length} estudiantes`,
+    logo: school.logo ?? undefined,
+    css: CARD_CSS,
+  });
+}
+
+async function cardsHtml(list: LiveStudent[], school: { nombre: string; logo: string | null }) {
+  const { data } = await supabase!.from('carnes').select('codigo, estudiante_id').eq('revocado', false).in('estudiante_id', list.map((s) => s.id));
+  const code = new Map((data ?? []).map((c) => [c.estudiante_id, c.codigo]));
+  const year = new Date().getFullYear();
+  const cards = await Promise.all(
+    list
+      .filter((s) => code.has(s.id))
+      .map(async (s) => {
+        const qr = await QRCode.toString(CARD_PREFIX + code.get(s.id), { type: 'svg', margin: 0, errorCorrectionLevel: 'M' });
+        return `<div class="card"><div class="top">${school.logo ? `<img src="${esc(school.logo)}" alt="">` : ''}<span>${esc(school.nombre)} · ${year}</span></div>
+<div class="body"><div class="who"><b>${esc(s.name)}</b><span>Sección ${esc(s.section)}</span><span>${s.age !== null && s.age >= 18 ? 'Mayor de edad' : 'Menor de edad'}</span><span class="code">${esc(code.get(s.id))}</span></div><div class="qr">${qr}</div></div></div>`;
+      }),
+  );
+  return `<div class="grid">${cards.join('')}</div>`;
+}
+
+const CARD_CSS = `.grid { display: grid; grid-template-columns: repeat(2, 85mm); gap: 4mm; }
+.card { width: 85mm; height: 54mm; border: 1px solid #999; border-radius: 3mm; padding: 3mm; box-sizing: border-box; display: flex; flex-direction: column; break-inside: avoid; }
+.top { display: flex; align-items: center; gap: 2mm; font-size: 8pt; font-weight: 700; text-transform: uppercase; color: #1e4fd8; }
+.top img { height: 7mm; }
+.body { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 3mm; }
+.who { display: flex; flex-direction: column; gap: 1mm; font-size: 8pt; }
+.who b { font-size: 11pt; }
+.code { font-family: monospace; letter-spacing: 1px; color: #555; }
+.qr svg { width: 32mm; height: 32mm; }
+@media print { header { display: none; } body { margin: 0; } }`;
+
 export function StudentsLive() {
   const data = useStudents();
+  const { school } = useAuth();
   const [filter, setFilter] = useState<AgeFilter>('all');
   const [section, setSection] = useState('');
   const [query, setQuery] = useState('');
@@ -44,6 +86,9 @@ export function StudentsLive() {
           <>
             <Button regular onClick={() => setPanel({ kind: 'import' })}>
               Importar matrícula
+            </Button>
+            <Button regular disabled={!list.length} onClick={() => printCards(list, { nombre: school?.nombre ?? '', logo: school?.logo ?? null })}>
+              Imprimir carnés{section ? ` de ${section}` : ''}
             </Button>
             <Button variant="primary" onClick={() => setPanel({ kind: 'add' })}>
               Agregar estudiante

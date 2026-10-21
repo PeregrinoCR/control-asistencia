@@ -99,6 +99,8 @@ export interface LessonToday {
   subject: string;
   teacher: string;
   mark: Mark | 'N';
+  /** The teacher is absent today: the lesson is free, or someone covers it. */
+  change?: { kind: 'free' } | { kind: 'sub'; substitute: string } | { kind: 'task' };
 }
 
 export interface DayRecord {
@@ -177,13 +179,26 @@ export function useKidToday(kid: Kid | null) {
   const load = useCallback(async () => {
     if (!kid) return;
     if (!kid.sectionId || !day) return setLessons([]);
-    const [plan, rec] = await Promise.all([sectionDay(kid.sectionId, day), kidRecords(kid.id, date, date)]);
+    const db = supabase!;
+    const [plan, rec, cov, t] = await Promise.all([
+      sectionDay(kid.sectionId, day),
+      kidRecords(kid.id, date, date),
+      db.from('coberturas').select('leccion, tipo, sustituto_id, ausencias_docentes!inner(fecha)').eq('seccion_id', kid.sectionId).eq('ausencias_docentes.fecha', date),
+      db.from('docentes').select('id, nombre'),
+    ]);
     const marks = rec.days.get(date)?.marks ?? [];
+    const names = new Map((t.data ?? []).map((x) => [x.id, x.nombre]));
+    const changeOf = (lesson: number): LessonToday['change'] => {
+      const c = (cov.data ?? []).find((x) => x.leccion === lesson);
+      if (!c) return undefined;
+      return c.tipo === 'sub' ? { kind: 'sub', substitute: names.get(c.sustituto_id) ?? 'otro docente' } : { kind: c.tipo as 'free' | 'task' };
+    };
     setLessons(
       plan.map((p) => ({
         ...p,
         start: LESSONS[p.lesson - 1]?.start ?? '',
         mark: marks.find((m) => m.lesson === p.lesson)?.mark ?? 'N',
+        change: changeOf(p.lesson),
       })),
     );
   }, [kid, day, date]);

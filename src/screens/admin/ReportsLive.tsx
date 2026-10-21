@@ -4,6 +4,8 @@ import { LineChart, type ChartPoint } from '../../components/LineChart';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { pct } from '../../data/school';
 import { fetchAll } from '../../lib/fetchAll';
+import { useAuth } from '../../lib/auth';
+import { printDocument, tableHtml } from '../../lib/print';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
@@ -38,7 +40,14 @@ function monday(d: string) {
   return localDate(x);
 }
 
-function downloadCsv(name: string, header: string[], rows: Array<Array<string | number>>) {
+interface Table {
+  file: string;
+  header: string[];
+  rows: Array<Array<string | number>>;
+}
+
+function downloadCsv({ file, header, rows }: Table) {
+  const name = `${file}.csv`;
   const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
   const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
@@ -50,6 +59,7 @@ function downloadCsv(name: string, header: string[], rows: Array<Array<string | 
 
 /** Dirección · Reportes, from the real roll calls of the school year. */
 export function ReportsLive() {
+  const { school } = useAuth();
   const [mode, setMode] = useState<Mode>('w');
   const [days, setDays] = useState<DayRow[] | null>(null);
   const [sections, setSections] = useState<Array<{ id: string; nombre: string }>>([]);
@@ -114,45 +124,44 @@ export function ReportsLive() {
     {
       title: 'Asistencia del mes por sección',
       help: 'Para el informe a la Dirección Regional',
-      run: () =>
-        downloadCsv(
-          `asistencia-${monthStart.slice(0, 7)}.csv`,
-          ['Sección', 'Asistencia %', 'Lecciones ausentes', 'Lecciones tarde', 'Justificaciones aprobadas'],
-          bySection.map((r) => [r.section, r.pct == null ? '' : r.pct.toFixed(1), r.absences, r.lates, r.justified]),
-        ),
+      data: async (): Promise<Table> => ({
+        file: `asistencia-${monthStart.slice(0, 7)}`,
+        header: ['Sección', 'Asistencia %', 'Lecciones ausentes', 'Lecciones tarde', 'Justificaciones aprobadas'],
+        rows: bySection.map((r) => [r.section, r.pct == null ? '' : r.pct.toFixed(1), r.absences, r.lates, r.justified]),
+      }),
     },
     {
       title: 'Ausentismo por estudiante',
       help: 'Ausencias y tardías del mes',
-      run: async () => {
+      data: async (): Promise<Table> => {
         const db = supabase!;
         const [m, st] = await Promise.all([db.from('asistencia_mes').select('estudiante_id, ausencias, tardias'), db.from('estudiantes').select('id, nombre, cedula, secciones(nombre)')]);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const byId = new Map(((st.data ?? []) as any[]).map((s) => [s.id, s]));
-        downloadCsv(
-          `ausentismo-${monthStart.slice(0, 7)}.csv`,
-          ['Estudiante', 'Cédula', 'Sección', 'Lecciones ausentes', 'Lecciones tarde'],
-          (m.data ?? []).map((r) => {
+        return {
+          file: `ausentismo-${monthStart.slice(0, 7)}`,
+          header: ['Estudiante', 'Cédula', 'Sección', 'Lecciones ausentes', 'Lecciones tarde'],
+          rows: (m.data ?? []).map((r) => {
             const s = byId.get(r.estudiante_id);
             return [s?.nombre ?? '', s?.cedula ?? '', s?.secciones?.nombre ?? '', r.ausencias, r.tardias];
           }),
-        );
+        };
       },
     },
     {
       title: 'Salidas tempranas y descargos',
       help: 'Del mes, con hora real de salida',
-      run: async () => {
+      data: async (): Promise<Table> => {
         const { data } = await supabase!
           .from('salidas')
           .select('fecha, hora, modo, motivo, retira_nombre, retira_cedula, comprobante, salio, estudiantes(nombre, secciones(nombre))')
           .gte('fecha', monthStart)
           .order('fecha');
-        downloadCsv(
-          `salidas-${monthStart.slice(0, 7)}.csv`,
-          ['Fecha', 'Estudiante', 'Sección', 'Hora autorizada', 'Cómo', 'Retira', 'Cédula', 'Motivo', 'Comprobante', 'Salió'],
+        return {
+          file: `salidas-${monthStart.slice(0, 7)}`,
+          header: ['Fecha', 'Estudiante', 'Sección', 'Hora autorizada', 'Cómo', 'Retira', 'Cédula', 'Motivo', 'Comprobante', 'Salió'],
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ((data ?? []) as any[]).map((r) => [
+          rows: ((data ?? []) as any[]).map((r) => [
             r.fecha,
             r.estudiantes?.nombre ?? '',
             r.estudiantes?.secciones?.nombre ?? '',
@@ -164,22 +173,22 @@ export function ReportsLive() {
             r.comprobante,
             r.salio ? new Date(r.salio).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit' }) : '',
           ]),
-        );
+        };
       },
     },
     {
       title: 'Giras y autorizaciones',
       help: 'Firmas, fecha y estado de pago',
-      run: async () => {
+      data: async (): Promise<Table> => {
         const { data } = await supabase!
           .from('gira_autorizaciones')
           .select('estado, salud, telefono, firma, firmado, pago, giras(titulo, fecha), estudiantes(nombre, secciones(nombre))')
           .order('firmado');
-        downloadCsv(
-          'giras-autorizaciones.csv',
-          ['Gira', 'Fecha', 'Estudiante', 'Sección', 'Respuesta', 'Salud', 'Teléfono', 'Firma', 'Pago'],
+        return {
+          file: 'giras-autorizaciones',
+          header: ['Gira', 'Fecha', 'Estudiante', 'Sección', 'Respuesta', 'Salud', 'Teléfono', 'Firma', 'Pago'],
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ((data ?? []) as any[]).map((r) => [
+          rows: ((data ?? []) as any[]).map((r) => [
             r.giras?.titulo ?? '',
             r.giras?.fecha ?? '',
             r.estudiantes?.nombre ?? '',
@@ -190,7 +199,7 @@ export function ReportsLive() {
             r.firma ?? '',
             { none: 'Pendiente', review: 'En revisión', paid: 'Pagado' }[r.pago as string] ?? '',
           ]),
-        );
+        };
       },
     },
   ];
@@ -287,7 +296,7 @@ export function ReportsLive() {
                 Descargar reportes
               </h2>
               <span className="text-xs muted" style={{ marginBottom: 6 }}>
-                Se descargan como archivo para abrir en Excel.
+                Excel descarga el archivo; PDF abre la versión para imprimir o "Guardar como PDF".
               </span>
               {downloads.map((d) => (
                 <div key={d.title} className="list-row gap-10">
@@ -295,8 +304,22 @@ export function ReportsLive() {
                     <span style={{ fontSize: 14, fontWeight: 700 }}>{d.title}</span>
                     <span className="text-xs muted">{d.help}</span>
                   </span>
-                  <Button size="sm" aria-label={`Descargar ${d.title} en Excel`} style={{ padding: '0 10px', borderRadius: 9 }} onClick={d.run}>
+                  <Button size="sm" aria-label={`Descargar ${d.title} en Excel`} style={{ padding: '0 10px', borderRadius: 9 }} onClick={async () => downloadCsv(await d.data())}>
                     Excel
+                  </Button>
+                  <Button
+                    size="sm"
+                    aria-label={`Imprimir o guardar ${d.title} en PDF`}
+                    style={{ padding: '0 10px', borderRadius: 9 }}
+                    onClick={() =>
+                      printDocument(
+                        d.title,
+                        d.data().then((t) => (t.rows.length ? tableHtml(t.header, t.rows) : '<p>Sin datos.</p>')),
+                        { school: school?.nombre, logo: school?.logo ?? undefined },
+                      )
+                    }
+                  >
+                    PDF
                   </Button>
                 </div>
               ))}

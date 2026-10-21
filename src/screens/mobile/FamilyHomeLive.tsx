@@ -8,6 +8,7 @@ import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 import { routes } from '../../routes';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
+import { PushCard } from './PushCard';
 
 /** Familia · Inicio, with the student's real day. */
 export function FamilyHomeLive() {
@@ -89,6 +90,7 @@ function Home({ f }: { f: FamilyCtx }) {
         </div>
 
         <KidPicker f={f} />
+        <PushCard compact />
 
         {flagged ? (
           <section className="alert-card" data-tone={flagged.mark === 'A' ? 'orange' : 'amber'} aria-live="polite">
@@ -176,9 +178,21 @@ function Home({ f }: { f: FamilyCtx }) {
                 </span>
                 <span className="stack grow">
                   <span style={{ fontSize: 15, fontWeight: 600 }}>{l.subject}</span>
-                  {l.teacher && <span className="text-xs muted">{l.teacher}</span>}
+                  {l.change?.kind === 'sub' ? (
+                    <span className="text-xs muted">Sustituye: {l.change.substitute}</span>
+                  ) : l.change?.kind === 'task' ? (
+                    <span className="text-xs muted">Trabajo asignado en el aula</span>
+                  ) : (
+                    l.teacher && <span className="text-xs muted">{l.teacher}</span>
+                  )}
                 </span>
-                <StatusBadge status={MARK_STATUS[l.mark]} size="md" />
+                {l.change?.kind === 'free' ? (
+                  <Badge tone="amber" size="md">
+                    Lección libre
+                  </Badge>
+                ) : (
+                  <StatusBadge status={MARK_STATUS[l.mark]} size="md" />
+                )}
               </div>
             ))
           )}

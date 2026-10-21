@@ -214,6 +214,7 @@ function InstitutionTab({ f, update }: TabProps) {
       </section>
 
       <aside className="split__side stack gap-16">
+        <Logo />
         <section aria-labelledby="curso-t" className="card gap-10">
           <h2 id="curso-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Curso lectivo {new Date().getFullYear()}
@@ -232,6 +233,46 @@ function InstitutionTab({ f, update }: TabProps) {
         </section>
       </aside>
     </div>
+  );
+}
+
+/** School logo: shown in the panel, the student cards and printed reports. */
+function Logo() {
+  const { school } = useAuth();
+  const [url, setUrl] = useState(school?.logo ?? null);
+  const [error, setError] = useState('');
+
+  const upload = async (file?: File) => {
+    if (!file) return;
+    if (file.size > 1_000_000) return setError('La imagen debe pesar menos de 1 MB.');
+    const db = supabase!;
+    const path = `${school!.id}/logo`;
+    const { error } = await db.storage.from('publico').upload(path, file, { upsert: true, contentType: file.type });
+    if (error) return setError(error.message);
+    const link = `${db.storage.from('publico').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+    const { data } = await db.from('colegios').select('config').maybeSingle();
+    const { error: e2 } = await db.from('colegios').update({ config: { ...(data?.config ?? {}), logo: link } }).eq('id', school!.id);
+    if (e2) return setError(e2.message);
+    setError('');
+    setUrl(link);
+  };
+
+  return (
+    <section aria-labelledby="logo-t" className="card gap-10">
+      <h2 id="logo-t" style={{ fontSize: 16, fontWeight: 700 }}>
+        Escudo o logo
+      </h2>
+      <label className="dropzone stack" style={{ height: 120, background: 'var(--bg)', fontSize: 14, cursor: 'pointer' }}>
+        {url ? <img src={url} alt="Logo actual" style={{ maxHeight: 90, maxWidth: '100%' }} /> : 'Subir imagen PNG, JPG o SVG'}
+        <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" onChange={(e) => upload(e.target.files?.[0])} />
+      </label>
+      {error && (
+        <span className="text-sm ink-orange" role="alert">
+          {error}
+        </span>
+      )}
+      <span className="text-sm muted">Aparece en el panel, en los carnés y en los reportes impresos. Se guarda al subirla.</span>
+    </section>
   );
 }
 
@@ -266,7 +307,7 @@ function ModulesTab({ f, update }: TabProps) {
             <SettingRow
               key={m.id}
               label={m.label}
-              help={m.id.startsWith('sms') ? `${m.help}. Se activa con la línea propia del colegio (próxima etapa).` : m.help}
+              help={m.id === 'sms' ? 'Si una familia no tiene la app o no le llegó la notificación, se le envía un SMS desde la línea propia del colegio' : m.help}
               checked={!!f.modulos[m.id] && (m.id !== 'smsUrgent' || !!f.modulos.sms)}
               onChange={(v) => update({ modulos: { ...f.modulos, [m.id]: v } })}
             />
@@ -274,8 +315,10 @@ function ModulesTab({ f, update }: TabProps) {
         </div>
       </section>
 
+      <div className="split__side stack gap-16">
+      {f.modulos.sms && <SmsLine />}
       {f.modulos.pay && (
-        <aside aria-labelledby="sinpe-t" className="card split__side gap-14">
+        <aside aria-labelledby="sinpe-t" className="card gap-14">
           <h2 id="sinpe-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Cuenta para recibir pagos
           </h2>
@@ -287,7 +330,86 @@ function ModulesTab({ f, update }: TabProps) {
           </span>
         </aside>
       )}
+      </div>
     </div>
+  );
+}
+
+/** The school's own SMS line: an Android phone running "SMS Gateway for Android". */
+function SmsLine() {
+  const [ready, setReady] = useState<boolean | null>(null);
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [limit, setLimit] = useState('100');
+  const [phone, setPhone] = useState('');
+  const [stats, setStats] = useState({ hour: 0, waiting: 0, failed: 0 });
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const load = async () => {
+    const db = supabase!;
+    const since = new Date(Date.now() - 3600_000).toISOString();
+    const [r, h, w, x] = await Promise.all([
+      db.rpc('sms_configurado'),
+      db.from('notificaciones').select('id', { count: 'exact', head: true }).eq('sms_estado', 'enviado').gte('sms_enviado', since),
+      db.from('notificaciones').select('id', { count: 'exact', head: true }).eq('sms_estado', 'pendiente'),
+      db.from('notificaciones').select('id', { count: 'exact', head: true }).eq('sms_estado', 'fallo'),
+    ]);
+    setReady(!!r.data);
+    setStats({ hour: h.count ?? 0, waiting: w.count ?? 0, failed: x.count ?? 0 });
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async () => {
+    if (!user.trim() || !pass.trim()) return setMsg({ ok: false, text: 'Escriba el usuario y la contraseña que muestra la app del teléfono.' });
+    const { error } = await supabase!.rpc('guardar_sms', { usuario: user.trim(), clave: pass.trim(), limite_hora: Number(limit) || 100 });
+    setMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Línea SMS conectada.' });
+    setPass('');
+    load();
+  };
+
+  const test = async () => {
+    if (!phone.trim()) return;
+    const { error } = await supabase!.rpc('sms_prueba', { tel: phone.trim() });
+    setMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Mensaje de prueba en cola: debería llegar en 1 o 2 minutos.' });
+    load();
+  };
+
+  return (
+    <aside aria-labelledby="sms-t" className="card gap-12">
+      <h2 id="sms-t" style={{ fontSize: 16, fontWeight: 700 }}>
+        Línea propia para SMS
+      </h2>
+      <span className={ready ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>{ready === null ? '…' : ready ? 'Conectada' : 'Sin conectar'}</span>
+      <ol className="text-sm stack gap-4" style={{ paddingLeft: 18, margin: 0, color: 'var(--ink-2)' }}>
+        <li>En un teléfono Android con chip y SMS ilimitados, instale "SMS Gateway for Android" (sms-gate.app).</li>
+        <li>En la app, active "Cloud server" y copie el usuario y la contraseña que aparecen.</li>
+        <li>Déjelo encendido, cargando y con internet.</li>
+      </ol>
+      <InputField id="s-user" label="Usuario" value={user} onChange={(e) => setUser(e.target.value)} />
+      <InputField id="s-pass" label="Contraseña" type="password" value={pass} onChange={(e) => setPass(e.target.value)} />
+      <InputField id="s-lim" label="Máximo de SMS por hora" type="number" hint="evita bloqueos de la operadora" value={limit} onChange={(e) => setLimit(e.target.value)} />
+      <Button variant="dark" onClick={save}>
+        {ready ? 'Cambiar datos de la línea' : 'Conectar línea'}
+      </Button>
+      <span className="text-xs muted">
+        Última hora: {stats.hour} enviados · {stats.waiting} en espera · {stats.failed} con error
+      </span>
+      {ready && (
+        <div className="row gap-8" style={{ alignItems: 'flex-end' }}>
+          <InputField id="s-test" label="Enviar SMS de prueba a" type="tel" placeholder="8888-8888" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Button onClick={test}>Probar</Button>
+        </div>
+      )}
+      {msg && (
+        <span role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-sm strong ink-green' : 'text-sm ink-orange'}>
+          {msg.text}
+        </span>
+      )}
+      <span className="text-xs muted">La contraseña se guarda solo en el servidor; nadie la puede ver desde la app.</span>
+    </aside>
   );
 }
 

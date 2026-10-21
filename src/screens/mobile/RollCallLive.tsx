@@ -15,6 +15,8 @@ interface Lesson {
   section: string;
   lesson: number;
   subject: string;
+  /** Covering for an absent teacher. */
+  substitute?: boolean;
 }
 
 interface Pupil {
@@ -60,23 +62,30 @@ export function RollCallLive() {
       const { data: p } = await db.from('personal').select('id, nombre').eq('usuario_id', session.user.id).maybeSingle();
       setMe(p ? { id: p.id, name: p.nombre } : null);
       if (!p || !day) return setLessons([]);
-      const { data, error } = await db
-        .from('horario')
-        .select('leccion, seccion_id, secciones(nombre), materias(nombre)')
-        .eq('docente_id', p.id)
-        .eq('dia', day)
-        .order('leccion');
+      const [{ data, error }, cover] = await Promise.all([
+        db.from('horario').select('leccion, seccion_id, secciones(nombre), materias(nombre)').eq('docente_id', p.id).eq('dia', day).order('leccion'),
+        // Lessons this teacher covers today for an absent colleague.
+        db.from('coberturas').select('seccion_id, leccion, secciones(nombre), ausencias_docentes!inner(fecha)').eq('sustituto_id', p.id).eq('ausencias_docentes.fecha', date),
+      ]);
       if (error) return setError(error.message);
-      const list: Lesson[] =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const own: Lesson[] = (data as any[]).map((r) => ({ sectionId: r.seccion_id, section: r.secciones?.nombre ?? '', lesson: r.leccion, subject: r.materias?.nombre ?? '' }));
+      const covered: Lesson[] = await Promise.all(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (data as any[]).map((r) => ({ sectionId: r.seccion_id, section: r.secciones?.nombre ?? '', lesson: r.leccion, subject: r.materias?.nombre ?? '' }));
+        ((cover.data ?? []) as any[]).map(async (c) => {
+          const { data: h } = await db.from('horario').select('materias(nombre)').eq('seccion_id', c.seccion_id).eq('dia', day).eq('leccion', c.leccion).maybeSingle();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return { sectionId: c.seccion_id, section: c.secciones?.nombre ?? '', lesson: c.leccion, subject: (h as any)?.materias?.nombre ?? 'Sustitución', substitute: true };
+        }),
+      );
+      const list = [...own, ...covered].sort((a, b) => a.lesson - b.lesson);
       setLessons(list);
       // Open the lesson happening now, or the next one.
       const now = new Date().getHours() * 60 + new Date().getMinutes();
       const idx = list.findIndex((l) => toMinutes(LESSONS[l.lesson - 1]?.end ?? '') > now);
       setCurrent(idx === -1 ? Math.max(0, list.length - 1) : idx);
     })();
-  }, [session, day]);
+  }, [session, day, date]);
 
   const lesson = lessons?.[current];
 
@@ -163,6 +172,7 @@ export function RollCallLive() {
                 Sección {lesson.section}
               </h1>
               <span className="muted" style={{ fontSize: 15 }}>
+                {lesson.substitute && 'Sustitución · '}
                 {lesson.subject} · {dayName} · {LESSONS[lesson.lesson - 1]?.name} {LESSONS[lesson.lesson - 1]?.start} · {list.length} estudiantes
               </span>
             </div>
@@ -171,6 +181,7 @@ export function RollCallLive() {
                 {lessons!.map((l, i) => (
                   <button key={i} type="button" className="chip" aria-pressed={i === current} onClick={() => setCurrent(i)}>
                     {l.lesson}.ª · {l.section}
+                    {l.substitute && ' · sust.'}
                   </button>
                 ))}
               </div>

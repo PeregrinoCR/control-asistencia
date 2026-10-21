@@ -31,9 +31,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="admin">
       <nav aria-label="Menú de dirección" className="admin__nav">
         <div className="admin__brand">
-          <div className="admin__logo">
-            <Icon name="checkSquare" strokeWidth={2.2} />
-          </div>
+          {school?.logo ? (
+            <img src={school.logo} alt="" className="admin__logo" style={{ objectFit: 'contain', background: '#fff' }} />
+          ) : (
+            <div className="admin__logo">
+              <Icon name="checkSquare" strokeWidth={2.2} />
+            </div>
+          )}
           <div className="stack">
             <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Asistencia</span>
             <span className="text-xs" style={{ color: 'var(--night-ink-3)' }}>
@@ -44,7 +48,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         {LINKS.map((l) => (
           <NavLink key={l.to} to={l.to} end className="admin__link">
             {l.label}
-            {l.count && <span className={cx('count', `count--${l.count.tone}`)}>{l.count.n}</span>}
+            {l.count && !supabase && <span className={cx('count', `count--${l.count.tone}`)}>{l.count.n}</span>}
           </NavLink>
         ))}
         <NavLink to={routes.admin.settings} className="admin__link admin__link--bottom">

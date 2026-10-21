@@ -4,6 +4,7 @@ import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileSc
 import { signOut, useAuth } from '../../lib/auth';
 import { routes } from '../../routes';
 import { FamilyGate } from './FamilyGate';
+import { PushCard } from './PushCard';
 
 /** Familia · Ajustes: carné, cuenta y estudiantes vinculados. */
 export function FamilySettingsLive() {
@@ -24,6 +25,8 @@ export function FamilySettingsLive() {
               </span>
               <Icon name="chevronLeft" size={18} style={{ transform: 'rotate(180deg)', color: 'var(--muted)' }} />
             </Link>
+
+            <PushCard />
 
             <section className="card card--mobile gap-8">
               <h2 style={{ fontSize: 16, fontWeight: 700 }}>Mi cuenta</h2>

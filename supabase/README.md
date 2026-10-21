@@ -18,6 +18,19 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
 - `0002_asistencia_mes.sql`: totales de ausencias y tardías del mes.
 - `0003_familias_y_modulos.sql`: app de familias, portón, giras, salidas, avisos, alerta temprana,
   configuración y archivos (comprobantes).
+- `0004_notificaciones_y_sustitutos.sql`: notificaciones al teléfono y SMS de respaldo, docentes ausentes
+  con sustitutos y logo del colegio.
+
+## Notificaciones y SMS (una sola vez)
+
+1. Correr `0004_notificaciones_y_sustitutos.sql` en el SQL Editor.
+2. **Edge Functions › Deploy a new function › Via Editor**: nombre `enviar-avisos`, pegar
+   `functions/enviar-avisos/index.ts` y **Deploy**. En los ajustes de la función, desactivar
+   **Verify JWT** (la llama el propio servidor cada minuto).
+3. SMS (opcional): teléfono Android con chip y SMS ilimitados + app "SMS Gateway for Android" en modo
+   *Cloud server*; copiar usuario y contraseña en **Configuración › Módulos › Línea propia para SMS**.
+4. Cada familia instala la app (Android: menú de Chrome › *Instalar app*; iPhone: Compartir ›
+   *Agregar a inicio*) y toca **Activar notificaciones**.
 
 ## Primer ingreso del director
 

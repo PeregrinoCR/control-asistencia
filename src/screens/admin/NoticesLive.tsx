@@ -192,7 +192,7 @@ export function NoticesLive() {
                 {msg.text}
               </span>
             ) : (
-              <span className="text-sm muted">Aparece en la app de las familias. Las notificaciones al teléfono y el SMS llegan en la próxima etapa.</span>
+              <span className="text-sm muted">Llega como notificación a quien la activó; urgentes y suspensiones también por SMS si la línea está conectada.</span>
             )}
             <Button variant={urgent ? 'danger' : 'primary'} style={{ height: 48, padding: '0 22px' }} disabled={busy} onClick={send}>
               {busy ? 'Enviando…' : 'Publicar aviso'}
@@ -224,9 +224,14 @@ export function NoticesLive() {
             <h2 id="auto-t" style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>
               Avisos automáticos
             </h2>
-            <span className="text-xs muted">Se guardan ahora y empezarán a enviarse cuando se activen las notificaciones.</span>
-            {AUTO_RULES.map((r) => (
-              <SettingRow key={r.id} label={r.label} help={r.help} checked={rules[r.id]} onChange={(v) => saveRule(r.id, v)} />
+            {AUTO_RULES.filter((r) => r.id !== 'three' && r.id !== 'arr').map((r) => (
+              <SettingRow
+                key={r.id}
+                label={r.label}
+                help={r.id === 'sms' ? 'Si la notificación no llega (sin app o sin activarlas)' : r.help}
+                checked={rules[r.id]}
+                onChange={(v) => saveRule(r.id, v)}
+              />
             ))}
           </section>
         </aside>

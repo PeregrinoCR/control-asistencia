@@ -45,7 +45,8 @@ function Card({ f }: { f: FamilyCtx }) {
       <div className="screen-body gap-16">
         <KidPicker f={f} />
         <section className="id-card" aria-label={`Carné de ${kid.name}`}>
-          <span className="text-xs" style={{ fontWeight: 700, letterSpacing: 0.7, textTransform: 'uppercase', color: 'var(--night-ink-3)' }}>
+          <span className="row gap-8 text-xs" style={{ fontWeight: 700, letterSpacing: 0.7, textTransform: 'uppercase', color: 'var(--night-ink-3)' }}>
+            {school?.logo && <img src={school.logo} alt="" style={{ height: 22, borderRadius: 4, background: '#fff' }} />}
             {school?.nombre} · Curso {new Date().getFullYear()}
           </span>
           <span className="id-card__photo" aria-hidden="true">

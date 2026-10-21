@@ -6,6 +6,8 @@ import { supabase } from './supabase';
 interface School {
   id: string;
   nombre: string;
+  /** Public link to the school's logo, set in Configuración. */
+  logo: string | null;
 }
 
 interface AuthState {
@@ -32,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!session) return setState({ ready: true, session, school: null, roles: [], family: false });
       const uid = session.user.id;
       const [school, me, guardian, adult] = await Promise.all([
-        db.from('colegios').select('id, nombre').maybeSingle(),
+        db.from('colegios').select('id, nombre, logo:config->>logo').maybeSingle(),
         db.from('personal').select('roles').eq('usuario_id', uid).maybeSingle(),
         db.from('encargados').select('id').eq('usuario_id', uid).maybeSingle(),
         db.from('estudiantes').select('id').eq('usuario_id', uid).maybeSingle(),

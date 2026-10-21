@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Badge, Button, StatusBadge, Switch } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { supabase } from '../../lib/supabase';
+import { TeacherAbsencesLive } from './TeacherAbsencesLive';
 import { SCHOOL_NAME } from '../../data/school';
 import {
   ABSENCE_REASONS,
@@ -35,6 +37,11 @@ function familyMessage(a: Pick<TeacherAbsence, 'lessons'>, earlyExit: boolean) {
 
 /** Dirección · Ausencias de docentes */
 export function TeacherAbsences() {
+  return supabase ? <TeacherAbsencesLive /> : <TeacherAbsencesSample />;
+}
+
+/** The sample screen, shown while no server is configured. */
+function TeacherAbsencesSample() {
   const [absences, setAbsences] = useState(TEACHER_ABSENCES);
   const [teacher, setTeacher] = useState('Karla Montero');
   const [reason, setReason] = useState(ABSENCE_REASONS[0]);

@@ -46,7 +46,10 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   Migración 0003: app de familias (`src/lib/family.ts`, `FamilyGate.tsx`), portón, giras, avisos,
   alerta temprana, reportes y configuración (`colegios.config`) con datos reales. Archivos en Storage
   (`comprobantes/<colegio>/…`). `supabase/armar-instalar.sh` regenera `instalar.sql`.
-  Faltan: docentes ausentes/sustitutos, push y SMS con línea propia (teléfono Android). Piloto: un colegio.
+  Migración 0004: cola `notificaciones` llenada por disparadores; Edge Function `supabase/functions/enviar-avisos`
+  (cada minuto por pg_cron) envía push (claves VAPID en `ajustes_privados`) y SMS por "SMS Gateway for Android".
+  App instalable (PWA: `public/manifest.webmanifest`, `public/sw.js`, `src/lib/push.ts`). Docentes ausentes con
+  sustitutos (`coberturas`); logo en bucket `publico`; impresión/PDF con `src/lib/print.ts`. Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Imprimir carnés en lote; guardar registros del portón.
 - Horario familiar (`src/data/schedule.ts`) aún es de ejemplo; con servidor debe leer la tabla `horario`.
