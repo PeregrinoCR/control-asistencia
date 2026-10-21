@@ -35,6 +35,23 @@ interface Row {
   nombre: string;
 }
 
+export interface PlacedLesson {
+  sectionId: string;
+  key: string;
+  teacherId: string;
+  subject: string;
+}
+
+/** One line of a section's load: a subject, who teaches it and how many lessons a week. */
+export interface LoadLine {
+  id: string;
+  materia: string;
+  docenteId: string;
+  lecciones: number;
+}
+
+export type Loads = Record<string, LoadLine[]>;
+
 /** Sections, subjects, teachers and weekly timetables of the signed-in user's school. */
 export function useSchedule() {
   const { school } = useAuth();
@@ -103,5 +120,25 @@ export function useSchedule() {
     return '';
   };
 
-  return { live: !!supabase, sections, subjects: subjects.map((s) => s.nombre), teachers, error, loadWeek, saveWeek };
+  /** Every placed lesson of the school, to spot a teacher booked twice and to total each teacher's load. */
+  const loadAll = async (): Promise<PlacedLesson[]> => {
+    const { data } = await supabase!.from('horario').select('seccion_id, dia, leccion, docente_id, materias(nombre)').limit(5000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return ((data ?? []) as any[]).map((r) => ({ sectionId: r.seccion_id, key: slotKey(r.dia, r.leccion), teacherId: r.docente_id ?? '', subject: r.materias?.nombre ?? '' }));
+  };
+
+  /** What each section takes: subject, teacher and lessons per week (kept in `colegios.config.cargas`). */
+  const loadLoads = async (): Promise<Loads> => {
+    const { data } = await supabase!.from('colegios').select('config').maybeSingle();
+    return (data?.config?.cargas ?? {}) as Loads;
+  };
+
+  const saveLoads = async (loads: Loads) => {
+    const db = supabase!;
+    const { data } = await db.from('colegios').select('config').maybeSingle();
+    const { error } = await db.from('colegios').update({ config: { ...(data?.config ?? {}), cargas: loads } }).eq('id', school!.id);
+    return error?.message ?? '';
+  };
+
+  return { live: !!supabase, sections, subjects: subjects.map((s) => s.nombre), teachers, error, loadWeek, saveWeek, loadAll, loadLoads, saveLoads };
 }
