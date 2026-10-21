@@ -21,6 +21,7 @@ export const routes = {
   admin: {
     today: '/direccion',
     schedules: '/direccion/horarios',
+    rooms: '/direccion/aulas',
     teacherAbsences: '/direccion/docentes-ausentes',
     examCare: '/direccion/cuidos',
     trips: '/direccion/giras',

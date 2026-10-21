@@ -23,6 +23,7 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
     title: 'Académico',
     links: [
       { to: routes.admin.schedules, label: 'Horarios y cargas' },
+      { to: routes.admin.rooms, label: 'Aulas y grupos' },
       { to: routes.admin.students, label: 'Estudiantes' },
       { to: routes.admin.examCare, label: 'Cuido de exámenes' },
     ],

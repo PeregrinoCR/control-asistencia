@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos } from '../../lib/devData';
+import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
 import {
   EXAM_RULES,
   INSTITUTION_FIELDS,
@@ -66,9 +67,10 @@ interface Form {
   reglasEspeciales: Record<string, boolean>;
   pruebas: Exam[];
   reglasPruebas: Record<string, boolean>;
-  /** Rooms of the school, and the room for each level's students with accommodations. */
+  /** Rooms of the school (managed in Académico › Aulas y grupos); the exam calendar suggests from them. */
   aulas: string[];
-  aulasAdecuacion: Record<string, string>;
+  aulasGrupo: Record<string, string>;
+  eventosAula: EventoAula[];
 }
 
 const shortDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -109,7 +111,8 @@ export function SettingsLive() {
         pruebas: cfg.pruebas ?? [],
         reglasPruebas: { ...ruleState(EXAM_RULES), ...(cfg.reglasPruebas ?? {}) },
         aulas: cfg.aulas ?? [],
-        aulasAdecuacion: cfg.aulasAdecuacion ?? {},
+        aulasGrupo: cfg.aulasGrupo ?? {},
+        eventosAula: cfg.eventosAula ?? [],
       });
       setSections((s.data ?? []).map((x) => x.nombre));
     })();
@@ -222,7 +225,6 @@ function InstitutionTab({ f, update }: TabProps) {
 
       <aside className="split__side stack gap-16">
         <Logo />
-        <Rooms f={f} update={update} />
         <section aria-labelledby="curso-t" className="card gap-10">
           <h2 id="curso-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Curso lectivo {new Date().getFullYear()}
@@ -280,59 +282,6 @@ function Logo() {
         </span>
       )}
       <span className="text-sm muted">Aparece en el panel, en los carnés y en los reportes impresos. Se guarda al subirla.</span>
-    </section>
-  );
-}
-
-/** The school's rooms, and where each level's students with accommodations sit their exams. */
-function Rooms({ f, update }: TabProps) {
-  const [name, setName] = useState('');
-  const levels = ['7', '8', '9', '10', '11', '12'];
-  return (
-    <section aria-labelledby="aulas-t" className="card gap-10">
-      <h2 id="aulas-t" style={{ fontSize: 16, fontWeight: 700 }}>
-        Aulas
-      </h2>
-      <div className="row wrap gap-6">
-        {f.aulas.length === 0 && <span className="text-sm muted">Agregue las aulas para usarlas en exámenes.</span>}
-        {f.aulas.map((a) => (
-          <button key={a} type="button" className="chip chip--sm" title="Quitar" onClick={() => update({ aulas: f.aulas.filter((x) => x !== a) })}>
-            {a} ×
-          </button>
-        ))}
-      </div>
-      <form
-        className="row gap-8"
-        style={{ alignItems: 'flex-end' }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (name.trim() && !f.aulas.includes(name.trim())) update({ aulas: [...f.aulas, name.trim()] });
-          setName('');
-        }}
-      >
-        <InputField id="aula-n" label="Nueva aula" placeholder="Aula 5, Laboratorio…" value={name} onChange={(e) => setName(e.target.value)} />
-        <Button type="submit" regular>
-          Agregar
-        </Button>
-      </form>
-      <h3 style={{ fontSize: 14, fontWeight: 700, marginTop: 6 }}>Aulas de adecuación por nivel</h3>
-      <span className="text-xs muted">Varios niveles pueden usar la misma aula si son pocos estudiantes.</span>
-      <div className="grid-2">
-        {levels.map((lv) => (
-          <div key={lv} className="field">
-            <label htmlFor={`adec-${lv}`} className="field__label">
-              {lv}.°
-            </label>
-            <select id={`adec-${lv}`} className="input" value={f.aulasAdecuacion[lv] ?? ''} onChange={(e) => update({ aulasAdecuacion: { ...f.aulasAdecuacion, [lv]: e.target.value } })}>
-              <option value="">Automática</option>
-              {f.aulas.map((a) => (
-                <option key={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-        ))}
-      </div>
-      <span className="text-xs muted">Recuerde presionar "Guardar cambios".</span>
     </section>
   );
 }
@@ -685,9 +634,13 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
   const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, leccionesAdecuacion: 3, materia: '' });
   // null = every section is picked (the usual case); the teacher unchecks the ones that do not take the exam.
   const [picked, setPicked] = useState<string[] | null>(null);
+  // Rooms typed by hand; anything not typed comes from the school's fixed room or a transfer event on that date.
   const [aulas, setAulas] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const chosen = picked ?? sections;
+  const cfgAulas: AulasConfig = { aulas: f.aulas, aulasAdecuacion: {}, aulasGrupo: f.aulasGrupo, eventosAula: f.eventosAula };
+  const sugerida = (s: string) => (draft.fecha ? aulaDe(cfgAulas, s, draft.fecha) : (f.aulasGrupo[s] ?? ''));
+  const trasladadas = draft.fecha ? chosen.map((s) => ({ s, ev: eventoActivo(cfgAulas, s, draft.fecha) })).filter((x) => x.ev) : [];
 
   // One row per exam: the sections that take it share a `grupo`. Older exams without one stand alone.
   const groupOf = (x: Exam) => x.grupo ?? x.id;
@@ -716,7 +669,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
       leccionesAdecuacion: draft.leccionesAdecuacion,
       materia: draft.materia.trim(),
       seccion,
-      aula: aulas[seccion]?.trim() ?? '',
+      aula: (aulas[seccion] ?? sugerida(seccion)).trim(),
       publicada: false,
     }));
     update({ pruebas: [...f.pruebas, ...nuevas] });
@@ -881,12 +834,17 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                     className="input"
                     list="x-aulas"
                     placeholder="Aula"
-                    value={aulas[s] ?? ''}
+                    value={aulas[s] ?? sugerida(s)}
                     onChange={(e) => setAulas({ ...aulas, [s]: e.target.value })}
                   />
                 </div>
               ))}
             </div>
+          )}
+          {trasladadas.length > 0 && (
+            <span className="text-sm" style={{ color: 'var(--ink-2)' }}>
+              Traslado activo ese día: {trasladadas.map((x) => `${x.s} → ${x.ev!.aulas[x.s]} (${x.ev!.nombre})`).join(', ')}.
+            </span>
           )}
           <datalist id="x-aulas">
             {f.aulas.map((a) => (

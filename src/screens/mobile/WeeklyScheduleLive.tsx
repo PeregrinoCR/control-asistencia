@@ -3,6 +3,7 @@ import { Badge } from '../../components';
 import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { SHIFT_BLOCKS } from '../../data/settings';
 import { SCHOOL_DAYS, type DayId } from '../../data/schedule';
+import { aulaDe, proximaFecha, SIN_CONFIG, type AulasConfig } from '../../lib/aulas';
 import { sectionDay } from '../../lib/family';
 import { localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
@@ -27,19 +28,22 @@ function Schedule({ f }: { f: FamilyCtx }) {
   const [day, setDay] = useState<DayId>(today ?? 'L');
   const [plan, setPlan] = useState<Awaited<ReturnType<typeof sectionDay>> | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
+  const [rooms, setRooms] = useState<AulasConfig>(SIN_CONFIG);
 
   useEffect(() => {
     supabase!
       .from('colegios')
       .select('config')
       .maybeSingle()
-      .then(({ data }) =>
+      .then(({ data }) => {
+        const cfg = data?.config ?? {};
         setExams(
-          ((data?.config?.pruebas ?? []) as Exam[])
+          ((cfg.pruebas ?? []) as Exam[])
             .filter((x) => x.publicada && x.seccion === kid.section && x.fecha >= localDate())
             .sort((a, b) => a.fecha.localeCompare(b.fecha)),
-        ),
-      );
+        );
+        setRooms({ ...SIN_CONFIG, aulasGrupo: cfg.aulasGrupo ?? {}, eventosAula: cfg.eventosAula ?? [] });
+      });
   }, [kid]);
 
   useEffect(() => {
@@ -53,7 +57,15 @@ function Schedule({ f }: { f: FamilyCtx }) {
   const rows = SHIFT_BLOCKS.noc.blocks.map(([name, start, end]) => {
     const isBreak = /Recreo|Merienda/.test(name);
     const n = isBreak ? 0 : ++lesson;
-    return { name, start, end, isBreak, slot: plan?.find((p) => p.lesson === n), live: day === today && now >= toMinutes(start) && now < toMinutes(end) };
+    return {
+      name,
+      start,
+      end,
+      isBreak,
+      slot: plan?.find((p) => p.lesson === n),
+      room: aulaDe(rooms, kid.section, proximaFecha(day)),
+      live: day === today && now >= toMinutes(start) && now < toMinutes(end),
+    };
   });
 
   return (
@@ -95,6 +107,7 @@ function Schedule({ f }: { f: FamilyCtx }) {
                   <span className="stack grow">
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{r.slot?.subject || 'Sin lección'}</span>
                     {r.slot?.teacher && <span className="text-xs muted">{r.slot.teacher}</span>}
+                    {r.slot && r.room && <span className="text-xs muted">{r.room}</span>}
                   </span>
                   {r.live && <Badge tone="blue">Ahora</Badge>}
                 </div>
