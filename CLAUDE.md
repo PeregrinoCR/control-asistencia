@@ -53,3 +53,10 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Probar notificaciones en teléfonos reales (Android y iPhone instalada) y la línea SMS.
 - Cambiar horas de lecciones desde la app (hoy fijas en `SHIFT_BLOCKS`); firma dibujada en salidas y giras.
+- **Siguiente sesión: cuido de exámenes** — diseño acordado en `docs/cuido-de-examenes.md` (falta confirmar
+  dónde se ingresa el horario de trabajo del personal que no da lecciones).
+- Otros hechos recientes: Profesores y secciones es un tablero con tarjetas por carga (`colegios.config.cargas`)
+  y panel "Carga por docente"; editar estudiantes/encargados en su ficha; en teléfono el panel usa barra
+  superior + menú desplegable + accesos rápidos abajo. Diseños de referencia: https://claude.ai/artifact/Fbi3gH92QsBmK7natTNPR2
+- Datos del entorno: app en https://elcole.netlify.app (Netlify publica `main`); Supabase proyecto
+  `cvfmprnelubknjaguyua`; migraciones 0001–0004 instaladas; Edge Function `enviar-avisos` publicada.
