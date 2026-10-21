@@ -862,7 +862,7 @@ function DevTab({ colegioId }: { colegioId: string }) {
       </div>
       <div className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
         <span className="text-sm">
-          <strong>Cargar datos de ejemplo.</strong> Solo si el colegio no tiene estudiantes: 8 secciones, 6 docentes, materias, horarios y 32 estudiantes con encargados.
+          <strong>Cargar datos de ejemplo.</strong> Solo si el colegio no tiene secciones: 8 secciones, 6 docentes, materias y horarios. Luego importe los estudiantes en Estudiantes › Importar matrícula.
         </span>
         <div>
           <Button disabled={busy} onClick={() => run(() => cargarEjemplos(colegioId))}>
