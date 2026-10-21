@@ -16,12 +16,11 @@ export interface EventoAula {
 /** Rooms kept in `colegios.config`: the school's catalog, each section's fixed room, and transfer events. */
 export interface AulasConfig {
   aulas: string[];
-  aulasAdecuacion: Record<string, string>;
   aulasGrupo: Record<string, string>;
   eventosAula: EventoAula[];
 }
 
-export const SIN_CONFIG: AulasConfig = { aulas: [], aulasAdecuacion: {}, aulasGrupo: {}, eventosAula: [] };
+export const SIN_CONFIG: AulasConfig = { aulas: [], aulasGrupo: {}, eventosAula: [] };
 
 /** The event that moves a section on a date, if any. */
 export function eventoActivo(cfg: AulasConfig, seccion: string, fecha: string) {
@@ -47,7 +46,6 @@ export async function leerAulas(): Promise<AulasConfig> {
   const cfg = data?.config ?? {};
   return {
     aulas: cfg.aulas ?? [],
-    aulasAdecuacion: cfg.aulasAdecuacion ?? {},
     aulasGrupo: cfg.aulasGrupo ?? {},
     eventosAula: cfg.eventosAula ?? [],
   };

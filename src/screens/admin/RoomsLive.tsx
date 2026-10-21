@@ -6,8 +6,6 @@ import { leerAulas, SIN_CONFIG, type AulasConfig, type EventoAula } from '../../
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
-const LEVELS = ['7', '8', '9', '10', '11', '12'];
-
 /** Académico · Aulas y grupos: the school's rooms, each group's fixed room, and transfer events. */
 export function RoomsLive() {
   const { school } = useAuth();
@@ -187,32 +185,6 @@ export function RoomsLive() {
         })}
       </section>
 
-      <section aria-labelledby="adec-t" className="card gap-10">
-        <h2 id="adec-t" style={{ fontSize: 16, fontWeight: 700 }}>
-          Aulas de adecuación por nivel
-        </h2>
-        <span className="text-xs muted">Varios niveles pueden usar la misma aula si son pocos estudiantes.</span>
-        <div className="grid-2">
-          {LEVELS.map((lv) => (
-            <div key={lv} className="field">
-              <label htmlFor={`adec-${lv}`} className="field__label">
-                {lv}.°
-              </label>
-              <select
-                id={`adec-${lv}`}
-                className="input"
-                value={cfg.aulasAdecuacion[lv] ?? ''}
-                onChange={(e) => update({ aulasAdecuacion: { ...cfg.aulasAdecuacion, [lv]: e.target.value } })}
-              >
-                <option value="">Automática</option>
-                {cfg.aulas.map((a) => (
-                  <option key={a}>{a}</option>
-                ))}
-              </select>
-            </div>
-          ))}
-        </div>
-      </section>
     </AdminLayout>
   );
 }

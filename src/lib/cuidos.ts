@@ -25,6 +25,8 @@ export interface ExamIn {
   lessons: number;
   /** Lessons for students with accommodations; the accommodation room covers them. Defaults to `lessons`. */
   lessonsAccommodated?: number;
+  /** Room where this exam's students with accommodations sit it. */
+  aulaAdecuacion?: string;
 }
 
 export interface StaffIn {
@@ -63,10 +65,8 @@ export interface ProposeInput {
   absent: Set<string>;
   /** Cares each person already did this period, to share the load. */
   counts: Map<string, number>;
-  /** Students with accommodations per level ('7', '8'…). */
+  /** Students with accommodations per section. */
   accommodations: Map<string, number>;
-  /** Room for each level's accommodated students; levels may share one. */
-  accommodationRooms: Record<string, string>;
 }
 
 /** '10-2' → '10'. */
@@ -75,7 +75,7 @@ export const levelOf = (section: string) => section.split('-')[0];
 const SUPPORT = ['ori', 'adm', 'dir', 'aux'];
 
 export function propose(input: ProposeInput): CareOut[] {
-  const { day, exams, staff, slots, subjectTeacher, absent, accommodations, accommodationRooms } = input;
+  const { day, exams, staff, slots, subjectTeacher, absent, accommodations } = input;
   const counts = new Map(input.counts);
   const examining = new Set(exams.map((e) => e.sectionId));
   const taken = new Set<string>(); // `${personId}|${lesson}` already caring somewhere
@@ -99,26 +99,22 @@ export function propose(input: ProposeInput): CareOut[] {
     for (let l = from; l <= to; l++) taken.add(`${id}|${l}`);
   };
 
-  // Accommodation rooms first: the subject teacher of each level's exam is busy there.
-  const examLevels = [...new Set(exams.map((e) => levelOf(e.section)))].filter((lv) => (accommodations.get(lv) ?? 0) > 0);
-  const roomsForLevels = new Map<string, string[]>();
-  for (const lv of examLevels) {
-    const room = accommodationRooms[lv] || `Adecuación ${lv}.°`;
-    roomsForLevels.set(room, [...(roomsForLevels.get(room) ?? []), lv]);
-  }
-  for (const [room, levels] of roomsForLevels) {
-    const es = exams.filter((e) => levels.includes(levelOf(e.section)));
-    const { from } = rangeOf(es);
-    // The accommodation room stays until the last lesson of its students.
+  // Accommodation rooms first: one per room chosen for an exam. The subject teacher is busy there.
+  const porAula = new Map<string, ExamIn[]>();
+  for (const e of exams) if (e.aulaAdecuacion) porAula.set(e.aulaAdecuacion, [...(porAula.get(e.aulaAdecuacion) ?? []), e]);
+  for (const [room, es] of porAula) {
+    const from = Math.min(...es.map((e) => e.from));
     const to = Math.max(...es.map((e) => e.from + (e.lessonsAccommodated ?? e.lessons) - 1));
     const teacherId = es.map((e) => subjectTeacher.get(`${e.sectionId}|${e.subject}`)).find((t) => t && !absent.has(t)) ?? null;
     if (teacherId) take(teacherId, from, to);
+    const sections = [...new Set(es.map((e) => e.section))];
+    const estudiantes = sections.reduce((n, sec) => n + (accommodations.get(sec) ?? 0), 0);
     out.push({
       room,
       kind: 'adecuacion',
-      level: levels.join(', '),
+      level: [...new Set(sections.map(levelOf))].join(', '),
       examId: es[0].id,
-      detail: `${levels.map((l) => `${l}.°`).join(' y ')} · ${[...new Set(es.map((e) => e.subject))].join(', ')} · ${levels.reduce((n, l) => n + (accommodations.get(l) ?? 0), 0)} est.`,
+      detail: `${sections.join(', ')} · ${[...new Set(es.map((e) => e.subject))].join(', ')} · ${estudiantes} est.`,
       from,
       to,
       personId: teacherId,

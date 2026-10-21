@@ -56,6 +56,8 @@ export interface Exam {
   grupo?: string;
   /** Lessons for students with accommodations (adecuación): same start, possibly longer. */
   leccionesAdecuacion?: number;
+  /** Room where this exam's students with accommodations sit it (shared by the rows of the exam). */
+  aulaAdecuacion?: string;
 }
 
 /** Everything this screen edits, kept in `colegios` (name, sector, phone, modules) and `colegios.config`. */
@@ -75,7 +77,6 @@ interface Form {
   reglasPruebas: Record<string, boolean>;
   /** Rooms of the school (managed in Académico › Aulas y grupos); the exam calendar suggests from them. */
   aulas: string[];
-  aulasAdecuacion: Record<string, string>;
   aulasGrupo: Record<string, string>;
   eventosAula: EventoAula[];
 }
@@ -118,7 +119,6 @@ export function SettingsLive() {
         pruebas: cfg.pruebas ?? [],
         reglasPruebas: { ...ruleState(EXAM_RULES), ...(cfg.reglasPruebas ?? {}) },
         aulas: cfg.aulas ?? [],
-        aulasAdecuacion: cfg.aulasAdecuacion ?? {},
         aulasGrupo: cfg.aulasGrupo ?? {},
         eventosAula: cfg.eventosAula ?? [],
       });
@@ -708,9 +708,12 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
   const [picked, setPicked] = useState<string[] | null>(null);
   // Rooms typed by hand; anything not typed comes from the school's fixed room or a transfer event on that date.
   const [aulas, setAulas] = useState<Record<string, string>>({});
+  // One room for the students with accommodations, shared by all the sections of the exam.
+  const [adecOpen, setAdecOpen] = useState(false);
+  const [aulaAdec, setAulaAdec] = useState('');
   const [error, setError] = useState('');
   const chosen = picked ?? sections;
-  const cfgAulas: AulasConfig = { aulas: f.aulas, aulasAdecuacion: {}, aulasGrupo: f.aulasGrupo, eventosAula: f.eventosAula };
+  const cfgAulas: AulasConfig = { aulas: f.aulas, aulasGrupo: f.aulasGrupo, eventosAula: f.eventosAula };
   const sugerida = (s: string) => (draft.fecha ? aulaDe(cfgAulas, s, draft.fecha) : (f.aulasGrupo[s] ?? ''));
   const trasladadas = draft.fecha ? chosen.map((s) => ({ s, ev: eventoActivo(cfgAulas, s, draft.fecha) })).filter((x) => x.ev) : [];
 
@@ -729,6 +732,10 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
 
   const add = () => {
     if (!draft.fecha || !draft.materia.trim() || chosen.length === 0) return setError('Complete fecha, materia y al menos una sección.');
+    // The day ends with the 6.ª lesson (9:50 p. m.); no exam may run past it.
+    const ultima = LESSONS.length;
+    if (draft.desde + draft.lecciones - 1 > ultima || draft.desde + draft.leccionesAdecuacion - 1 > ultima)
+      return setError('La prueba termina después de las 9:50 p. m. Elija una hora de inicio más temprana o menos lecciones.');
     const hora = LESSONS[draft.desde - 1]?.start ?? '';
     const grupo = crypto.randomUUID();
     const nuevas: Exam[] = chosen.map((seccion) => ({
@@ -742,6 +749,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
       materia: draft.materia.trim(),
       seccion,
       aula: (aulas[seccion] ?? sugerida(seccion)).trim(),
+      ...(aulaAdec ? { aulaAdecuacion: aulaAdec } : {}),
       publicada: false,
     }));
     update({ pruebas: [...f.pruebas, ...nuevas] });
@@ -812,6 +820,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                               <strong>{x.seccion}</strong> {x.aula ? `Aula ${x.aula.replace(/^Aula /, '')}` : <span className="muted">sin aula</span>}
                             </span>
                           ))}
+                          {first.aulaAdecuacion && <span className="text-xs muted" style={{ display: 'block' }}>Adecuación: {first.aulaAdecuacion}</span>}
                         </span>
                       </td>
                       <td>
@@ -858,7 +867,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                   setDraft({ ...draft, lecciones, leccionesAdecuacion: Math.max(lecciones, draft.leccionesAdecuacion) });
                 }}
               >
-                {LESSONS.slice(0, LESSONS.length - draft.desde + 1).map((l) => (
+                {LESSONS.map((l) => (
                   <option key={l.n} value={l.n}>
                     {l.n} {l.n === 1 ? 'lección' : 'lecciones'}
                   </option>
@@ -870,8 +879,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                 Con adecuación
               </label>
               <select id="x-dur-adec" className="input" value={draft.leccionesAdecuacion} onChange={(e) => setDraft({ ...draft, leccionesAdecuacion: Number(e.target.value) })}>
-                {LESSONS.slice(0, LESSONS.length - draft.desde + 1)
-                  .filter((l) => l.n >= draft.lecciones)
+                {LESSONS.filter((l) => l.n >= draft.lecciones)
                   .map((l) => (
                     <option key={l.n} value={l.n}>
                       {l.n} {l.n === 1 ? 'lección' : 'lecciones'}
@@ -892,7 +900,23 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                   {s}
                 </button>
               ))}
+              <button type="button" className="chip chip--sm" aria-pressed={adecOpen} onClick={() => setAdecOpen(!adecOpen)}>
+                Adecuación
+              </button>
             </div>
+            {adecOpen && (
+              <div className="field" style={{ maxWidth: 260 }}>
+                <label htmlFor="x-aula-adec" className="field__label">
+                  Aula de estudiantes con adecuación
+                </label>
+                <select id="x-aula-adec" className="input" value={aulaAdec} onChange={(e) => setAulaAdec(e.target.value)}>
+                  <option value="">Sin aula especial</option>
+                  {f.aulas.map((a) => (
+                    <option key={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           {chosen.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
@@ -917,34 +941,6 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
             <span className="text-sm" style={{ color: 'var(--ink-2)' }}>
               Traslado activo ese día: {trasladadas.map((x) => `${x.s} → ${x.ev!.aulas[x.s]} (${x.ev!.nombre})`).join(', ')}.
             </span>
-          )}
-          {levelsOf(sections).length > 0 && (
-            <div className="stack gap-6">
-              <span className="text-sm" style={{ fontWeight: 600 }}>
-                Aula de adecuación por nivel
-              </span>
-              <span className="text-xs muted">Estudiantes con adecuación rinden la prueba aquí. Se administra también en Académico › Aulas y grupos.</span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
-                {levelsOf(sections).map((lv) => (
-                  <div key={lv} className="field">
-                    <label htmlFor={`exa-adec-${lv}`} className="field__label">
-                      {lv}.°
-                    </label>
-                    <select
-                      id={`exa-adec-${lv}`}
-                      className="input"
-                      value={f.aulasAdecuacion[lv] ?? ''}
-                      onChange={(e) => update({ aulasAdecuacion: { ...f.aulasAdecuacion, [lv]: e.target.value } })}
-                    >
-                      <option value="">Automática</option>
-                      {f.aulas.map((a) => (
-                        <option key={a}>{a}</option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
           )}
           <datalist id="x-aulas">
             {f.aulas.map((a) => (
@@ -974,11 +970,6 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
       </aside>
     </div>
   );
-}
-
-/** Grade levels of the sections, e.g. ['7', '10'] for 7-1 and 10-2. */
-function levelsOf(sections: string[]) {
-  return [...new Set(sections.map(levelOf))].sort((a, b) => Number(a) - Number(b));
 }
 
 /** Temporary, for the development phase: empty the school's data, or load sample data into an empty school. */

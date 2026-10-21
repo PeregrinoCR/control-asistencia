@@ -3,7 +3,7 @@ import { Badge, Button } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { useAuth } from '../../lib/auth';
-import { levelOf, propose, type ExamIn, type SlotIn, type StaffIn } from '../../lib/cuidos';
+import { propose, type ExamIn, type SlotIn, type StaffIn } from '../../lib/cuidos';
 import { printDocument, tableHtml } from '../../lib/print';
 import { LESSONS, localDate, type Loads } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
@@ -30,7 +30,6 @@ interface Data {
   timetable: Array<{ sectionId: string; day: string; lesson: number; teacherId: string; subject: string }>;
   loads: Loads;
   accommodations: Map<string, number>;
-  accommodationRooms: Record<string, string>;
 }
 
 const longDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -72,8 +71,8 @@ export function ExamCareLive() {
       const accommodations = new Map<string, number>();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ((acc.data ?? []) as any[]).forEach((s) => {
-        const lv = s.secciones?.nombre ? levelOf(s.secciones.nombre) : '';
-        if (lv) accommodations.set(lv, (accommodations.get(lv) ?? 0) + 1);
+        const sec = s.secciones?.nombre ?? '';
+        if (sec) accommodations.set(sec, (accommodations.get(sec) ?? 0) + 1);
       });
       const exams = ((cfg.pruebas ?? []) as Exam[]).filter((x) => x.fecha >= localDate()).sort((a, b) => a.fecha.localeCompare(b.fecha));
       setData({
@@ -89,7 +88,6 @@ export function ExamCareLive() {
           .map((r) => ({ sectionId: r.seccion_id, day: r.dia, lesson: r.leccion, teacherId: r.docente_id, subject: r.materias?.nombre ?? '' })),
         loads: cfg.cargas ?? {},
         accommodations,
-        accommodationRooms: cfg.aulasAdecuacion ?? {},
       });
       if (exams[0]) setDate(exams[0].fecha);
     })();
@@ -150,6 +148,7 @@ export function ExamCareLive() {
         from: x.desde ?? 4,
         lessons: x.lecciones ?? LESSONS.length - (x.desde ?? 4) + 1,
         lessonsAccommodated: x.leccionesAdecuacion,
+        aulaAdecuacion: x.aulaAdecuacion,
       }));
     const slots: SlotIn[] = data.timetable.filter((t) => t.day === day);
     // Who teaches each subject in each section: the load, else the timetable.
@@ -168,7 +167,6 @@ export function ExamCareLive() {
       absent: new Set((abs ?? []).map((a) => a.docente_id)),
       counts,
       accommodations: data.accommodations,
-      accommodationRooms: data.accommodationRooms,
     });
     // Keep the saved rows' ids so saving updates them in place.
     setRows(out.map((o, i) => ({ ...o, id: rows[i]?.id, published: false })));
