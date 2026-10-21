@@ -5,6 +5,7 @@ import { AUTO_RULES, NOTICE_TONE, NOTICE_TYPES, type NoticeType } from '../../da
 import { ruleState } from '../../data/school';
 import { useAuth } from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
+import { ordenarSecciones } from '../../lib/secciones';
 
 const toneVars = {
   blue: ['var(--blue)', 'var(--blue-bg)', 'var(--blue-ink)'],
@@ -54,7 +55,7 @@ export function NoticesLive() {
       db.from('aviso_lecturas').select('aviso_id'),
       db.from('colegios').select('config').maybeSingle(),
     ]);
-    const secs = s.data ?? [];
+    const secs = ordenarSecciones(s.data);
     setSections(secs);
     const reads = new Map<string, number>();
     (l.data ?? []).forEach((r) => reads.set(r.aviso_id, (reads.get(r.aviso_id) ?? 0) + 1));

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './auth';
 import { supabase } from './supabase';
+import { ordenarSecciones } from './secciones';
 
 export interface Guardian {
   id: string;
@@ -72,7 +73,7 @@ export function useStudents() {
     // Monthly totals are optional: if migration 0002 isn't installed yet, show zeros.
     const err = st.error ?? secs.error;
     if (err) return setError(err.message);
-    setSections(secs.data!);
+    setSections(ordenarSecciones(secs.data));
     const totals = new Map((att.data ?? []).map((a) => [a.estudiante_id, a]));
     setStudents(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

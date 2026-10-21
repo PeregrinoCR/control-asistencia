@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { PermissionId, RoleId, User } from '../data/users';
 import { useAuth } from './auth';
 import { supabase } from './supabase';
+import { ordenarSecciones } from './secciones';
 
 interface StaffRow {
   id: string;
@@ -33,7 +34,7 @@ export function useStaff() {
     ]);
     if (staff.error || secs.error) return setError((staff.error ?? secs.error)!.message);
     const byId = new Map(secs.data.map((s) => [s.id, s.nombre]));
-    setSections(secs.data);
+    setSections(ordenarSecciones(secs.data));
     setUsers(
       (staff.data as StaffRow[]).map((r) => ({
         id: r.id,

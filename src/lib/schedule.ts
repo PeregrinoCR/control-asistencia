@@ -3,6 +3,7 @@ import { SHIFT_BLOCKS } from '../data/settings';
 import { SCHOOL_DAYS, type DayId } from '../data/schedule';
 import { useAuth } from './auth';
 import { supabase } from './supabase';
+import { ordenarSecciones } from './secciones';
 
 /** The night shift's lessons (breaks left out), numbered 1–6 as stored in `horario.leccion`. */
 export const LESSONS = SHIFT_BLOCKS.noc.blocks
@@ -70,7 +71,7 @@ export function useSchedule() {
     ]);
     const err = secs.error ?? subs.error ?? staff.error;
     if (err) return setError(err.message);
-    setSections(secs.data);
+    setSections(ordenarSecciones(secs.data));
     setSubjects(subs.data ?? []);
     setTeachers((staff.data ?? []).filter((p) => (p.roles as string[]).includes('doc')));
   }, [school]);

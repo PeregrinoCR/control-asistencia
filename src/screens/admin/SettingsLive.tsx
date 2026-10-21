@@ -3,6 +3,7 @@ import { Badge, Button, InputField, Segmented, SettingRow } from '../../componen
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
+import { ordenSecciones } from '../../lib/secciones';
 import { levelOf } from '../../lib/cuidos';
 import {
   EXAM_RULES,
@@ -23,6 +24,7 @@ import { ruleState } from '../../data/school';
 import { useAuth } from '../../lib/auth';
 import { LESSONS, localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
+import { ordenarSecciones } from '../../lib/secciones';
 
 type Tab = 'inst' | 'mod' | 'jor' | 'esp' | 'exa' | 'dev';
 
@@ -122,7 +124,7 @@ export function SettingsLive() {
         aulasGrupo: cfg.aulasGrupo ?? {},
         eventosAula: cfg.eventosAula ?? [],
       });
-      setSections((s.data ?? []).map((x) => x.nombre));
+      setSections(ordenarSecciones(s.data).map((x) => x.nombre));
     })();
   }, []);
 
@@ -702,6 +704,7 @@ function SpecialTab({ f, update, save, sections }: TabProps & { save: (next?: Fo
 
 function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]; save: (next?: Form) => Promise<string> }) {
   const [section, setSection] = useState('Todas');
+  const [soloAdec, setSoloAdec] = useState(false);
   // Exams usually start at 8:00 p. m. (4.ª lesson), so students who finish can go home.
   const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, leccionesAdecuacion: 3, materia: '' });
   // null = every section is picked (the usual case); the teacher unchecks the ones that do not take the exam.
@@ -719,7 +722,9 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
 
   // One row per exam: the sections that take it share a `grupo`. Older exams without one stand alone.
   const groupOf = (x: Exam) => x.grupo ?? x.id;
-  const visibleKeys = new Set(f.pruebas.filter((x) => section === 'Todas' || x.seccion === section).map(groupOf));
+  const visibleKeys = new Set(
+    f.pruebas.filter((x) => (section === 'Todas' || x.seccion === section) && (!soloAdec || !!x.aulaAdecuacion)).map(groupOf),
+  );
   const rows = Object.values(
     f.pruebas.filter((x) => visibleKeys.has(groupOf(x))).reduce<Record<string, Exam[]>>((acc, x) => {
       (acc[groupOf(x)] ??= []).push(x);
@@ -781,6 +786,9 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
               {s}
             </button>
           ))}
+          <button type="button" className="chip chip--sm" aria-pressed={soloAdec} onClick={() => setSoloAdec(!soloAdec)}>
+            Con adecuación
+          </button>
         </div>
         {rows.length === 0 ? (
           <p className="text-sm muted">No hay pruebas registradas.</p>
@@ -814,7 +822,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                       <td>{first.materia}</td>
                       <td>
                         <span className="text-sm">
-                          {g.map((x, i) => (
+                          {[...g].sort((x, y) => ordenSecciones(x.seccion, y.seccion)).map((x, i) => (
                             <span key={x.id}>
                               {i > 0 && ' · '}
                               <strong>{x.seccion}</strong> {x.aula ? `Aula ${x.aula.replace(/^Aula /, '')}` : <span className="muted">sin aula</span>}

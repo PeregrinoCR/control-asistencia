@@ -7,6 +7,7 @@ import { SCHOOL_DAYS } from '../../data/schedule';
 import { hasPanel, signOut, useAuth } from '../../lib/auth';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { ageOn } from '../../lib/students';
+import type { Exam } from '../admin/SettingsLive';
 import { supabase } from '../../lib/supabase';
 import { routes } from '../../routes';
 
@@ -23,6 +24,7 @@ interface Pupil {
   id: string;
   name: string;
   adult: boolean;
+  accommodation: boolean;
 }
 
 type Marks = Record<string, Mark | undefined>;
@@ -47,6 +49,8 @@ export function RollCallLive() {
   const [lessons, setLessons] = useState<Lesson[] | null>(null);
   const [current, setCurrent] = useState(0);
   const [pupils, setPupils] = useState<Pupil[] | null>(null);
+  // Room where the accommodated students sit the section's exam on this day, if there is one.
+  const [aulaAdec, setAulaAdec] = useState('');
   const [marks, setMarks] = useState<Marks>({});
   const [state, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [error, setError] = useState('');
@@ -102,12 +106,19 @@ export function RollCallLive() {
     setState('idle');
     (async () => {
       const db = supabase!;
-      const [st, att] = await Promise.all([
-        db.from('estudiantes').select('id, nombre, nacimiento').eq('seccion_id', lesson.sectionId).eq('activo', true).order('nombre'),
+      const [st, att, cfg] = await Promise.all([
+        db.from('estudiantes').select('id, nombre, nacimiento, adecuacion').eq('seccion_id', lesson.sectionId).eq('activo', true).order('nombre'),
         db.from('asistencia').select('estudiante_id, marca').eq('seccion_id', lesson.sectionId).eq('fecha', date).eq('leccion', lesson.lesson),
+        db.from('colegios').select('config').maybeSingle(),
       ]);
       if (st.error || att.error) return setError((st.error ?? att.error)!.message);
-      setPupils(st.data.map((s) => ({ id: s.id, name: s.nombre, adult: (ageOn(s.nacimiento) ?? 0) >= 18 })));
+      const exam = ((cfg.data?.config?.pruebas ?? []) as Exam[]).find(
+        (x) => x.publicada && x.fecha === date && x.seccion === lesson.section && x.aulaAdecuacion,
+      );
+      setAulaAdec(exam?.aulaAdecuacion ?? '');
+      setPupils(
+        st.data.map((s) => ({ id: s.id, name: s.nombre, adult: (ageOn(s.nacimiento) ?? 0) >= 18, accommodation: !!s.adecuacion })),
+      );
       setMarks(Object.fromEntries(att.data.map((a) => [a.estudiante_id, a.marca as Mark])));
       if (att.data.length) setState('saved');
     })();
@@ -258,6 +269,7 @@ export function RollCallLive() {
                       {sub.text}
                       {s.adult && ' · mayor de edad'}
                     </span>
+                    {s.accommodation && aulaAdec && <span className="text-xs strong">Adecuación · {aulaAdec}</span>}
                   </div>
                   <div className="row gap-4" role="group" aria-label={`Asistencia de ${s.name}`}>
                     {MARKS.map((m) => (

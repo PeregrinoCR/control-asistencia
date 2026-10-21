@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { ageOn } from '../../lib/students';
 import { supabase } from '../../lib/supabase';
+import { ordenarSecciones } from '../../lib/secciones';
 
 type Tab = 'trip' | 'exits';
 
@@ -75,7 +76,7 @@ export function TripsLive() {
     ]);
     const gmap = new Map((g.data ?? []).map((r) => [r.usuario_id as string, r.nombre as string]));
     setGuardians(gmap);
-    setSections(s.data ?? []);
+    setSections(ordenarSecciones(s.data));
     setTrips((t.data ?? []) as Trip[]);
     setExits(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -8,6 +8,7 @@ import { useAuth } from '../../lib/auth';
 import { printDocument, tableHtml } from '../../lib/print';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
+import { ordenarSecciones } from '../../lib/secciones';
 
 type Mode = 'w' | 'm';
 
@@ -79,7 +80,7 @@ export function ReportsLive() {
           db.from('justificaciones').select('estudiantes(seccion_id)').eq('estado', 'a').gte('hasta', monthStart),
         ]);
         setDays(d);
-        setSections(s.data ?? []);
+        setSections(ordenarSecciones(s.data));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setJustified(((j.data ?? []) as any[]).map((r) => ({ seccion: r.estudiantes?.seccion_id ?? null })));
       } catch (e) {

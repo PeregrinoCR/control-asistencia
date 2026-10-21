@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth';
 import { leerAulas, SIN_CONFIG, type AulasConfig, type EventoAula } from '../../lib/aulas';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
+import { ordenarSecciones } from '../../lib/secciones';
 
 /** Académico · Aulas y grupos: the school's rooms, each group's fixed room, and transfer events. */
 export function RoomsLive() {
@@ -19,7 +20,7 @@ export function RoomsLive() {
     (async () => {
       const [c, s] = await Promise.all([leerAulas(), supabase!.from('secciones').select('nombre').order('nombre')]);
       setCfg(c);
-      setSections((s.data ?? []).map((x) => x.nombre));
+      setSections(ordenarSecciones(s.data).map((x) => x.nombre));
     })();
   }, []);
 

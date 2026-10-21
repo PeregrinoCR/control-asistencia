@@ -5,6 +5,7 @@ import { pct } from '../../data/school';
 import { fetchAll } from '../../lib/fetchAll';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
+import { ordenarSecciones } from '../../lib/secciones';
 
 interface SectionRow {
   id: string;
@@ -60,7 +61,7 @@ export function TodayLive() {
           db.from('asistencia_mes').select('estudiante_id, ausencias').gte('ausencias', 3),
         ]);
         const sectionName = new Map(secs.map((s) => [s.id, s.nombre]));
-        const sections = secs.map((s): SectionRow => {
+        const sections = ordenarSecciones(secs).map((s): SectionRow => {
           const mine = slots.filter((x) => x.seccion_id === s.id);
           const m = marks.filter((x) => x.seccion_id === s.id);
           // A student counts once a day: absent if missed any lesson, late if late to any.

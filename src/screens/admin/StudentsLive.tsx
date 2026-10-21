@@ -64,6 +64,7 @@ export function StudentsLive() {
   const [filter, setFilter] = useState<AgeFilter>('all');
   const [section, setSection] = useState('');
   const [query, setQuery] = useState('');
+  const [soloAdec, setSoloAdec] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
 
   const all = data.students ?? [];
@@ -72,6 +73,7 @@ export function StudentsLive() {
     (s) =>
       (filter === 'all' || (filter === 'min' ? !isAdult(s) : isAdult(s))) &&
       (!section || s.section === section) &&
+      (!soloAdec || s.accommodation) &&
       [s.name, s.idNumber, ...s.guardians.map((g) => g.name)].join(' ').toLowerCase().includes(q),
   );
   const minors = all.filter((s) => !isAdult(s)).length;
@@ -130,6 +132,9 @@ export function StudentsLive() {
                 { value: 'adu', label: 'Mayores de edad' },
               ]}
             />
+            <button type="button" className="chip chip--sm" aria-pressed={soloAdec} onClick={() => setSoloAdec(!soloAdec)}>
+              Con adecuación
+            </button>
             <label htmlFor="e-seccion" className="sr-only">
               Sección
             </label>
@@ -373,7 +378,7 @@ function StudentForm({ s, sections, onSave, onCancel }: { s: LiveStudent; sectio
         <InputField id="ed-tel" label="Teléfono" hint="si es mayor" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
       </div>
       <CheckCard checked={f.accommodation} onChange={(v) => setF({ ...f, accommodation: v })}>
-        Con adecuación: hace los exámenes en el aula de adecuación de su nivel
+        Con adecuación: rinde las pruebas en el aula de adecuación que se asigna en cada prueba
       </CheckCard>
       <div className="grid-2">
         <Button onClick={onCancel}>Cancelar</Button>
