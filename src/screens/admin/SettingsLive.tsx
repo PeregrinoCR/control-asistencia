@@ -19,7 +19,7 @@ import {
 } from '../../data/settings';
 import { ruleState } from '../../data/school';
 import { useAuth } from '../../lib/auth';
-import { localDate } from '../../lib/schedule';
+import { LESSONS, localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 import { routes } from '../../routes';
 
@@ -43,6 +43,9 @@ export interface Exam {
   seccion: string;
   aula: string;
   publicada: boolean;
+  /** First lesson (1–6) and how many lessons it lasts; used to assign exam care. */
+  desde?: number;
+  lecciones?: number;
 }
 
 /** Everything this screen edits, kept in `colegios` (name, sector, phone, modules) and `colegios.config`. */
@@ -60,6 +63,9 @@ interface Form {
   reglasEspeciales: Record<string, boolean>;
   pruebas: Exam[];
   reglasPruebas: Record<string, boolean>;
+  /** Rooms of the school, and the room for each level's students with accommodations. */
+  aulas: string[];
+  aulasAdecuacion: Record<string, string>;
 }
 
 const shortDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -102,6 +108,8 @@ export function SettingsLive() {
         reglasEspeciales: { ...ruleState(SPECIAL_RULES), ...(cfg.reglasEspeciales ?? {}) },
         pruebas: cfg.pruebas ?? [],
         reglasPruebas: { ...ruleState(EXAM_RULES), ...(cfg.reglasPruebas ?? {}) },
+        aulas: cfg.aulas ?? [],
+        aulasAdecuacion: cfg.aulasAdecuacion ?? {},
       });
       setCounts({ teachers: t.data?.length ?? 0, sections: s.data?.length ?? 0, subjects: m.data?.length ?? 0 });
       setSections((s.data ?? []).map((x) => x.nombre));
@@ -215,6 +223,7 @@ function InstitutionTab({ f, update }: TabProps) {
 
       <aside className="split__side stack gap-16">
         <Logo />
+        <Rooms f={f} update={update} />
         <section aria-labelledby="curso-t" className="card gap-10">
           <h2 id="curso-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Curso lectivo {new Date().getFullYear()}
@@ -272,6 +281,59 @@ function Logo() {
         </span>
       )}
       <span className="text-sm muted">Aparece en el panel, en los carnés y en los reportes impresos. Se guarda al subirla.</span>
+    </section>
+  );
+}
+
+/** The school's rooms, and where each level's students with accommodations sit their exams. */
+function Rooms({ f, update }: TabProps) {
+  const [name, setName] = useState('');
+  const levels = ['7', '8', '9', '10', '11', '12'];
+  return (
+    <section aria-labelledby="aulas-t" className="card gap-10">
+      <h2 id="aulas-t" style={{ fontSize: 16, fontWeight: 700 }}>
+        Aulas
+      </h2>
+      <div className="row wrap gap-6">
+        {f.aulas.length === 0 && <span className="text-sm muted">Agregue las aulas para usarlas en exámenes.</span>}
+        {f.aulas.map((a) => (
+          <button key={a} type="button" className="chip chip--sm" title="Quitar" onClick={() => update({ aulas: f.aulas.filter((x) => x !== a) })}>
+            {a} ×
+          </button>
+        ))}
+      </div>
+      <form
+        className="row gap-8"
+        style={{ alignItems: 'flex-end' }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (name.trim() && !f.aulas.includes(name.trim())) update({ aulas: [...f.aulas, name.trim()] });
+          setName('');
+        }}
+      >
+        <InputField id="aula-n" label="Nueva aula" placeholder="Aula 5, Laboratorio…" value={name} onChange={(e) => setName(e.target.value)} />
+        <Button type="submit" regular>
+          Agregar
+        </Button>
+      </form>
+      <h3 style={{ fontSize: 14, fontWeight: 700, marginTop: 6 }}>Aulas de adecuación por nivel</h3>
+      <span className="text-xs muted">Varios niveles pueden usar la misma aula si son pocos estudiantes.</span>
+      <div className="grid-2">
+        {levels.map((lv) => (
+          <div key={lv} className="field">
+            <label htmlFor={`adec-${lv}`} className="field__label">
+              {lv}.°
+            </label>
+            <select id={`adec-${lv}`} className="input" value={f.aulasAdecuacion[lv] ?? ''} onChange={(e) => update({ aulasAdecuacion: { ...f.aulasAdecuacion, [lv]: e.target.value } })}>
+              <option value="">Automática</option>
+              {f.aulas.map((a) => (
+                <option key={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+      <span className="text-xs muted">Recuerde presionar "Guardar cambios".</span>
     </section>
   );
 }
@@ -658,14 +720,16 @@ function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Pro
 
 function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]; save: (next?: Form) => Promise<string> }) {
   const [section, setSection] = useState('Todas');
-  const [draft, setDraft] = useState({ fecha: '', hora: '6:00 p. m.', materia: '', seccion: sections[0] ?? '', aula: '' });
+  // Exams usually start at 8:00 p. m. (4.ª lesson), so students who finish can go home.
+  const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, materia: '', seccion: sections[0] ?? '', aula: '' });
   const [error, setError] = useState('');
   const exams = [...f.pruebas].filter((x) => section === 'Todas' || x.seccion === section).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const drafts = f.pruebas.filter((x) => !x.publicada).length;
 
   const add = () => {
     if (!draft.fecha || !draft.materia.trim() || !draft.seccion) return setError('Complete fecha, materia y sección.');
-    update({ pruebas: [...f.pruebas, { id: crypto.randomUUID(), ...draft, materia: draft.materia.trim(), publicada: false }] });
+    const hora = LESSONS[draft.desde - 1]?.start ?? '';
+    update({ pruebas: [...f.pruebas, { id: crypto.randomUUID(), ...draft, hora, materia: draft.materia.trim(), publicada: false }] });
     setDraft({ ...draft, materia: '', aula: '' });
     setError('');
   };
@@ -712,7 +776,10 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                 {exams.map((x) => (
                   <tr key={x.id}>
                     <td className="strong">{shortDate(x.fecha)}</td>
-                    <td className="tabular">{x.hora}</td>
+                    <td className="tabular">
+                      {x.hora}
+                      {x.lecciones ? <span className="text-xs muted"> · {x.lecciones} lecc.</span> : null}
+                    </td>
                     <td>{x.materia}</td>
                     <td>{x.seccion}</td>
                     <td>{x.aula || '—'}</td>
@@ -734,7 +801,30 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
           <h3 style={{ fontSize: 15, fontWeight: 700 }}>Agregar prueba</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             <InputField id="x-fecha" type="date" label="Fecha" value={draft.fecha} onChange={(e) => setDraft({ ...draft, fecha: e.target.value })} />
-            <InputField id="x-hora" label="Hora" value={draft.hora} onChange={(e) => setDraft({ ...draft, hora: e.target.value })} />
+            <div className="field">
+              <label htmlFor="x-desde" className="field__label">
+                Empieza
+              </label>
+              <select id="x-desde" className="input" value={draft.desde} onChange={(e) => setDraft({ ...draft, desde: Number(e.target.value) })}>
+                {LESSONS.map((l) => (
+                  <option key={l.n} value={l.n}>
+                    {l.start} ({l.n}.ª)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="x-dur" className="field__label">
+                Duración
+              </label>
+              <select id="x-dur" className="input" value={draft.lecciones} onChange={(e) => setDraft({ ...draft, lecciones: Number(e.target.value) })}>
+                {LESSONS.slice(0, LESSONS.length - draft.desde + 1).map((l) => (
+                  <option key={l.n} value={l.n}>
+                    {l.n} {l.n === 1 ? 'lección' : 'lecciones'}
+                  </option>
+                ))}
+              </select>
+            </div>
             <InputField id="x-mat" label="Materia" value={draft.materia} onChange={(e) => setDraft({ ...draft, materia: e.target.value })} />
             <div className="field">
               <label htmlFor="x-sec" className="field__label">
@@ -746,7 +836,12 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                 ))}
               </select>
             </div>
-            <InputField id="x-aula" label="Aula" hint="opcional" value={draft.aula} onChange={(e) => setDraft({ ...draft, aula: e.target.value })} />
+            <InputField id="x-aula" label="Aula" hint="igual = juntas" list="x-aulas" value={draft.aula} onChange={(e) => setDraft({ ...draft, aula: e.target.value })} />
+            <datalist id="x-aulas">
+              {f.aulas.map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
           </div>
           {error && (
             <span className="text-sm ink-orange" role="alert">

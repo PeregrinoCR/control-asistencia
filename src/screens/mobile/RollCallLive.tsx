@@ -50,6 +50,7 @@ export function RollCallLive() {
   const [marks, setMarks] = useState<Marks>({});
   const [state, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [error, setError] = useState('');
+  const [cares, setCares] = useState<{ id: string; fecha: string; aula: string; desde: number; hasta: number; detalle: string | null }[]>([]);
 
   const day = todayId();
   const date = localDate();
@@ -61,6 +62,11 @@ export function RollCallLive() {
       const db = supabase!;
       const { data: p } = await db.from('personal').select('id, nombre').eq('usuario_id', session.user.id).maybeSingle();
       setMe(p ? { id: p.id, name: p.nombre } : null);
+      if (p) {
+        // Exam cares published for this person, from today on.
+        const { data: c } = await db.from('cuidos').select('id, fecha, aula, desde, hasta, detalle').eq('persona_id', p.id).eq('estado', 'publicado').gte('fecha', date).order('fecha').order('desde');
+        setCares(c ?? []);
+      }
       if (!p || !day) return setLessons([]);
       const [{ data, error }, cover] = await Promise.all([
         db.from('horario').select('leccion, seccion_id, secciones(nombre), materias(nombre)').eq('docente_id', p.id).eq('dia', day).order('leccion'),
@@ -165,6 +171,17 @@ export function RollCallLive() {
             </button>
           </span>
         </div>
+        {cares.length > 0 && (
+          <div className="stack gap-2 text-sm">
+            <span className="strong">Mis próximos cuidos de examen</span>
+            {cares.map((c) => (
+              <span key={c.id} className="muted">
+                {c.fecha.split('-').reverse().slice(0, 2).join('/')} · {c.aula} · {LESSONS[c.desde - 1]?.start}–{LESSONS[c.hasta - 1]?.end}
+                {c.detalle && ` · ${c.detalle}`}
+              </span>
+            ))}
+          </div>
+        )}
         {lesson ? (
           <>
             <div className="stack gap-2">

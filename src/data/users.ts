@@ -78,7 +78,7 @@ export const PERMISSION_LABEL = Object.fromEntries(ALL_PERMISSIONS.map((p) => [p
 /** Permissions that can be limited to one or more sections. */
 export const SCOPED = new Set<PermissionId>(ALL_PERMISSIONS.filter((p) => p.scoped).map((p) => p.id));
 
-export type RoleId = 'dir' | 'doc' | 'gui' | 'ori' | 'adm' | 'gua';
+export type RoleId = 'dir' | 'doc' | 'gui' | 'ori' | 'adm' | 'gua' | 'aux';
 
 export interface Role {
   id: RoleId;
@@ -117,6 +117,7 @@ export const ROLES: Role[] = [
     grants: ['viewAttendance', 'approveJust', 'teacherAbs', 'notices', 'payments', 'cards', 'reports'],
   },
   { id: 'gua', name: 'Guarda de portón', help: 'Controla entradas y salidas', grants: ['gate'] },
+  { id: 'aux', name: 'Auxiliar', help: 'Personal de apoyo: cuido de exámenes y otras tareas', grants: [] },
 ];
 
 export interface User {
@@ -128,6 +129,8 @@ export interface User {
   /** Section a guide teacher is in charge of. */
   section?: string;
   extra: PermissionId[];
+  /** Working hours, in lessons, for staff who don't teach (used for exam care). */
+  work?: { dias: string[]; desde: number; hasta: number } | null;
   active: boolean;
   lastSeen: string;
 }

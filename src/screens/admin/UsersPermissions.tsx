@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { LESSONS } from '../../lib/schedule';
 import { useStaff } from '../../lib/staff';
 import {
   PERMISSION_GROUPS,
@@ -253,6 +254,53 @@ interface UserPanelProps {
   onSave: () => void;
 }
 
+const WEEK = [
+  ['L', 'Lun'],
+  ['K', 'Mar'],
+  ['M', 'Mié'],
+  ['J', 'Jue'],
+  ['V', 'Vie'],
+] as const;
+
+/** Working hours of staff who don't teach, in lessons; used to assign exam care. */
+function WorkHours({ value, onChange }: { value?: User['work']; onChange: (w: User['work']) => void }) {
+  const w = value ?? { dias: ['L', 'K', 'M', 'J', 'V'], desde: 1, hasta: LESSONS.length };
+  return (
+    <fieldset className="fieldset">
+      <legend>Horario de trabajo</legend>
+      <div className="row wrap gap-6">
+        {WEEK.map(([id, label]) => {
+          const on = w.dias.includes(id);
+          return (
+            <button key={id} type="button" className="chip chip--sm" aria-pressed={on} onClick={() => onChange({ ...w, dias: on ? w.dias.filter((d) => d !== id) : [...w.dias, id] })}>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="grid-2" style={{ marginTop: 8 }}>
+        {(['desde', 'hasta'] as const).map((k) => (
+          <div key={k} className="field">
+            <label htmlFor={`w-${k}`} className="field__label">
+              {k === 'desde' ? 'Desde' : 'Hasta'}
+            </label>
+            <select id={`w-${k}`} className="input" value={w[k]} onChange={(e) => onChange({ ...w, [k]: Number(e.target.value) })}>
+              {LESSONS.map((l) => (
+                <option key={l.n} value={l.n}>
+                  {k === 'desde' ? l.start : l.end} ({l.n}.ª)
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+      <span className="text-xs muted" style={{ display: 'block', marginTop: 6 }}>
+        {value ? 'Se usa para proponer el cuido de exámenes.' : 'Sin dato: se toma toda la jornada. Cambie algo y guarde para fijarlo.'}
+      </span>
+    </fieldset>
+  );
+}
+
 function UserPanel({ user, roles, sections, onChange, saved, error, onSave }: UserPanelProps) {
   const { fromRoles, all } = effectivePermissions(user, roles);
   const isGuide = user.roles.includes('gui');
@@ -283,6 +331,7 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave }: Us
 
       <RoleChecks value={user.roles} roles={roles} onChange={(r) => onChange({ ...user, roles: r, section: r.includes('gui') ? user.section : undefined })} />
       {isGuide && <SectionPicker value={user.section} sections={sections} onChange={(s) => onChange({ ...user, section: s })} />}
+      {!user.roles.includes('doc') && <WorkHours value={user.work} onChange={(w) => onChange({ ...user, work: w })} />}
 
       <div className="stack gap-8">
         <h3 className="eyebrow">Permisos</h3>

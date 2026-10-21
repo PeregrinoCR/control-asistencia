@@ -8,6 +8,7 @@ import { Assignments } from './screens/admin/Assignments';
 import { TeacherAbsences } from './screens/admin/TeacherAbsences';
 import { UsersPermissions } from './screens/admin/UsersPermissions';
 import { EarlyWarning } from './screens/admin/EarlyWarning';
+import { ExamCare } from './screens/admin/ExamCare';
 import { Justifications } from './screens/admin/Justifications';
 import { Notices } from './screens/admin/Notices';
 import { Reports } from './screens/admin/Reports';
@@ -82,6 +83,7 @@ export function App() {
         <Route path={routes.admin.justifications} element={<Justifications />} />
         <Route path={routes.admin.notices} element={<Notices />} />
         <Route path={routes.admin.earlyWarning} element={<EarlyWarning />} />
+        <Route path={routes.admin.examCare} element={<ExamCare />} />
         <Route path={routes.admin.reports} element={<Reports />} />
         <Route path={routes.admin.users} element={<UsersPermissions />} />
         <Route path={routes.admin.settings} element={<Settings />} />

@@ -57,7 +57,8 @@ export const useAuth = () => useContext(AuthContext);
 export function homeFor(roles: string[], family = false) {
   if (roles.length === 0 && family) return routes.family.home;
   const panel = roles.some((r) => ['dir', 'ori', 'adm'].includes(r));
-  if (!panel && roles.some((r) => r === 'doc' || r === 'gui')) return routes.teacher.rollCall;
+  // Teachers and support staff land on the roll call, which also lists their exam cares.
+  if (!panel && roles.some((r) => r === 'doc' || r === 'gui' || r === 'aux')) return routes.teacher.rollCall;
   if (!panel && roles.includes('gua')) return routes.guard.gate;
   return routes.admin.today;
 }

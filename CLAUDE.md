@@ -53,11 +53,12 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Probar notificaciones en teléfonos reales (Android y iPhone instalada) y la línea SMS.
 - Cambiar horas de lecciones desde la app (hoy fijas en `SHIFT_BLOCKS`); firma dibujada en salidas y giras.
-- **Siguiente sesión: cuido de exámenes** — diseño acordado en `docs/cuido-de-examenes.md` (falta confirmar
-  dónde se ingresa el horario de trabajo del personal que no da lecciones).
+- Cuido de exámenes hecho (migración 0005, `src/lib/cuidos.ts`, `ExamCareLive.tsx` en `/direccion/cuidos`;
+  horario de trabajo en la ficha del personal, casilla "adecuación" en estudiantes, aulas en Configuración).
+  Diseño en `docs/cuido-de-examenes.md`. Falta: que el usuario corra 0005 en Supabase y lo pruebe con datos reales.
 - Otros hechos recientes: Profesores y secciones es un tablero con tarjetas por carga (`colegios.config.cargas`)
   y panel "Carga por docente"; editar estudiantes/encargados en su ficha; en teléfono el panel usa barra
   superior + menú desplegable + accesos rápidos abajo. Diseños de referencia: https://claude.ai/artifact/Fbi3gH92QsBmK7natTNPR2
 - Datos del entorno: app en https://control-asistencia-12b.pages.dev (Cloudflare Pages publica `main`; 500
   publicaciones/mes). Netlify (elcole.netlify.app) quedó en desuso por límite de créditos: publicar en lote, una vez por sesión; Supabase proyecto
-  `cvfmprnelubknjaguyua`; migraciones 0001–0004 instaladas; Edge Function `enviar-avisos` publicada.
+  `cvfmprnelubknjaguyua`; migraciones 0001–0004 instaladas (0005 pendiente); Edge Function `enviar-avisos` publicada.

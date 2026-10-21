@@ -22,6 +22,7 @@ export const routes = {
     today: '/direccion',
     assignments: '/direccion/asignaciones',
     teacherAbsences: '/direccion/docentes-ausentes',
+    examCare: '/direccion/cuidos',
     trips: '/direccion/giras',
     students: '/direccion/estudiantes',
     justifications: '/direccion/justificaciones',

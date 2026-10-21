@@ -13,6 +13,7 @@ interface StaffRow {
   seccion_guia: string | null;
   activo: boolean;
   usuario_id: string | null;
+  horario_trabajo: User['work'];
 }
 
 /** Staff of the signed-in user's school, read from and saved to the server. */
@@ -43,6 +44,7 @@ export function useStaff() {
         extra: r.permisos_extra,
         active: r.activo,
         lastSeen: r.usuario_id ? 'Cuenta creada' : 'Aún no crea su cuenta',
+        work: r.horario_trabajo,
       })),
     );
   }, [school]);
@@ -61,6 +63,7 @@ export function useStaff() {
       permisos_extra: u.extra,
       seccion_guia: sections.find((s) => s.nombre === u.section)?.id ?? null,
       activo: u.active,
+      horario_trabajo: u.work ?? null,
     };
   };
 

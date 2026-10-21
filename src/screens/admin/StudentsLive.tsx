@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Avatar, Button, Icon, InputField, MiniStat, Segmented } from '../../components';
+import { Avatar, Button, CheckCard, Icon, InputField, MiniStat, Segmented } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import QRCode from 'qrcode';
 import { CARD_PREFIX } from '../../data/gate';
@@ -239,6 +239,7 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
             {s.age !== null && ` · ${s.age} años · ${adult ? 'mayor de edad' : 'menor de edad'}`}
           </span>
           {s.idNumber && <span className="text-sm muted">Cédula {s.idNumber}</span>}
+          {s.accommodation && <span className="text-sm strong" style={{ color: 'var(--blue-ink)' }}>Con adecuación</span>}
         </div>
       </div>
 
@@ -342,7 +343,7 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
 }
 
 function StudentForm({ s, sections, onSave, onCancel }: { s: LiveStudent; sections: string[]; onSave: (row: Omit<NewStudent, 'guardian'>) => void; onCancel: () => void }) {
-  const [f, setF] = useState({ name: s.name, idNumber: s.idNumber, birth: s.birth ?? '', section: s.section === '—' ? '' : s.section, phone: s.phone });
+  const [f, setF] = useState({ name: s.name, idNumber: s.idNumber, birth: s.birth ?? '', section: s.section === '—' ? '' : s.section, phone: s.phone, accommodation: s.accommodation });
   return (
     <form
       className="stack gap-12"
@@ -371,6 +372,9 @@ function StudentForm({ s, sections, onSave, onCancel }: { s: LiveStudent; sectio
         </div>
         <InputField id="ed-tel" label="Teléfono" hint="si es mayor" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
       </div>
+      <CheckCard checked={f.accommodation} onChange={(v) => setF({ ...f, accommodation: v })}>
+        Con adecuación: hace los exámenes en el aula de adecuación de su nivel
+      </CheckCard>
       <div className="grid-2">
         <Button onClick={onCancel}>Cancelar</Button>
         <Button type="submit" variant="primary">

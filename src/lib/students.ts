@@ -20,6 +20,8 @@ export interface LiveStudent {
   age: number | null;
   section: string;
   phone: string;
+  /** Sits exams apart with other accommodated students of the same level. */
+  accommodation: boolean;
   hasAccount: boolean;
   guardians: Guardian[];
   /** Lessons absent and late this month. */
@@ -34,6 +36,7 @@ export interface NewStudent {
   birth: string;
   section: string;
   phone: string;
+  accommodation?: boolean;
   guardian?: { name: string; idNumber: string; relation: string; phone: string; email: string };
 }
 
@@ -60,7 +63,7 @@ export function useStudents() {
     const [st, secs, att] = await Promise.all([
       supabase
         .from('estudiantes')
-        .select('id, nombre, cedula, nacimiento, telefono, usuario_id, secciones(nombre), estudiante_encargado(parentesco, encargados(*))')
+        .select('id, nombre, cedula, nacimiento, telefono, adecuacion, usuario_id, secciones(nombre), estudiante_encargado(parentesco, encargados(*))')
         .eq('activo', true)
         .order('nombre'),
       supabase.from('secciones').select('id, nombre').order('nombre'),
@@ -81,6 +84,7 @@ export function useStudents() {
         age: ageOn(r.nacimiento),
         section: r.secciones?.nombre ?? '—',
         phone: r.telefono ?? '',
+        accommodation: !!r.adecuacion,
         hasAccount: !!r.usuario_id,
         absences: totals.get(r.id)?.ausencias ?? 0,
         lates: totals.get(r.id)?.tardias ?? 0,
@@ -187,6 +191,7 @@ export function useStudents() {
         nacimiento: row.birth || null,
         seccion_id: section?.id ?? null,
         telefono: row.phone.trim() || null,
+        adecuacion: !!row.accommodation,
       })
       .eq('id', id);
     if (!error) await reload();
