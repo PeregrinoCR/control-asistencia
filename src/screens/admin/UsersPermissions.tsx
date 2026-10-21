@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { LESSONS } from '../../lib/schedule';
+import { useAuth } from '../../lib/auth';
 import { useStaff } from '../../lib/staff';
 import {
   PERMISSION_GROUPS,
@@ -72,6 +73,7 @@ export function UsersPermissions() {
 type Staff = ReturnType<typeof useStaff>;
 
 function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: (u: User[]) => void; roles: Role[]; staff: Staff }) {
+  const { session } = useAuth();
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | RoleId>('all');
   const [selectedId, setSelectedId] = useState<User['id'] | 'new'>(staff.live ? (users[0]?.id ?? 'new') : 2);
@@ -95,6 +97,14 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
     const error = await staff.save(selected);
     setSaveError(error);
     setSaved(!error);
+  };
+
+  // Removes the selected person from the staff; the list falls back to the first remaining one.
+  const remove = async () => {
+    if (!selected) return;
+    const error = await staff.remove(String(selected.id));
+    setSaveError(error);
+    if (!error) setSelectedId(users.find((u) => u.id !== selected.id)?.id ?? 'new');
   };
 
   return (
@@ -172,7 +182,17 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
       </section>
 
       {selected ? (
-        <UserPanel key={selected.id} user={selected} roles={roles} sections={sections} onChange={update} saved={saved} error={saveError} onSave={save} />
+        <UserPanel
+          key={selected.id}
+          user={selected}
+          roles={roles}
+          sections={sections}
+          onChange={update}
+          saved={saved}
+          error={saveError}
+          onSave={save}
+          onRemove={staff.live && selected.contact.toLowerCase() !== session?.user.email?.toLowerCase() ? remove : undefined}
+        />
       ) : (
         <InvitePanel
           roles={roles}
@@ -301,8 +321,10 @@ function WorkHours({ value, onChange }: { value?: User['work']; onChange: (w: Us
   );
 }
 
-function UserPanel({ user, roles, sections, onChange, saved, error, onSave }: UserPanelProps) {
+function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRemove }: UserPanelProps & { onRemove?: () => void }) {
   const { fromRoles, all } = effectivePermissions(user, roles);
+  const [confirming, setConfirming] = useState(false);
+  const [typed, setTyped] = useState('');
   const isGuide = user.roles.includes('gui');
   const noRoles = user.roles.length === 0;
 
@@ -393,6 +415,30 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave }: Us
           Guardar cambios
         </Button>
       </div>
+
+      {onRemove && (
+        <div className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
+          {!confirming ? (
+            <Button variant="ghost-danger" onClick={() => setConfirming(true)}>
+              Eliminar del personal
+            </Button>
+          ) : (
+            <>
+              <span className="text-sm">
+                Se quita a <strong>{user.name}</strong> del personal. Su cuenta de inicio de sesión queda, sin acceso al colegio.
+                Escriba ELIMINAR para confirmar.
+              </span>
+              <InputField id="del-word" label="Escriba ELIMINAR" value={typed} onChange={(e) => setTyped(e.target.value)} />
+              <div className="row gap-8">
+                <Button variant="ghost-danger" disabled={typed.trim() !== 'ELIMINAR'} onClick={onRemove}>
+                  Eliminar del personal
+                </Button>
+                <Button onClick={() => { setConfirming(false); setTyped(''); }}>Cancelar</Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </aside>
   );
 }

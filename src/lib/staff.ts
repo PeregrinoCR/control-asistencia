@@ -85,5 +85,12 @@ export function useStaff() {
     return { id: data?.id as string | undefined, error: error?.message ?? '' };
   };
 
-  return { live: !!supabase, users, sections: sections.map((s) => s.nombre), error, save, invite };
+  /** Removes the person from the staff. Their sign-in account stays, without access. Returns an error message, or ''. */
+  const remove = async (id: string) => {
+    const { error } = await supabase!.from('personal').delete().eq('id', id);
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
+  return { live: !!supabase, users, sections: sections.map((s) => s.nombre), error, save, invite, remove };
 }
