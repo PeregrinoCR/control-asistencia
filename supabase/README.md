@@ -20,6 +20,9 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
   configuración y archivos (comprobantes).
 - `0004_notificaciones_y_sustitutos.sql`: notificaciones al teléfono y SMS de respaldo, docentes ausentes
   con sustitutos y logo del colegio.
+- `0005_cuido_examenes.sql`: cuido de exámenes (horario de trabajo, adecuación, cuidos).
+- `0006_desarrollo.sql`: botón de desarrollo para borrar los datos del colegio (Configuración › Desarrollo).
+  Se quita antes de la versión final.
 
 ## Notificaciones y SMS (una sola vez)
 

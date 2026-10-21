@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { borrarDatos, cargarEjemplos } from '../../lib/devData';
 import {
   EXAM_RULES,
   INSTITUTION_FIELDS,
@@ -21,7 +22,7 @@ import { useAuth } from '../../lib/auth';
 import { LESSONS, localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
-type Tab = 'inst' | 'mod' | 'jor' | 'esp' | 'exa';
+type Tab = 'inst' | 'mod' | 'jor' | 'esp' | 'exa' | 'dev';
 
 export interface SpecialEvent {
   id: string;
@@ -161,6 +162,7 @@ export function SettingsLive() {
           { value: 'jor', label: 'Jornadas y horarios' },
           { value: 'esp', label: 'Horarios especiales' },
           { value: 'exa', label: 'Horario de exámenes' },
+          { value: 'dev', label: 'Desarrollo' },
         ]}
       />
 
@@ -173,6 +175,7 @@ export function SettingsLive() {
           {tab === 'jor' && <ShiftsTab f={form} update={update} />}
           {tab === 'esp' && <SpecialTab f={form} update={update} save={save} />}
           {tab === 'exa' && <ExamsTab f={form} update={update} sections={sections} save={save} />}
+          {tab === 'dev' && school && <DevTab colegioId={school.id} />}
         </div>
       )}
     </AdminLayout>
@@ -819,5 +822,59 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
         </Button>
       </aside>
     </div>
+  );
+}
+
+/** Temporary, for the development phase: empty the school's data, or load sample data into an empty school. */
+function DevTab({ colegioId }: { colegioId: string }) {
+  const [word, setWord] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  // Both actions reload the page, so the screens read the new data.
+  const run = async (action: () => Promise<string>) => {
+    setBusy(true);
+    setError('');
+    const err = await action();
+    setBusy(false);
+    if (err) return setError(err);
+    window.location.reload();
+  };
+
+  return (
+    <section aria-labelledby="dev-t" className="card card--roomy stack gap-14">
+      <div className="stack gap-2">
+        <h2 id="dev-t" className="title-section">
+          Desarrollo
+        </h2>
+        <span className="text-sm muted">Herramientas para la fase de pruebas. Se quitan antes de la versión final.</span>
+      </div>
+      <div className="stack gap-8">
+        <span className="text-sm">
+          <strong>Borrar los datos del colegio.</strong> Quita estudiantes, encargados, personal (excepto su cuenta), secciones, horarios, pruebas, avisos y registros. El nombre, los módulos y la institución se conservan.
+        </span>
+        <InputField id="dev-word" label="Escriba BORRAR para confirmar" value={word} onChange={(e) => setWord(e.target.value)} />
+        <div>
+          <Button variant="primary" disabled={busy || word.trim() !== 'BORRAR'} onClick={() => run(borrarDatos)}>
+            {busy ? 'Borrando…' : 'Borrar datos'}
+          </Button>
+        </div>
+      </div>
+      <div className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
+        <span className="text-sm">
+          <strong>Cargar datos de ejemplo.</strong> Solo si el colegio no tiene estudiantes: 8 secciones, 6 docentes, materias, horarios y 32 estudiantes con encargados.
+        </span>
+        <div>
+          <Button disabled={busy} onClick={() => run(() => cargarEjemplos(colegioId))}>
+            {busy ? 'Cargando…' : 'Cargar datos de ejemplo'}
+          </Button>
+        </div>
+      </div>
+      {error && (
+        <span className="text-sm ink-orange" role="alert">
+          {error}
+        </span>
+      )}
+    </section>
   );
 }
