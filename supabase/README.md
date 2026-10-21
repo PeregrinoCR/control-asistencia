@@ -40,7 +40,7 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
    luego su cuenta con ese mismo correo.
 
 Para que el enlace del correo abra la app, en **Authentication › URL Configuration** poner como
-*Site URL* la dirección donde está publicada la app.
+*Site URL* la dirección donde está publicada la app (hoy https://control-asistencia-12b.pages.dev).
 
 ## Cómo se vinculan las cuentas
 

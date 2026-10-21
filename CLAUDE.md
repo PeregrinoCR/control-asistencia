@@ -58,5 +58,6 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 - Otros hechos recientes: Profesores y secciones es un tablero con tarjetas por carga (`colegios.config.cargas`)
   y panel "Carga por docente"; editar estudiantes/encargados en su ficha; en teléfono el panel usa barra
   superior + menú desplegable + accesos rápidos abajo. Diseños de referencia: https://claude.ai/artifact/Fbi3gH92QsBmK7natTNPR2
-- Datos del entorno: app en https://elcole.netlify.app (Netlify publica `main`); Supabase proyecto
+- Datos del entorno: app en https://control-asistencia-12b.pages.dev (Cloudflare Pages publica `main`; 500
+  publicaciones/mes). Netlify (elcole.netlify.app) quedó en desuso por límite de créditos: publicar en lote, una vez por sesión; Supabase proyecto
   `cvfmprnelubknjaguyua`; migraciones 0001–0004 instaladas; Edge Function `enviar-avisos` publicada.
