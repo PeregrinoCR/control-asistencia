@@ -19,8 +19,9 @@ begin
   delete from bitacora where colegio_id = col;
   delete from estudiantes where colegio_id = col;
   delete from encargados where colegio_id = col;
-  delete from materias where colegio_id = col;
+  -- Antes de las materias: los horarios dependen de ellas y se borran al borrar las secciones.
   delete from secciones where colegio_id = col;
+  delete from materias where colegio_id = col;
   -- Se conserva la cuenta que hace el borrado; las demás personas del personal se eliminan.
   delete from personal where colegio_id = col and usuario_id is distinct from auth.uid();
   -- Configuración de cargas, calendario y aulas: vuelve a empezar; los datos del colegio se conservan.
