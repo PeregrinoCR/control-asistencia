@@ -407,7 +407,13 @@ function ExamsTab() {
   const [section, setSection] = useState('Todas');
   const [rules, setRules] = useState(ruleState(EXAM_RULES));
   const [published, setPublished] = useState(false);
-  const exams = EXAMS.filter((x) => section === 'Todas' || x.section === section);
+  // One row per exam: the same subject, date and time for several sections.
+  const exams = Object.values(
+    EXAMS.filter((x) => section === 'Todas' || x.section === section).reduce<Record<string, typeof EXAMS>>((acc, x) => {
+      (acc[`${x.date}|${x.subject}|${x.time}`] ??= []).push(x);
+      return acc;
+    }, {}),
+  );
 
   return (
     <div className="split">
@@ -435,33 +441,42 @@ function ExamsTab() {
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Hora</th>
+                <th>Horario</th>
                 <th>Materia</th>
-                <th>Sección</th>
-                <th>Docente</th>
-                <th>Aula</th>
+                <th>Secciones y aula</th>
                 <th>Estado</th>
               </tr>
             </thead>
             <tbody>
-              {exams.map((x) => (
-                <tr key={`${x.date}-${x.section}-${x.subject}`}>
-                  <td className="strong">{x.date}</td>
-                  <td className="tabular">{x.time}</td>
-                  <td>{x.subject}</td>
-                  <td>{x.section}</td>
-                  <td>{x.teacher}</td>
-                  <td>{x.room}</td>
-                  <td>
-                    <Badge tone={x.published ? 'green' : 'neutral'}>{x.published ? 'Publicada' : 'Borrador'}</Badge>
-                  </td>
-                </tr>
-              ))}
+              {exams.map((g) => {
+                const first = g[0];
+                const published = g.every((x) => x.published);
+                return (
+                  <tr key={`${first.date}-${first.subject}-${first.time}`}>
+                    <td className="strong">{first.date}</td>
+                    <td className="tabular">{first.time}</td>
+                    <td>{first.subject}</td>
+                    <td>
+                      <span className="text-sm">
+                        {g.map((x, i) => (
+                          <span key={x.section}>
+                            {i > 0 && ' · '}
+                            <strong>{x.section}</strong> {x.room}
+                          </span>
+                        ))}
+                      </span>
+                    </td>
+                    <td>
+                      <Badge tone={published ? 'green' : 'neutral'}>{published ? 'Publicada' : 'Borrador'}</Badge>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
         <span className="text-sm muted">
-          {exams.length} pruebas · {exams.filter((x) => !x.published).length} en borrador
+          {exams.length} pruebas · {exams.filter((g) => !g[0].published).length} en borrador
         </span>
       </section>
 

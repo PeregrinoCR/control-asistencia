@@ -45,6 +45,8 @@ export interface Exam {
   /** First lesson (1–6) and how many lessons it lasts; used to assign exam care. */
   desde?: number;
   lecciones?: number;
+  /** Shared by the rows of one exam given to several sections. Older exams have none. */
+  grupo?: string;
 }
 
 /** Everything this screen edits, kept in `colegios` (name, sector, phone, modules) and `colegios.config`. */
@@ -678,18 +680,49 @@ function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Pro
 function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]; save: (next?: Form) => Promise<string> }) {
   const [section, setSection] = useState('Todas');
   // Exams usually start at 8:00 p. m. (4.ª lesson), so students who finish can go home.
-  const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, materia: '', seccion: sections[0] ?? '', aula: '' });
+  const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, materia: '' });
+  // null = every section is picked (the usual case); the teacher unchecks the ones that do not take the exam.
+  const [picked, setPicked] = useState<string[] | null>(null);
+  const [aulas, setAulas] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
-  const exams = [...f.pruebas].filter((x) => section === 'Todas' || x.seccion === section).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const chosen = picked ?? sections;
+
+  // One row per exam: the sections that take it share a `grupo`. Older exams without one stand alone.
+  const groupOf = (x: Exam) => x.grupo ?? x.id;
+  const visibleKeys = new Set(f.pruebas.filter((x) => section === 'Todas' || x.seccion === section).map(groupOf));
+  const rows = Object.values(
+    f.pruebas.filter((x) => visibleKeys.has(groupOf(x))).reduce<Record<string, Exam[]>>((acc, x) => {
+      (acc[groupOf(x)] ??= []).push(x);
+      return acc;
+    }, {}),
+  ).sort((a, b) => a[0].fecha.localeCompare(b[0].fecha));
   const drafts = f.pruebas.filter((x) => !x.publicada).length;
 
+  const toggle = (s: string) => setPicked(chosen.includes(s) ? chosen.filter((x) => x !== s) : [...chosen, s]);
+
   const add = () => {
-    if (!draft.fecha || !draft.materia.trim() || !draft.seccion) return setError('Complete fecha, materia y sección.');
+    if (!draft.fecha || !draft.materia.trim() || chosen.length === 0) return setError('Complete fecha, materia y al menos una sección.');
     const hora = LESSONS[draft.desde - 1]?.start ?? '';
-    update({ pruebas: [...f.pruebas, { id: crypto.randomUUID(), ...draft, hora, materia: draft.materia.trim(), publicada: false }] });
-    setDraft({ ...draft, materia: '', aula: '' });
+    const grupo = crypto.randomUUID();
+    const nuevas: Exam[] = chosen.map((seccion) => ({
+      id: crypto.randomUUID(),
+      grupo,
+      fecha: draft.fecha,
+      hora,
+      desde: draft.desde,
+      lecciones: draft.lecciones,
+      materia: draft.materia.trim(),
+      seccion,
+      aula: aulas[seccion]?.trim() ?? '',
+      publicada: false,
+    }));
+    update({ pruebas: [...f.pruebas, ...nuevas] });
+    setDraft({ ...draft, materia: '' });
+    setAulas({});
     setError('');
   };
+
+  const remove = (key: string) => update({ pruebas: f.pruebas.filter((x) => groupOf(x) !== key) });
 
   const publish = () => {
     const pruebas = f.pruebas.map((x) => ({ ...x, publicada: true }));
@@ -713,7 +746,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
             </button>
           ))}
         </div>
-        {exams.length === 0 ? (
+        {rows.length === 0 ? (
           <p className="text-sm muted">No hay pruebas registradas.</p>
         ) : (
           <div className="table-wrap">
@@ -721,35 +754,46 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
               <thead>
                 <tr>
                   <th>Fecha</th>
-                  <th>Hora</th>
+                  <th>Horario</th>
                   <th>Materia</th>
-                  <th>Sección</th>
-                  <th>Aula</th>
+                  <th>Secciones y aula</th>
                   <th>Estado</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
-                {exams.map((x) => (
-                  <tr key={x.id}>
-                    <td className="strong">{shortDate(x.fecha)}</td>
-                    <td className="tabular">
-                      {x.hora}
-                      {x.lecciones ? <span className="text-xs muted"> · {x.lecciones} lecc.</span> : null}
-                    </td>
-                    <td>{x.materia}</td>
-                    <td>{x.seccion}</td>
-                    <td>{x.aula || '—'}</td>
-                    <td>
-                      <Badge tone={x.publicada ? 'green' : 'neutral'}>{x.publicada ? 'Publicada' : 'Borrador'}</Badge>
-                    </td>
-                    <td>
-                      <button type="button" className="link-button text-sm" onClick={() => update({ pruebas: f.pruebas.filter((p) => p.id !== x.id) })}>
-                        Quitar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((g) => {
+                  const first = g[0];
+                  const published = g.every((x) => x.publicada);
+                  return (
+                    <tr key={groupOf(first)}>
+                      <td className="strong">{shortDate(first.fecha)}</td>
+                      <td className="tabular">
+                        {first.hora}
+                        {first.lecciones ? <span className="text-xs muted"> · {first.lecciones} lecc.</span> : null}
+                      </td>
+                      <td>{first.materia}</td>
+                      <td>
+                        <span className="text-sm">
+                          {g.map((x, i) => (
+                            <span key={x.id}>
+                              {i > 0 && ' · '}
+                              <strong>{x.seccion}</strong> {x.aula ? `Aula ${x.aula.replace(/^Aula /, '')}` : <span className="muted">sin aula</span>}
+                            </span>
+                          ))}
+                        </span>
+                      </td>
+                      <td>
+                        <Badge tone={published ? 'green' : 'neutral'}>{published ? 'Publicada' : 'Borrador'}</Badge>
+                      </td>
+                      <td>
+                        <button type="button" className="link-button text-sm" onClick={() => remove(groupOf(first))}>
+                          Quitar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -783,30 +827,51 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
               </select>
             </div>
             <InputField id="x-mat" label="Materia" value={draft.materia} onChange={(e) => setDraft({ ...draft, materia: e.target.value })} />
-            <div className="field">
-              <label htmlFor="x-sec" className="field__label">
-                Sección
-              </label>
-              <select id="x-sec" className="input" value={draft.seccion} onChange={(e) => setDraft({ ...draft, seccion: e.target.value })}>
-                {sections.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <InputField id="x-aula" label="Aula" hint="igual = juntas" list="x-aulas" value={draft.aula} onChange={(e) => setDraft({ ...draft, aula: e.target.value })} />
-            <datalist id="x-aulas">
-              {f.aulas.map((a) => (
-                <option key={a} value={a} />
-              ))}
-            </datalist>
           </div>
+          <div className="stack gap-6">
+            <span className="text-sm" style={{ fontWeight: 600 }}>
+              Secciones que presentan la prueba <span className="muted">· {chosen.length} de {sections.length}</span>
+            </span>
+            <div className="row wrap gap-6">
+              {sections.map((s) => (
+                <button key={s} type="button" className="chip chip--sm" aria-pressed={chosen.includes(s)} onClick={() => toggle(s)}>
+                  {chosen.includes(s) ? '✓ ' : ''}
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          {chosen.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+              {chosen.map((s) => (
+                <div key={s} className="field">
+                  <label htmlFor={`x-aula-${s}`} className="field__label">
+                    Aula de {s}
+                  </label>
+                  <input
+                    id={`x-aula-${s}`}
+                    className="input"
+                    list="x-aulas"
+                    placeholder="Aula"
+                    value={aulas[s] ?? ''}
+                    onChange={(e) => setAulas({ ...aulas, [s]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <datalist id="x-aulas">
+            {f.aulas.map((a) => (
+              <option key={a} value={a} />
+            ))}
+          </datalist>
           {error && (
             <span className="text-sm ink-orange" role="alert">
               {error}
             </span>
           )}
           <Button variant="dashed" size="md" style={{ alignSelf: 'flex-start' }} onClick={add}>
-            + Agregar a la lista
+            + Agregar prueba a {chosen.length} {chosen.length === 1 ? 'sección' : 'secciones'}
           </Button>
           <span className="text-xs muted">Recuerde presionar "Guardar cambios" o "Publicar calendario".</span>
         </div>
