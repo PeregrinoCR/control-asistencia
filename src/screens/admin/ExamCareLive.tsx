@@ -149,6 +149,7 @@ export function ExamCareLive() {
         room: x.aula,
         from: x.desde ?? 4,
         lessons: x.lecciones ?? LESSONS.length - (x.desde ?? 4) + 1,
+        lessonsAccommodated: x.leccionesAdecuacion,
       }));
     const slots: SlotIn[] = data.timetable.filter((t) => t.day === day);
     // Who teaches each subject in each section: the load, else the timetable.

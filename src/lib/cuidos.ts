@@ -23,6 +23,8 @@ export interface ExamIn {
   /** First lesson (1–6) and how many lessons it lasts. */
   from: number;
   lessons: number;
+  /** Lessons for students with accommodations; the accommodation room covers them. Defaults to `lessons`. */
+  lessonsAccommodated?: number;
 }
 
 export interface StaffIn {
@@ -106,7 +108,9 @@ export function propose(input: ProposeInput): CareOut[] {
   }
   for (const [room, levels] of roomsForLevels) {
     const es = exams.filter((e) => levels.includes(levelOf(e.section)));
-    const { from, to } = rangeOf(es);
+    const { from } = rangeOf(es);
+    // The accommodation room stays until the last lesson of its students.
+    const to = Math.max(...es.map((e) => e.from + (e.lessonsAccommodated ?? e.lessons) - 1));
     const teacherId = es.map((e) => subjectTeacher.get(`${e.sectionId}|${e.subject}`)).find((t) => t && !absent.has(t)) ?? null;
     if (teacherId) take(teacherId, from, to);
     out.push({

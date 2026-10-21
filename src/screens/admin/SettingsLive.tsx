@@ -47,6 +47,8 @@ export interface Exam {
   lecciones?: number;
   /** Shared by the rows of one exam given to several sections. Older exams have none. */
   grupo?: string;
+  /** Lessons for students with accommodations (adecuación): same start, possibly longer. */
+  leccionesAdecuacion?: number;
 }
 
 /** Everything this screen edits, kept in `colegios` (name, sector, phone, modules) and `colegios.config`. */
@@ -680,7 +682,7 @@ function SpecialTab({ f, update, save }: TabProps & { save: (next?: Form) => Pro
 function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]; save: (next?: Form) => Promise<string> }) {
   const [section, setSection] = useState('Todas');
   // Exams usually start at 8:00 p. m. (4.ª lesson), so students who finish can go home.
-  const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, materia: '' });
+  const [draft, setDraft] = useState({ fecha: '', desde: 4, lecciones: 3, leccionesAdecuacion: 3, materia: '' });
   // null = every section is picked (the usual case); the teacher unchecks the ones that do not take the exam.
   const [picked, setPicked] = useState<string[] | null>(null);
   const [aulas, setAulas] = useState<Record<string, string>>({});
@@ -711,6 +713,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
       hora,
       desde: draft.desde,
       lecciones: draft.lecciones,
+      leccionesAdecuacion: draft.leccionesAdecuacion,
       materia: draft.materia.trim(),
       seccion,
       aula: aulas[seccion]?.trim() ?? '',
@@ -771,6 +774,9 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                       <td className="tabular">
                         {first.hora}
                         {first.lecciones ? <span className="text-xs muted"> · {first.lecciones} lecc.</span> : null}
+                        {first.leccionesAdecuacion && first.leccionesAdecuacion !== first.lecciones ? (
+                          <span className="text-xs muted"> · adecuación {first.leccionesAdecuacion}</span>
+                        ) : null}
                       </td>
                       <td>{first.materia}</td>
                       <td>
@@ -818,12 +824,34 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
               <label htmlFor="x-dur" className="field__label">
                 Duración
               </label>
-              <select id="x-dur" className="input" value={draft.lecciones} onChange={(e) => setDraft({ ...draft, lecciones: Number(e.target.value) })}>
+              <select
+                id="x-dur"
+                className="input"
+                value={draft.lecciones}
+                onChange={(e) => {
+                  const lecciones = Number(e.target.value);
+                  setDraft({ ...draft, lecciones, leccionesAdecuacion: Math.max(lecciones, draft.leccionesAdecuacion) });
+                }}
+              >
                 {LESSONS.slice(0, LESSONS.length - draft.desde + 1).map((l) => (
                   <option key={l.n} value={l.n}>
                     {l.n} {l.n === 1 ? 'lección' : 'lecciones'}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="x-dur-adec" className="field__label">
+                Con adecuación
+              </label>
+              <select id="x-dur-adec" className="input" value={draft.leccionesAdecuacion} onChange={(e) => setDraft({ ...draft, leccionesAdecuacion: Number(e.target.value) })}>
+                {LESSONS.slice(0, LESSONS.length - draft.desde + 1)
+                  .filter((l) => l.n >= draft.lecciones)
+                  .map((l) => (
+                    <option key={l.n} value={l.n}>
+                      {l.n} {l.n === 1 ? 'lección' : 'lecciones'}
+                    </option>
+                  ))}
               </select>
             </div>
             <InputField id="x-mat" label="Materia" value={draft.materia} onChange={(e) => setDraft({ ...draft, materia: e.target.value })} />
