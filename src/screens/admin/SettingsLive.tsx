@@ -718,6 +718,17 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
   const chosen = picked ?? sections;
   const cfgAulas: AulasConfig = { aulas: f.aulas, aulasGrupo: f.aulasGrupo, eventosAula: f.eventosAula };
   const sugerida = (s: string) => (draft.fecha ? aulaDe(cfgAulas, s, draft.fecha) : (f.aulasGrupo[s] ?? ''));
+  // The same room used as a normal room by another exam at the same lessons on this day.
+  const choqueAdec = aulaAdec && draft.fecha
+    ? f.pruebas.filter(
+        (x) =>
+          x.aula === aulaAdec &&
+          x.fecha === draft.fecha &&
+          x.desde !== undefined &&
+          x.desde <= draft.desde + draft.lecciones - 1 &&
+          draft.desde <= x.desde + (x.lecciones ?? 1) - 1,
+      )
+    : [];
   const trasladadas = draft.fecha ? chosen.map((s) => ({ s, ev: eventoActivo(cfgAulas, s, draft.fecha) })).filter((x) => x.ev) : [];
 
   // One row per exam: the sections that take it share a `grupo`. Older exams without one stand alone.
@@ -923,6 +934,11 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
                     <option key={a}>{a}</option>
                   ))}
                 </select>
+                {choqueAdec.length > 0 && (
+                  <span className="text-xs strong ink-orange" role="status">
+                    Choque: {aulaAdec} ya la usa {choqueAdec.map((x) => `${x.seccion} (${x.materia})`).join(', ')} a esa hora.
+                  </span>
+                )}
               </div>
             )}
           </div>

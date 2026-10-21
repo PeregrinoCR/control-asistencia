@@ -27,6 +27,8 @@ export interface ExamIn {
   lessonsAccommodated?: number;
   /** Room where this exam's students with accommodations sit it. */
   aulaAdecuacion?: string;
+  /** Shared by the rows of one exam; the accommodation room is per exam, not per room name. */
+  grupo?: string;
 }
 
 export interface StaffIn {
@@ -101,8 +103,13 @@ export function propose(input: ProposeInput): CareOut[] {
 
   // Accommodation rooms first: one per room chosen for an exam. The subject teacher is busy there.
   const porAula = new Map<string, ExamIn[]>();
-  for (const e of exams) if (e.aulaAdecuacion) porAula.set(e.aulaAdecuacion, [...(porAula.get(e.aulaAdecuacion) ?? []), e]);
-  for (const [room, es] of porAula) {
+  for (const e of exams) {
+    if (!e.aulaAdecuacion) continue;
+    const key = `${e.aulaAdecuacion}|${e.grupo ?? e.id}`;
+    porAula.set(key, [...(porAula.get(key) ?? []), e]);
+  }
+  for (const [key, es] of porAula) {
+    const room = key.split('|')[0];
     const from = Math.min(...es.map((e) => e.from));
     const to = Math.max(...es.map((e) => e.from + (e.lessonsAccommodated ?? e.lessons) - 1));
     const teacherId = es.map((e) => subjectTeacher.get(`${e.sectionId}|${e.subject}`)).find((t) => t && !absent.has(t)) ?? null;
@@ -134,8 +141,14 @@ export function propose(input: ProposeInput): CareOut[] {
     };
     const fewest = (ids: string[]) => ids.sort((a, b) => (counts.get(a) ?? 0) - (counts.get(b) ?? 0) || byId.get(a)!.name.localeCompare(byId.get(b)!.name))[0];
 
+    // One person for the whole exam when someone can: their own teachers first, then anyone free.
+    const whole = (ids: string[]) => ids.filter((id) => Array.from({ length: to - from + 1 }, (_, k) => from + k).every((l) => valid(id, l)));
+    const ownIds = [...new Set(slots.filter((s) => sections.has(s.sectionId)).map((s) => s.teacherId))];
+    const solo = fewest(whole(ownIds)) ?? fewest(whole(staff.map((p) => p.id))) ?? null;
+    if (solo) counts.set(solo, (counts.get(solo) ?? 0) + 1);
+
     const perLesson: Array<string | null> = [];
-    let current: string | null = null;
+    let current: string | null = solo;
     for (let l = from; l <= to; l++) {
       if (!current || !valid(current, l)) {
         const own = slots.filter((s) => s.lesson === l && sections.has(s.sectionId)).map((s) => s.teacherId).filter((id) => valid(id, l));

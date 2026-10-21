@@ -149,6 +149,7 @@ export function ExamCareLive() {
         lessons: x.lecciones ?? LESSONS.length - (x.desde ?? 4) + 1,
         lessonsAccommodated: x.leccionesAdecuacion,
         aulaAdecuacion: x.aulaAdecuacion,
+        grupo: x.grupo,
       }));
     const slots: SlotIn[] = data.timetable.filter((t) => t.day === day);
     // Who teaches each subject in each section: the load, else the timetable.
@@ -242,6 +243,13 @@ export function ExamCareLive() {
     return !!r.personId && rows.some((o, j) => j !== i && o.personId === r.personId && o.from <= r.to && r.from <= o.to);
   };
 
+  // One card per room and exam; a change of person during the exam appears as a relevo inside the same card.
+  const cards = [...rows.reduce((acc, r, i) => {
+    const key = `${r.room}|${r.kind}|${r.examId}`;
+    acc.set(key, [...(acc.get(key) ?? []), i]);
+    return acc;
+  }, new Map<string, number[]>()).values()];
+
   const published = rows.length > 0 && rows.every((r) => r.published) && !dirty;
 
   return (
@@ -323,36 +331,52 @@ export function ExamCareLive() {
                   . Presione "Proponer cuidadores".
                 </p>
               )}
-              {rows.map((r, i) => (
-                <div key={i} className="card row wrap between gap-10" style={{ padding: '12px 16px', borderColor: !r.personId ? 'var(--orange)' : undefined }}>
-                  <span className="stack" style={{ minWidth: 200 }}>
+              {cards.map((idx) => {
+                const first = rows[idx[0]];
+                // Adecuación rooms clash when a normal room with the same name sits the same lessons.
+                const choque =
+                  first.kind === 'adecuacion' &&
+                  rows.some((o) => o.kind === 'aula' && o.room === first.room && o.from <= first.to && first.from <= o.to);
+                return (
+                  <div key={idx.join('-')} className="card stack gap-8" style={{ padding: '12px 16px' }}>
                     <span className="row gap-8">
-                      <strong style={{ fontSize: 15 }}>{r.room}</strong>
-                      {r.kind === 'adecuacion' && <Badge tone="blue">Adecuación</Badge>}
-                      {r.published && !dirty && <Badge tone="green">Publicado</Badge>}
+                      <strong style={{ fontSize: 15 }}>{first.room}</strong>
+                      {first.kind === 'adecuacion' && <Badge tone="blue">Adecuación</Badge>}
+                      {first.published && !dirty && <Badge tone="green">Publicado</Badge>}
                     </span>
-                    <span className="text-sm muted">{r.detail}</span>
-                    <span className="text-sm">
-                      {r.from}.ª a {r.to}.ª · {hours(r.from, r.to)}
-                    </span>
-                  </span>
-                  <span className="stack gap-4" style={{ minWidth: 220 }}>
-                    <label htmlFor={`p-${i}`} className="sr-only">
-                      Cuidador de {r.room}
-                    </label>
-                    <select id={`p-${i}`} className="input" value={r.personId ?? ''} onChange={(e) => setPerson(i, e.target.value || null)}>
-                      <option value="">Sin cuidador</option>
-                      {data.staff.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} · {tally.get(p.id)?.cares ?? 0} cuidos
-                        </option>
-                      ))}
-                    </select>
-                    {!r.personId && <span className="text-xs strong ink-orange">Falta asignar</span>}
-                    {clash(i) && <span className="text-xs strong ink-orange">Esta persona ya cuida otra aula a esa hora</span>}
-                  </span>
-                </div>
-              ))}
+                    <span className="text-sm muted">{first.detail}</span>
+                    {choque && <span className="text-xs strong ink-orange">Choque: esta aula también aparece como aula normal a esa hora.</span>}
+                    {idx.map((i, k) => {
+                      const r = rows[i];
+                      return (
+                        <div key={i} className="row wrap between gap-10" style={{ paddingTop: k ? 8 : 0, borderTop: k ? '1px solid var(--border-soft)' : undefined }}>
+                          <span className="stack" style={{ minWidth: 200 }}>
+                            <span className="text-sm">
+                              {k > 0 && <strong>Relevo · </strong>}
+                              {r.from}.ª a {r.to}.ª · {hours(r.from, r.to)}
+                            </span>
+                          </span>
+                          <span className="stack gap-4" style={{ minWidth: 220 }}>
+                            <label htmlFor={`p-${i}`} className="sr-only">
+                              Cuidador de {r.room}, {r.from}.ª a {r.to}.ª
+                            </label>
+                            <select id={`p-${i}`} className="input" value={r.personId ?? ''} onChange={(e) => setPerson(i, e.target.value || null)}>
+                              <option value="">Sin cuidador</option>
+                              {data.staff.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name} · {tally.get(p.id)?.cares ?? 0} cuidos
+                                </option>
+                              ))}
+                            </select>
+                            {!r.personId && <span className="text-xs strong ink-orange">Falta asignar</span>}
+                            {clash(i) && <span className="text-xs strong ink-orange">Esta persona ya cuida otra aula a esa hora</span>}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </section>
 
             <aside aria-label="Cuidos por persona" className="card gap-6" style={{ flex: '1 1 260px', minWidth: 240, padding: 16 }}>
