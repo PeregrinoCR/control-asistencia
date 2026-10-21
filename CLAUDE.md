@@ -51,7 +51,5 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   App instalable (PWA: `public/manifest.webmanifest`, `public/sw.js`, `src/lib/push.ts`). Docentes ausentes con
   sustitutos (`coberturas`); logo en bucket `publico`; impresión/PDF con `src/lib/print.ts`. Piloto: un colegio.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
-- Imprimir carnés en lote; guardar registros del portón.
-- Horario familiar (`src/data/schedule.ts`) aún es de ejemplo; con servidor debe leer la tabla `horario`.
-- Pase de lista del docente sustituto.
-- App instalable: recomendado Capacitor (iOS y Android) o PWA.
+- Probar notificaciones en teléfonos reales (Android y iPhone instalada) y la línea SMS.
+- Cambiar horas de lecciones desde la app (hoy fijas en `SHIFT_BLOCKS`); firma dibujada en salidas y giras.
