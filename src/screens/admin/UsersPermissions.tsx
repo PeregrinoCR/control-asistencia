@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth';
 import { useStaff } from '../../lib/staff';
 import {
   PERMISSION_GROUPS,
+  PERMISSION_LABEL,
   ROLES,
   SCOPED,
   SECTION_IDS,
@@ -328,6 +329,8 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
   const [typed, setTyped] = useState('');
   const isGuide = user.roles.includes('gui');
   const noRoles = user.roles.length === 0;
+  // A permission given by hand is not limited to the section, even for a guide teacher.
+  const wideExtras = isGuide ? user.extra.filter((p) => SCOPED.has(p)) : [];
 
   const toggleExtra = (p: PermissionId) =>
     onChange({ ...user, extra: user.extra.includes(p) ? user.extra.filter((x) => x !== p) : [...user.extra, p] });
@@ -366,6 +369,12 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
             Sin roles, esta persona solo tendrá los permisos extra.
           </span>
         )}
+        {wideExtras.length > 0 && (
+          <span className="text-sm ink-orange" role="alert">
+            Es profesor guía: sus permisos extra ({wideExtras.map((p) => PERMISSION_LABEL[p]).join(', ')}) sirven para
+            todo el colegio, no solo para {user.section ?? 'su sección'}.
+          </span>
+        )}
         {PERMISSION_GROUPS.map((g) => {
           const active = g.permissions.filter((p) => all.has(p.id)).length;
           return (
@@ -396,7 +405,7 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
                   {byRole ? (
                     <Badge tone="soft">{scoped ? `Por rol · solo ${user.section ?? 'su sección'}` : 'Por rol'}</Badge>
                   ) : has ? (
-                    <Badge tone="amber">Extra</Badge>
+                    <Badge tone="amber">{wideExtras.includes(p.id) ? 'Extra · todo el colegio' : 'Extra'}</Badge>
                   ) : null}
                 </label>
               );

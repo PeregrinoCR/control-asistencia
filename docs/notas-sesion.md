@@ -55,7 +55,7 @@
 4. Cuido: probar con datos reales la noche de la captura (sin aula con dos cuidadores sin relevo visible).
 5. Roles y accesos (migración 0009, corrida y verificada en Supabase):
    salidas con permiso `approveExit` (dirección y administración), `students` para matrícula, y el profesor guía
-   sin avisos ni giras. Pendiente: aviso en Usuarios cuando un permiso extra cambia el alcance; `teacherAbs` aún
+   sin avisos ni giras. Hecho: aviso en Usuarios cuando un profesor guía tiene un permiso extra (sirve para todo el colegio). Pendiente: `teacherAbs` aún
    deja ver todo el personal.
 11. El organizador de una gira puede buscar cualquier estudiante del colegio (para agregarlo). Revisar si debe
    limitarse a sus secciones.
