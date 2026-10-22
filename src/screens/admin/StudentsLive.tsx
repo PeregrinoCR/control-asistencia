@@ -224,6 +224,17 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
   const [editing, setEditing] = useState<Editing>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [sinCarne, setSinCarne] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [pickId, setPickId] = useState('');
+  const [relation, setRelation] = useState('');
+
+  // Other students who share one of this student's guardians (siblings, or children picked up by the same person).
+  const everyone = data.students ?? [];
+  const shared = everyone.filter((x) => x.id !== s.id && x.guardians.some((g) => s.guardians.some((sg) => sg.id === g.id)));
+  // Guardians of the school that this student does not have yet, to link them.
+  const linkable = [...new Map(everyone.flatMap((x) => x.guardians).map((g) => [g.id, g])).values()].filter(
+    (g) => !s.guardians.some((sg) => sg.id === g.id),
+  );
 
   // Prints this student's card only (the same card as «Imprimir carnés» in the list).
   const imprimirCarne = async () => {
@@ -362,9 +373,65 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
                 </span>
               </div>
             ))}
-            <Button size="md" variant="dashed" onClick={() => (setMsg(null), setEditing({ guardian: 'new' }))}>
-              + Agregar encargado
-            </Button>
+            {linking ? (
+              <div className="stack gap-6" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
+                <div className="field">
+                  <label htmlFor="link-g" className="field__label">
+                    Encargado ya registrado
+                  </label>
+                  <select id="link-g" className="input" value={pickId} onChange={(e) => setPickId(e.target.value)}>
+                    <option value="">Elija una persona…</option>
+                    {linkable.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                        {g.idNumber ? ` · ${g.idNumber}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <InputField id="link-rel" label="Parentesco con este estudiante" placeholder="Madre, tío, abuela…" value={relation} onChange={(e) => setRelation(e.target.value)} />
+                <div className="grid-2">
+                  <Button onClick={() => setLinking(false)}>Cancelar</Button>
+                  <Button
+                    variant="primary"
+                    disabled={!pickId}
+                    onClick={async () => {
+                      const err = await data.linkGuardian(s.id, pickId, relation);
+                      setLinking(false);
+                      setPickId('');
+                      setRelation('');
+                      done(err, 'Encargado vinculado.');
+                    }}
+                  >
+                    Vincular
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid-2">
+                <Button size="md" variant="dashed" onClick={() => (setMsg(null), setEditing({ guardian: 'new' }))}>
+                  + Agregar encargado
+                </Button>
+                <Button size="md" variant="dashed" disabled={linkable.length === 0} onClick={() => (setMsg(null), setLinking(true))}>
+                  Vincular existente
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="stack gap-6">
+            <h3 className="eyebrow" style={{ fontSize: 14 }}>
+              Hermanos y otros estudiantes del mismo encargado
+            </h3>
+            {shared.length === 0 && <span className="text-sm muted">Ninguno por ahora.</span>}
+            {shared.map((x) => (
+              <span key={x.id} style={{ fontSize: 14 }}>
+                {x.name} · {x.section}
+                <span className="muted">
+                  {' '}
+                  (encargado: {x.guardians.filter((g) => s.guardians.some((sg) => sg.id === g.id)).map((g) => g.name).join(', ')})
+                </span>
+              </span>
+            ))}
           </div>
           <div className="grid-2">
             <Button onClick={() => (setMsg(null), setEditing('student'))}>Editar datos</Button>

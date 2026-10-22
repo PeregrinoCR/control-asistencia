@@ -235,13 +235,22 @@ export function useStudents() {
   };
 
   /** Removes a guardian from one student only; they stay linked to their other children. */
+  /** Links a guardian who already exists in the school to another student (siblings, shared pick-up). */
+  const linkGuardian = async (studentId: string, guardianId: string, relation: string) => {
+    const { error } = await supabase!
+      .from('estudiante_encargado')
+      .upsert({ estudiante_id: studentId, encargado_id: guardianId, parentesco: relation.trim() || null }, { onConflict: 'estudiante_id,encargado_id' });
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
   const unlinkGuardian = async (studentId: string, guardianId: string) => {
     const { error } = await supabase!.from('estudiante_encargado').delete().eq('estudiante_id', studentId).eq('encargado_id', guardianId);
     if (!error) await reload();
     return error?.message ?? '';
   };
 
-  return { live: !!supabase, students, sections: sections.map((s) => s.nombre), error, add, updateStudent, deactivate, saveGuardian, unlinkGuardian };
+  return { live: !!supabase, students, sections: sections.map((s) => s.nombre), error, add, updateStudent, deactivate, saveGuardian, linkGuardian, unlinkGuardian };
 }
 
 /** Columns of the enrollment file, in order. */
