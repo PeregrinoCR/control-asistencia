@@ -61,6 +61,11 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   App instalable (PWA: `public/manifest.webmanifest`, `public/sw.js`, `src/lib/push.ts`). Docentes ausentes con
   sustitutos (`coberturas`); logo en bucket `publico`; impresión/PDF con `src/lib/print.ts`. Piloto: un colegio.
 - Justificaciones (migración 0015, `src/lib/justificaciones.ts`): el docente decide cada ausencia de su lección (`ToJustify.tsx`, `/docente/por-justificar`); dirección supervisa y reabre vencidas con motivo (`Justifications.tsx`). Falta: que el usuario corra 0015 en Supabase antes de subir a `main`.
+- Pase de lista compacto (`RollCallLive.tsx`: lección en lista desplegable, `.lesson-pick` y `.tally-row` en `screens.css`).
+  Horarios y cargas (`AssignmentsLive.tsx`): fichas de sección con avance, materias en fila, semana a todo el ancho;
+  máximo de lecciones por docente en Configuración (`colegios.config.institucion['c-carga-max']`, por defecto 30).
+  Rediseño de pantallas "en orden" del menú: hechas Hoy, Docentes ausentes, Justificaciones, Horarios y cargas; sigue **Aulas y grupos**
+  (lógica primero, luego 3 opciones en canvas, implementar, un push a `main`).
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Probar notificaciones en teléfonos reales (Android y iPhone instalada) y la línea SMS.
 - Cambiar horas de lecciones desde la app (hoy fijas en `SHIFT_BLOCKS`); firma dibujada en salidas y giras.
