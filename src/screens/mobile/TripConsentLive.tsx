@@ -138,10 +138,13 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(!answer);
-  const [method, setMethod] = useState<'sinpe' | 'efectivo'>(answer?.metodo ?? 'sinpe');
+  // A trip with a cost always shows how to pay. SINPE needs a number: the trip's own, or the school's when the module is on.
+  const sinpeNumber = trip.telefono_pago || (payments.on ? payments.number : '');
+  const sinpe = !!sinpeNumber;
+  const [method, setMethod] = useState<'sinpe' | 'efectivo'>(answer?.metodo ?? (sinpe ? 'sinpe' : 'efectivo'));
   const ready = checks.every(Boolean) && signed && idNumber.trim();
-  const charge = payments.on && trip.costo;
-  const cash = charge && method === 'efectivo';
+  const charge = !!trip.costo;
+  const cash = charge && (method === 'efectivo' || !sinpe);
   const signedAt = new Date().toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' });
 
   const save = async (estado: 'ok' | 'no') => {
@@ -153,7 +156,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
       // Cash is confirmed by the school later, so it waits for review like a receipt.
       const pagoEnEfectivo = estado === 'ok' && cash && answer?.pago !== 'paid';
       const pago = comprobante || pagoEnEfectivo ? 'review' : (answer?.pago ?? 'none');
-      const metodo = estado === 'ok' && charge ? method : null;
+      const metodo = estado === 'ok' && charge ? (cash ? 'efectivo' : 'sinpe') : null;
       const { error } = await supabase!.from('gira_autorizaciones').upsert(
         {
           gira_id: trip.id,
@@ -272,19 +275,21 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
 
             {charge && (
               <div className="stack gap-10">
-                <Segmented
-                  label="Forma de pago"
-                  fill
-                  value={method}
-                  onChange={(m) => {
-                    setMethod(m);
-                    setError('');
-                  }}
-                  options={[
-                    { value: 'sinpe', label: 'SINPE Móvil' },
-                    { value: 'efectivo', label: 'Efectivo' },
-                  ]}
-                />
+                {sinpe && (
+                  <Segmented
+                    label="Forma de pago"
+                    fill
+                    value={method}
+                    onChange={(m) => {
+                      setMethod(m);
+                      setError('');
+                    }}
+                    options={[
+                      { value: 'sinpe', label: 'SINPE Móvil' },
+                      { value: 'efectivo', label: 'Efectivo' },
+                    ]}
+                  />
+                )}
                 {cash ? (
                   <p className="text-sm" style={{ color: 'var(--ink-2)' }}>
                     Pague {trip.costo} en efectivo a la persona organizadora de la gira. La escuela confirmará el pago.
@@ -292,7 +297,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
                 ) : (
                   <SinpePayment
                     amount={trip.costo!}
-                    number={trip.telefono_pago || payments.number || '[NÚMERO SINPE]'}
+                    number={sinpeNumber}
                     holder={payments.holder || '[TITULAR]'}
                     reference={`Gira ${kid.section} ${kid.name}`}
                     receipt={receipt}
