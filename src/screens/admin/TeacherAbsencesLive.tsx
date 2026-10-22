@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, InputField, StatusBadge, Switch, useFlash } from '../../components';
+import { Badge, Button, EmptyState, InputField, Stat, StatusBadge, Switch, useFlash } from '../../components';
+import { IncapacityCard } from './IncapacityCard';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { ABSENCE_REASONS, COVERAGE, type Coverage } from '../../data/teacherAbsences';
 import { SCHOOL_DAYS } from '../../data/schedule';
@@ -213,44 +214,49 @@ export function TeacherAbsencesLive() {
     load();
   };
 
-  const lessonName = (n: number) => `${LESSONS[n - 1]?.name} · ${LESSONS[n - 1]?.start}`;
   const waiting = (c: string) => Math.max(0, Math.floor((Date.now() - new Date(c).getTime()) / 86400000));
+  const lessonName = (n: number) => `${LESSONS[n - 1]?.name} · ${LESSONS[n - 1]?.start}`;
+
+  const dayLabel = date === today ? 'hoy' : fechaCorta(date);
+  const freeCount = absences.reduce((n, a) => n + a.lessons.filter((l) => l.type === 'free').length, 0);
+  const waitingCount = incapacities.filter((i) => i.substitution === 'esperando').length;
 
   return (
     <AdminLayout>
       <PageHeader kicker="Un docente ausente no se reemplaza: sus lecciones quedan libres. Solo una incapacidad larga puede tener sustituto del MEP" title="Ausencias de docentes" />
 
-      {incapacities.length > 0 && (
-        <section aria-labelledby="inc-t" className="card gap-10">
-          <h2 id="inc-t" className="title-section">
-            Incapacidades vigentes
-          </h2>
-          <div className="stack">
+      <div className="grid-tiles">
+        <Stat label={date === today ? 'Ausentes hoy' : `Ausentes el ${dayLabel}`} value={String(absences.length)} />
+        <Stat label="Incapacidades en curso" value={String(incapacities.length)} />
+        <Stat label="Esperan sustituto del MEP" value={String(waitingCount)} ink={waitingCount ? 'amber' : undefined} />
+        <Stat label={date === today ? 'Lecciones libres hoy' : 'Lecciones libres ese día'} value={String(freeCount)} />
+      </div>
+
+      <div className="split">
+        <div className="split__main stack gap-16">
+          <section aria-labelledby="inc-t" className="card gap-10">
+            <h2 id="inc-t" className="title-section">
+              Incapacidades en curso
+            </h2>
+            {incapacities.length === 0 && (
+              <EmptyState title="No hay incapacidades en curso">Cuando registre una con el motivo "Incapacidad", aparecerá aquí con el trámite del sustituto.</EmptyState>
+            )}
             {incapacities.map((i) => {
-              const st = SUSTITUCION[i.substitution];
               const total = lectivos(i.from, i.to).length;
               const editing = edit?.id === i.id ? edit : null;
               return (
-                <div key={i.id} className="stack gap-8" style={{ padding: '12px 0', borderTop: '1px solid var(--border-soft)' }}>
-                  <div className="row wrap between gap-8">
-                    <span className="stack">
-                      <strong style={{ fontSize: 15 }}>{i.teacher}</strong>
-                      <span className="text-sm muted">
-                        {fechaCorta(i.from)} a {fechaCorta(i.to)} · {total} {total === 1 ? 'día lectivo' : 'días lectivos'}
-                      </span>
-                    </span>
-                    <span className="stack" style={{ alignItems: 'flex-end' }}>
-                      <StatusBadge status={st} size="md" />
-                      {i.substitution === 'nombrado' && (
-                        <span className="text-sm muted">
-                          {i.substitute}
-                          {i.substituteFrom && ` · desde ${fechaCorta(i.substituteFrom)}`}
-                        </span>
-                      )}
-                      {i.substitution === 'esperando' && <span className="text-sm muted">Pedido hace {waiting(i.created)} {waiting(i.created) === 1 ? 'día' : 'días'}</span>}
-                    </span>
-                  </div>
-                  <span className="text-sm muted">{st.help}</span>
+                <IncapacityCard
+                  key={i.id}
+                  teacher={i.teacher}
+                  from={fechaCorta(i.from)}
+                  to={fechaCorta(i.to)}
+                  substitution={i.substitution}
+                  substitute={i.substitute}
+                  substituteFrom={i.substituteFrom ? fechaCorta(i.substituteFrom) : undefined}
+                  askedDays={waiting(i.created)}
+                  elapsed={i.from <= today ? lectivos(i.from, today).length : 0}
+                  total={total}
+                >
                   <div className="row wrap gap-8">
                     {i.substitution === 'ninguno' && (
                       <Button onClick={() => run('marcar_sustitucion', { p_inc: i.id, p_estado: 'esperando' }, 'Quedó como "esperando al MEP".')}>Pedí un sustituto al MEP</Button>
@@ -315,15 +321,57 @@ export function TeacherAbsencesLive() {
                       <Button onClick={() => setEdit(null)}>Cancelar</Button>
                     </div>
                   )}
-                </div>
+                </IncapacityCard>
               );
             })}
-          </div>
-        </section>
-      )}
+          </section>
 
-      <div className="split">
-        <section aria-labelledby="nueva-t" className="card card--roomy split__main">
+          <section aria-labelledby="hoy-t" className="card gap-10">
+            <h2 id="hoy-t" className="title-section">
+              {date === today ? 'Ausentes hoy' : `Ausentes el ${dayLabel}`}
+            </h2>
+            {absences.length === 0 ? (
+              <EmptyState title="Nadie falta ese día">Registre una ausencia en el panel de la derecha.</EmptyState>
+            ) : (
+              <div className="stack">
+                {absences.map((a) => {
+                  const inc = incapacities.find((i) => i.teacher === a.teacher);
+                  const free = a.lessons.some((l) => l.type === 'free');
+                  return (
+                    <div key={a.id} className="row wrap between gap-10" style={{ padding: '10px 0', borderTop: '1px solid var(--border-soft)' }}>
+                      <span className="stack" style={{ minWidth: 180 }}>
+                        <strong style={{ fontSize: 15 }}>{a.teacher}</strong>
+                        <span className="text-sm muted">
+                          {a.reason}
+                          {a.reason === INCAPACITY && inc && ` · día ${lectivos(inc.from, date).length} de ${lectivos(inc.from, inc.to).length}`}
+                        </span>
+                      </span>
+                      <span className="row wrap gap-6 grow absence-lessons">
+                        {a.lessons
+                          .sort((x, y) => x.lesson - y.lesson)
+                          .map((l) => (
+                            <StatusBadge
+                              key={l.section + l.lesson}
+                              size="md"
+                              status={{ label: `${l.lesson}.ª ${l.section} · ${l.type === 'sub' ? `da ${l.substitute || 'el sustituto'}` : l.type === 'task' ? 'trabajo asignado' : 'libre'}`, tone: COVERAGE[l.type].tone }}
+                            />
+                          ))}
+                      </span>
+                      <span className="row gap-8">
+                        {free ? <Badge tone="green">Familias avisadas</Badge> : <span className="text-sm muted">Sin aviso: no cambia nada</span>}
+                        <button type="button" className="link-button text-sm" onClick={() => remove(a.id)}>
+                          Anular este día
+                        </button>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside aria-labelledby="nueva-t" className="card split__side split__side--sticky gap-12" style={{ flexBasis: 340, padding: 20 }}>
           <h2 id="nueva-t" className="title-section">
             Registrar ausencia
           </h2>
@@ -466,59 +514,8 @@ export function TeacherAbsencesLive() {
               {busy ? 'Guardando…' : isIncapacity ? 'Registrar incapacidad' : families > 0 ? `Registrar y avisar a ${families} familias` : 'Registrar ausencia'}
             </Button>
           </div>
-        </section>
+        </aside>
       </div>
-
-      <section aria-labelledby="hoy-t" className="card gap-10">
-        <h2 id="hoy-t" className="title-section">
-          Ausencias registradas ese día
-        </h2>
-        {absences.length === 0 ? (
-          <p className="text-sm muted">Ninguna.</p>
-        ) : (
-          <div className="table-wrap">
-            <table className="table" style={{ minWidth: 720 }}>
-              <thead>
-                <tr>
-                  <th>Docente</th>
-                  <th>Motivo</th>
-                  <th>Lecciones</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {absences.map((a) => (
-                  <tr key={a.id}>
-                    <td className="strong">{a.teacher}</td>
-                    <td>{a.reason}</td>
-                    <td>
-                      <span className="stack gap-4">
-                        {a.lessons
-                          .sort((x, y) => x.lesson - y.lesson)
-                          .map((l) => (
-                            <span key={l.section + l.lesson} className="row wrap gap-8">
-                              <span>
-                                {l.lesson}.ª · {l.section}
-                              </span>
-                              <StatusBadge status={COVERAGE[l.type]} />
-                              {l.substitute && <span className="text-sm muted">{l.substitute}</span>}
-                            </span>
-                          ))}
-                      </span>
-                    </td>
-                    <td>
-                      {a.lessons.some((l) => l.type === 'free') && <Badge tone="green">Familias avisadas</Badge>}{' '}
-                      <button type="button" className="link-button text-sm" onClick={() => remove(a.id)}>
-                        Anular este día
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
     </AdminLayout>
   );
 }

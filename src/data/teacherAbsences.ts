@@ -59,10 +59,38 @@ export const TEACHERS_WITH_LESSONS = Object.keys(TEACHER_LESSONS_TODAY);
 
 export const SUBSTITUTES = ['Marta Vindas', 'Ana Lucía Rojas', 'Esteban Quirós', 'Andrea Solís'];
 
+/** Long incapacities in course, with the state of the substitute the MEP may name. */
+export const TEACHER_INCAPACITIES: Array<{
+  teacher: string;
+  from: string;
+  to: string;
+  total: number;
+  elapsed: number;
+  substitution: Sustitucion;
+  askedDays?: number;
+  substitute?: string;
+  substituteFrom?: string;
+}> = [
+  { teacher: 'Jorge Céspedes', from: 'lun 19 oct', to: 'vie 30 oct', total: 10, elapsed: 1, substitution: 'esperando', askedDays: 2 },
+  { teacher: 'Ricardo Mora', from: 'lun 12 oct', to: 'vie 6 nov', total: 20, elapsed: 6, substitution: 'nombrado', substitute: 'Lucía Fonseca', substituteFrom: 'lun 19 oct' },
+];
+
 /** Absences already reported today. */
 export const TEACHER_ABSENCES: TeacherAbsence[] = [
   {
     id: 1,
+    teacher: 'Patricia Ulate',
+    reason: 'Cita médica',
+    date: 'Lun 19 oct',
+    reportedBy: 'Dirección · 3:50 p. m.',
+    lessons: [
+      { ...TEACHER_LESSONS_TODAY['Patricia Ulate'][0], coverage: 'free' },
+      { ...TEACHER_LESSONS_TODAY['Patricia Ulate'][1], coverage: 'free' },
+    ],
+    notified: true,
+  },
+  {
+    id: 2,
     teacher: 'Jorge Céspedes',
     reason: 'Incapacidad',
     date: 'Lun 19 oct',
@@ -73,5 +101,15 @@ export const TEACHER_ABSENCES: TeacherAbsence[] = [
     ],
     notified: true,
     incapacity: { from: 'lun 19 oct', to: 'vie 30 oct', days: 10, substitution: 'esperando' },
+  },
+  {
+    id: 3,
+    teacher: 'Ricardo Mora',
+    reason: 'Incapacidad',
+    date: 'Lun 19 oct',
+    reportedBy: 'Dirección · 12 oct',
+    lessons: [{ ...TEACHER_LESSONS_TODAY['Ricardo Mora'][0], coverage: 'sub', substitute: 'Lucía Fonseca' }],
+    notified: false,
+    incapacity: { from: 'lun 12 oct', to: 'vie 6 nov', days: 20, substitution: 'nombrado', substitute: 'Lucía Fonseca' },
   },
 ];

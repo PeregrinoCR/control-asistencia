@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Badge, Button, InputField, StatusBadge, Switch } from '../../components';
+import { Badge, Button, EmptyState, InputField, Stat, StatusBadge, Switch } from '../../components';
+import { IncapacityCard } from './IncapacityCard';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { lectivos, SUSTITUCION, type Sustitucion } from '../../lib/ausencias';
 import { supabase } from '../../lib/supabase';
@@ -10,6 +11,7 @@ import {
   COVERAGE,
   TEACHERS_WITH_LESSONS,
   TEACHER_ABSENCES,
+  TEACHER_INCAPACITIES,
   TEACHER_LESSONS_TODAY,
   type Coverage,
   type TeacherAbsence,
@@ -92,20 +94,78 @@ function TeacherAbsencesSample() {
     );
   };
 
+  const freeToday = absences.reduce((n, a) => n + a.lessons.filter((l) => l.coverage === 'free').length, 0);
+  const waiting = TEACHER_INCAPACITIES.filter((i) => i.substitution === 'esperando').length;
+
   return (
     <AdminLayout>
-      <PageHeader
-        kicker="Lunes 19 de octubre · jornada nocturna"
-        title="Ausencias de docentes"
-      />
+      <PageHeader kicker="Lunes 19 de octubre · jornada nocturna" title="Ausencias de docentes" />
+
+      <div className="grid-tiles">
+        <Stat label="Ausentes hoy" value={String(absences.length)} />
+        <Stat label="Incapacidades en curso" value={String(TEACHER_INCAPACITIES.length)} />
+        <Stat label="Esperan sustituto del MEP" value={String(waiting)} ink={waiting ? 'amber' : undefined} />
+        <Stat label="Lecciones libres hoy" value={String(freeToday)} />
+      </div>
 
       <div className="split">
-        <section aria-labelledby="nueva-t" className="card card--roomy split__main">
-          <h2 id="nueva-t" className="title-section">
-            Registrar ausencia
-          </h2>
+        <div className="split__main stack gap-16">
+          <section aria-labelledby="inc-t" className="card gap-10">
+            <h2 id="inc-t" className="title-section">
+              Incapacidades en curso
+            </h2>
+            {TEACHER_INCAPACITIES.map((i) => (
+              <IncapacityCard key={i.teacher} {...i} elapsed={i.elapsed} total={i.total}>
+                <div className="row wrap gap-8">
+                  {i.substitution === 'esperando' && <Button variant="primary">Registrar sustituto nombrado</Button>}
+                  {i.substitution === 'nombrado' && <Button>Cambiar sustituto</Button>}
+                  <Button>Cambiar fecha final</Button>
+                  <Button variant="ghost-danger">Ya regresó</Button>
+                </div>
+              </IncapacityCard>
+            ))}
+          </section>
 
-          <div className="field" style={{ maxWidth: 360 }}>
+          <section aria-labelledby="hoy-t" className="card gap-10">
+            <h2 id="hoy-t" className="title-section">
+              Ausentes hoy
+            </h2>
+            {absences.length === 0 ? (
+              <EmptyState title="Nadie falta hoy">Registre una ausencia en el panel de la derecha.</EmptyState>
+            ) : (
+              <div className="stack">
+                {absences.map((a) => (
+                  <div key={a.id} className="row wrap between gap-10" style={{ padding: '10px 0', borderTop: '1px solid var(--border-soft)' }}>
+                    <span className="stack" style={{ minWidth: 180 }}>
+                      <strong style={{ fontSize: 15 }}>{a.teacher}</strong>
+                      <span className="text-sm muted">
+                        {a.reason}
+                        {a.incapacity && ` · día ${a.incapacity.substitution === 'nombrado' ? 6 : 1} de ${a.incapacity.days}`}
+                      </span>
+                    </span>
+                    <span className="row wrap gap-6 grow absence-lessons">
+                      {a.lessons.map((l) => (
+                        <StatusBadge
+                          key={l.section + l.time}
+                          size="md"
+                          status={{ label: `${l.section} · ${l.time} · ${l.coverage === 'sub' ? `da ${l.substitute}` : l.coverage === 'task' ? 'trabajo asignado' : 'libre'}`, tone: COVERAGE[l.coverage].tone }}
+                        />
+                      ))}
+                    </span>
+                    {a.notified ? <Badge tone="green">Familias avisadas</Badge> : <span className="text-sm muted">Sin aviso: no cambia nada</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside aria-labelledby="nueva-t" className="split__side split__side--sticky stack gap-16" style={{ flexBasis: 340 }}>
+          <section className="card gap-12" style={{ padding: 20 }}>
+            <h2 id="nueva-t" className="title-section">
+              Registrar ausencia
+            </h2>
+          <div className="field">
             <label htmlFor="d-docente" className="field__label">
               Docente
             </label>
@@ -215,9 +275,8 @@ function TeacherAbsencesSample() {
               {isIncapacity ? 'Registrar incapacidad' : families > 0 ? `Registrar y avisar a ${families} familias` : 'Registrar ausencia'}
             </Button>
           </div>
-        </section>
+          </section>
 
-        <aside className="split__side stack gap-16">
           <div className="card card--night gap-10">
             <span className="eyebrow" style={{ fontSize: 12, letterSpacing: 0.7, color: 'var(--night-ink-3)' }}>
               Así llega a las familias
@@ -244,60 +303,6 @@ function TeacherAbsencesSample() {
           </div>
         </aside>
       </div>
-
-      <section aria-labelledby="hoy-t" className="card gap-10">
-        <h2 id="hoy-t" className="title-section">
-          Ausencias registradas hoy
-        </h2>
-        <div className="table-wrap">
-          <table className="table" style={{ minWidth: 720 }}>
-            <thead>
-              <tr>
-                <th>Docente</th>
-                <th>Motivo</th>
-                <th>Lecciones</th>
-                <th>Avisos</th>
-                <th>Registró</th>
-              </tr>
-            </thead>
-            <tbody>
-              {absences.map((a) => (
-                <tr key={a.id}>
-                  <td className="strong">{a.teacher}</td>
-                  <td>
-                    {a.reason}
-                    {a.incapacity && (
-                      <span className="stack gap-4" style={{ marginTop: 4 }}>
-                        <span className="text-sm muted">
-                          {a.incapacity.from} a {a.incapacity.to} · {a.incapacity.days} días
-                        </span>
-                        <StatusBadge status={SUSTITUCION[a.incapacity.substitution]} />
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    <span className="stack gap-4">
-                      {a.lessons.map((l) => (
-                        <span key={l.section + l.time} className="row wrap gap-8">
-                          <span>
-                            {l.time} · {l.subject} {l.section}
-                          </span>
-                          <StatusBadge status={COVERAGE[l.coverage]} />
-                          {l.substitute && <span className="text-sm muted">{l.substitute}</span>}
-                        </span>
-                      ))}
-                    </span>
-                  </td>
-                  <td>
-                    <Badge tone={a.notified ? 'green' : 'neutral'}>{a.notified ? 'Familias avisadas' : 'Sin aviso'}</Badge>
-                  </td>
-                  <td className="text-sm muted">{a.reportedBy}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </AdminLayout>
   );
 }
