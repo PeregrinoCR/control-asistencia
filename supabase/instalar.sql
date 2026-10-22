@@ -9,7 +9,7 @@ drop table if exists cuidos, coberturas, ausencias_docentes, incapacidades, ause
   seguimientos, aviso_lecturas, avisos, gira_autorizaciones, giras, porton, salidas,
   bitacora, justificaciones, asistencia, horario, materias, carnes,
   estudiante_encargado, encargados, estudiantes, personal, roles, secciones, colegios cascade;
-drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estudiantes, tiene_permiso, mi_colegio,
+drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estudiantes, tiene_permiso, es_direccion_o_admin, mi_colegio,
   soy_personal, crear_carne, nuevo_codigo_carne, reponer_carne, cr_hoy, vapid_publica, guardar_sms, sms_configurado,
   encolar, destinatarios, avisar_estudiante, regla, avisar_asistencia, avisar_aviso, avisar_salida,
   avisar_justificacion, sms_prueba, avisar_leccion_libre, avisar_cuido,
@@ -1705,6 +1705,43 @@ begin
 end
 $$;
 grant execute on function recordar_docente(uuid) to authenticated;
+
+-- Alcance de los permisos extra:
+-- 1. Un profesor guía con un permiso extra de asistencia, justificaciones o alerta temprana lo usa solo
+--    en su sección. Giras y avisos no se consultan por sección: para un guía el extra no tiene efecto.
+-- 2. Solo Dirección y Administrativos ven la lista completa del personal (aunque tengan otro permiso).
+-- Se puede correr más de una vez.
+
+create or replace function tiene_permiso(perm text, seccion uuid default null) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from personal p
+    where p.usuario_id = auth.uid() and p.activo and (
+      (perm = any (p.permisos_extra)
+        and (not ('gui' = any (p.roles))
+             or (perm = any (array['viewAttendance','approveJust','earlyWarning'])
+                 and seccion is not null and seccion = p.seccion_guia)))
+      or exists (
+        select 1 from roles r
+        where r.id = any (p.roles) and perm = any (r.permisos)
+          and (not r.limitado_a_seccion or (seccion is not null and seccion = p.seccion_guia))
+      )
+    )
+  )
+$$;
+
+create or replace function es_direccion_o_admin() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from personal p
+    where p.usuario_id = auth.uid() and p.activo and p.roles && array['dir','adm']
+  )
+$$;
+
+drop policy if exists ver on personal;
+create policy ver on personal for select
+  using (colegio_id = mi_colegio() and (
+    usuario_id = auth.uid() or tiene_permiso('users') or (tiene_permiso('teacherAbs') and es_direccion_o_admin())));
 
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 

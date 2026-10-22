@@ -159,6 +159,9 @@ export function effectivePermissions(user: Pick<User, 'roles' | 'extra'>, roles:
   return { fromRoles, all: new Set<PermissionId>([...fromRoles, ...user.extra]) };
 }
 
+/** Extra permissions a guide teacher gets are limited to their own section (the server decides by section). */
+export const GUIDE_EXTRA_SECTION = new Set<PermissionId>(['viewAttendance', 'approveJust', 'earlyWarning']);
+
 /** Whether a scoped permission is limited to the user's own section. */
 export function isSectionScoped(user: Pick<User, 'roles'>, perm: PermissionId, roles: Role[]) {
   if (!SCOPED.has(perm)) return false;

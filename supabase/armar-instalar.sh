@@ -14,7 +14,7 @@ drop table if exists cuidos, coberturas, ausencias_docentes, incapacidades, ause
   seguimientos, aviso_lecturas, avisos, gira_autorizaciones, giras, porton, salidas,
   bitacora, justificaciones, asistencia, horario, materias, carnes,
   estudiante_encargado, encargados, estudiantes, personal, roles, secciones, colegios cascade;
-drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estudiantes, tiene_permiso, mi_colegio,
+drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estudiantes, tiene_permiso, es_direccion_o_admin, mi_colegio,
   soy_personal, crear_carne, nuevo_codigo_carne, reponer_carne, cr_hoy, vapid_publica, guardar_sms, sms_configurado,
   encolar, destinatarios, avisar_estudiante, regla, avisar_asistencia, avisar_aviso, avisar_salida,
   avisar_justificacion, sms_prueba, avisar_leccion_libre, avisar_cuido,
