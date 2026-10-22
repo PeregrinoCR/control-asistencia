@@ -126,6 +126,9 @@ export interface Exit {
   way: 'pickup' | 'alone';
   receipt: string;
   left: string | null;
+  /** Requested, approved by dirección, or not authorized. */
+  estado: 'pendiente' | 'aprobada' | 'rechazada';
+  motivo_rechazo: string | null;
 }
 
 /** Day by day marks, justifications and early exits of one student between two dates. */
@@ -134,7 +137,7 @@ export async function kidRecords(kidId: string, from: string, to: string) {
   const [att, js, ex] = await Promise.all([
     db.from('asistencia').select('fecha, leccion, marca').eq('estudiante_id', kidId).gte('fecha', from).lte('fecha', to).order('leccion'),
     db.from('justificaciones').select('desde, hasta, tipo, motivo, estado').eq('estudiante_id', kidId).lte('desde', to).gte('hasta', from),
-    db.from('salidas').select('id, fecha, hora, modo, comprobante, salio').eq('estudiante_id', kidId).gte('fecha', from).lte('fecha', to),
+    db.from('salidas').select('id, fecha, hora, modo, comprobante, salio, estado, motivo_rechazo').eq('estudiante_id', kidId).gte('fecha', from).lte('fecha', to),
   ]);
   const days = new Map<string, DayRecord>();
   (att.data ?? []).forEach((r) => {
@@ -145,7 +148,9 @@ export async function kidRecords(kidId: string, from: string, to: string) {
   return {
     days,
     justifs: (js.data ?? []).map((j): Justif => ({ from: j.desde, to: j.hasta, kind: j.tipo, reason: j.motivo, state: j.estado })),
-    exits: (ex.data ?? []).map((e): Exit => ({ id: e.id, date: e.fecha, hour: e.hora, way: e.modo, receipt: e.comprobante, left: e.salio })),
+    exits: (ex.data ?? []).map(
+      (e): Exit => ({ id: e.id, date: e.fecha, hour: e.hora, way: e.modo, receipt: e.comprobante, left: e.salio, estado: e.estado, motivo_rechazo: e.motivo_rechazo }),
+    ),
   };
 }
 

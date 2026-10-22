@@ -143,7 +143,11 @@ function History({ f }: { f: FamilyCtx }) {
           )}
           {exit && (
             <p style={{ fontSize: 15, color: 'var(--ink-2)' }}>
-              Salida temprana autorizada a las {exit.hour} p. m.{exit.left ? ' Salió del colegio.' : ''}
+              {exit.estado === 'aprobada'
+                ? `Salida temprana autorizada a las ${exit.hour} p. m.${exit.left ? ' Salió del colegio.' : ''}`
+                : exit.estado === 'pendiente'
+                  ? `Solicitud de salida temprana a las ${exit.hour} p. m.: pendiente de aprobación.`
+                  : `Salida temprana no autorizada${exit.motivo_rechazo ? `: ${exit.motivo_rechazo}` : ''}.`}
             </p>
           )}
           {(kind === 'A' || kind === 'T') && !justif && (

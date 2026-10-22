@@ -139,7 +139,7 @@ function Home({ f }: { f: FamilyCtx }) {
               {t.answer === 'ok' ? <Badge tone="green">Autorizada</Badge> : t.answer === 'no' ? <Badge tone="neutral">No va</Badge> : <Badge tone="orange">Falta firma</Badge>}
             </Link>
           ))}
-          {exit ? (
+          {exit && exit.estado === 'aprobada' ? (
             <div className="perm-link" style={{ cursor: 'default' }}>
               <span className="perm-link__icon">
                 <Icon name="logout" />
@@ -147,6 +147,26 @@ function Home({ f }: { f: FamilyCtx }) {
               <span className="stack grow">
                 <span style={{ fontSize: 15, fontWeight: 700 }}>Salida autorizada a las {exit.hour} p. m.</span>
                 <span className="text-sm muted">{exit.left ? 'Ya salió del colegio.' : `Comprobante ${exit.receipt}`}</span>
+              </span>
+            </div>
+          ) : exit && exit.estado === 'pendiente' ? (
+            <div className="perm-link" style={{ cursor: 'default' }}>
+              <span className="perm-link__icon">
+                <Icon name="logout" />
+              </span>
+              <span className="stack grow">
+                <span style={{ fontSize: 15, fontWeight: 700 }}>Solicitud enviada</span>
+                <span className="text-sm muted">Dirección revisará la solicitud de salida a las {exit.hour} p. m.</span>
+              </span>
+            </div>
+          ) : exit && exit.estado === 'rechazada' ? (
+            <div className="perm-link" style={{ cursor: 'default' }}>
+              <span className="perm-link__icon">
+                <Icon name="logout" />
+              </span>
+              <span className="stack grow">
+                <span style={{ fontSize: 15, fontWeight: 700 }}>Salida no autorizada</span>
+                <span className="text-sm muted">Motivo: {exit.motivo_rechazo ?? 'sin detalle'}.</span>
               </span>
             </div>
           ) : (
