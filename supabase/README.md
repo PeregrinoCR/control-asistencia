@@ -25,6 +25,8 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
 - `0007_firmas.sql`: firma dibujada en las salidas anticipadas.
 - `0008_salidas_aprobacion.sql`: salidas anticipadas pendientes de aprobación de dirección.
   Se quita antes de la versión final.
+- `0009_roles_y_accesos.sql`: roles por sección bien aplicados, permisos propios para salidas y
+  estudiantes, y el profesor guía sin avisos ni giras.
 
 ## Notificaciones y SMS (una sola vez)
 

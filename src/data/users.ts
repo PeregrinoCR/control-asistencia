@@ -1,12 +1,12 @@
 /** Who can do what in the school's account. Families and adult students are not staff users. */
 
 export type PermissionId =
-  | 'rollCall' | 'viewAttendance' | 'approveJust'
+  | 'rollCall' | 'viewAttendance' | 'approveJust' | 'approveExit'
   | 'teacherAbs' | 'assign'
   | 'trips' | 'gate'
   | 'notices' | 'sms'
   | 'earlyWarning' | 'saber'
-  | 'payments' | 'cards' | 'reports' | 'users' | 'settings';
+  | 'payments' | 'cards' | 'students' | 'reports' | 'users' | 'settings';
 
 export interface Permission {
   id: PermissionId;
@@ -24,6 +24,7 @@ export const PERMISSION_GROUPS: Array<{ id: string; label: string; permissions: 
       { id: 'rollCall', label: 'Pasar lista', help: 'En las lecciones que tiene asignadas' },
       { id: 'viewAttendance', label: 'Ver asistencia', help: 'Panel del día y estudiantes', scoped: true },
       { id: 'approveJust', label: 'Aprobar justificaciones', help: 'Aprobar, rechazar o pedir información', scoped: true },
+      { id: 'approveExit', label: 'Aprobar salidas anticipadas', help: 'Autorizar o no las salidas que piden las familias' },
     ],
   },
   {
@@ -63,6 +64,7 @@ export const PERMISSION_GROUPS: Array<{ id: string; label: string; permissions: 
     label: 'Administración',
     permissions: [
       { id: 'payments', label: 'Confirmar pagos', help: 'Revisar comprobantes SINPE' },
+      { id: 'students', label: 'Gestionar estudiantes', help: 'Matrícula, encargados y su importación' },
       { id: 'cards', label: 'Gestionar carnés', help: 'Imprimir, reponer y desactivar' },
       { id: 'reports', label: 'Ver reportes', help: 'Y descargarlos' },
       { id: 'users', label: 'Gestionar usuarios', help: 'Invitar, asignar roles y permisos' },
@@ -101,7 +103,7 @@ export const ROLES: Role[] = [
     id: 'gui',
     name: 'Profesor guía',
     help: 'A cargo de una sección',
-    grants: ['viewAttendance', 'approveJust', 'trips', 'notices', 'earlyWarning'],
+    grants: ['viewAttendance', 'approveJust', 'earlyWarning'],
     scopedToSection: true,
   },
   {
@@ -114,7 +116,7 @@ export const ROLES: Role[] = [
     id: 'adm',
     name: 'Administrativo',
     help: 'Oficina y secretaría',
-    grants: ['viewAttendance', 'approveJust', 'teacherAbs', 'notices', 'payments', 'cards', 'reports'],
+    grants: ['viewAttendance', 'approveJust', 'approveExit', 'teacherAbs', 'trips', 'notices', 'payments', 'cards', 'students', 'reports'],
   },
   { id: 'gua', name: 'Guarda de portón', help: 'Controla entradas y salidas', grants: ['gate'] },
   { id: 'aux', name: 'Auxiliar', help: 'Personal de apoyo: cuido de exámenes y otras tareas', grants: [] },

@@ -50,8 +50,10 @@
 2. Formato oficial de exportación SABER: validar columnas con el MEP.
 3. Horas de lección editables desde la app (hoy fijas en `SHIFT_BLOCKS`, `src/data/settings.ts`).
 4. Cuido: probar con datos reales la noche de la captura (sin aula con dos cuidadores sin relevo visible).
-5. Permiso para aprobar salidas: hoy es `approveJust` (también lo tiene el profesor guía). Decidir si debe ser solo
-   dirección/administración.
+5. Roles y accesos (migración 0009, hecho en código; falta correrla en Supabase y probar con cuentas de cada rol):
+   salidas con permiso `approveExit` (dirección y administración), `students` para matrícula, y el profesor guía
+   sin avisos ni giras. Pendiente: aviso en Usuarios cuando un permiso extra cambia el alcance; `teacherAbs` aún
+   deja ver todo el personal.
 6. Pase de lista: bloquear después de la hora de salida anticipada (decisión del usuario: por ahora no).
 7. Horario de exámenes sigue dentro de Configuración; el plan era moverlo a Académico.
 8. Email de confirmación de cuentas reales no llega: revisar en Supabase (Authentication › Logs / Users) y considerar
