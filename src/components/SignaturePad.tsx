@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { Button } from './Button';
 import { Icon } from './Icon';
 
 interface SignaturePadProps {
-  /** The drawn signature as a PNG data URL; null while nothing is drawn. */
+  /** The confirmed signature as a PNG data URL; null while nothing is confirmed. */
   value: string | null;
   onChange: (value: string | null) => void;
   signer: string;
@@ -11,26 +12,32 @@ interface SignaturePadProps {
 }
 
 /**
- * Box where a guardian draws the signature with a finger or the mouse. The drawing is kept as a PNG,
- * so the school sees the real signature and not a placeholder.
+ * Box where a guardian draws the signature with a finger or the mouse. The strokes stay editable until
+ * "Confirmar firma" saves them as a PNG, so the school keeps the real signature.
  */
 export function SignaturePad({ value, onChange, signer, signedAt, height = 110 }: SignaturePadProps) {
-  const [drawing, setDrawing] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawing = useRef(false);
+  const [hasStrokes, setHasStrokes] = useState(false);
 
-  // The canvas is created again after clearing, so it is set up whenever it mounts (a stable ref: no redraw mid-stroke).
-  const setup = useCallback((el: HTMLCanvasElement | null) => {
-    if (!el) return;
-    const box = el.getBoundingClientRect();
-    el.width = box.width * 2;
-    el.height = height * 2;
-    const ctx = el.getContext('2d');
-    if (!ctx) return;
-    ctx.scale(2, 2);
-    ctx.lineWidth = 2.2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#1f2933';
-  }, [height]);
+  // Set up once, when the canvas mounts (a stable ref, so strokes are not reset by re-renders).
+  const setup = useCallback(
+    (el: HTMLCanvasElement | null) => {
+      canvasRef.current = el;
+      if (!el) return;
+      const box = el.getBoundingClientRect();
+      el.width = box.width * 2;
+      el.height = height * 2;
+      const ctx = el.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(2, 2);
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#1f2933';
+    },
+    [height],
+  );
 
   const at = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const box = e.currentTarget.getBoundingClientRect();
@@ -43,27 +50,36 @@ export function SignaturePad({ value, onChange, signer, signedAt, height = 110 }
     const p = at(e);
     ctx?.beginPath();
     ctx?.moveTo(p.x, p.y);
-    setDrawing(true);
+    drawing.current = true;
   };
 
+  // Each movement adds to the same stroke: lifting the finger only ends that stroke, the box stays editable.
   const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!drawing) return;
+    if (!drawing.current) return;
     const ctx = e.currentTarget.getContext('2d');
     const p = at(e);
     ctx?.lineTo(p.x, p.y);
     ctx?.stroke();
+    setHasStrokes(true);
   };
 
-  // Saves the drawing when the stroke ends, so the form knows there is a signature.
-  const end = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!drawing) return;
-    setDrawing(false);
-    onChange(e.currentTarget.toDataURL('image/png'));
+  const end = () => {
+    drawing.current = false;
+  };
+
+  const clear = () => {
+    const el = canvasRef.current;
+    el?.getContext('2d')?.clearRect(0, 0, el.width / 2, el.height / 2);
+    setHasStrokes(false);
+  };
+
+  const confirm = () => {
+    if (canvasRef.current) onChange(canvasRef.current.toDataURL('image/png'));
   };
 
   if (!value) {
     return (
-      <div className="stack gap-4">
+      <div className="stack gap-6">
         <canvas
           ref={setup}
           role="img"
@@ -71,13 +87,22 @@ export function SignaturePad({ value, onChange, signer, signedAt, height = 110 }
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={end}
-          onPointerLeave={end}
           onPointerCancel={end}
           style={{ width: '100%', height, touchAction: 'none', borderRadius: 'var(--radius-lg)', border: '1.5px dashed var(--blue)', background: 'var(--surface)', cursor: 'crosshair' }}
         />
-        <span className="text-xs muted row gap-4">
-          <Icon name="pen" size={14} /> Firme con el dedo o el mouse, dentro del recuadro.
-        </span>
+        <div className="row between wrap gap-8">
+          <span className="text-xs muted row gap-4">
+            <Icon name="pen" size={14} /> Firme dentro del recuadro. Puede corregir con «Borrar».
+          </span>
+          <div className="row gap-8">
+            <Button style={{ height: 36, fontSize: 14 }} onClick={clear} disabled={!hasStrokes}>
+              Borrar
+            </Button>
+            <Button variant="primary" style={{ height: 36, fontSize: 14 }} onClick={confirm} disabled={!hasStrokes}>
+              Confirmar firma
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -93,7 +118,7 @@ export function SignaturePad({ value, onChange, signer, signedAt, height = 110 }
           {signer} · {signedAt}
         </span>
         <button type="button" className="btn btn--ghost" style={{ height: 32, padding: '0 10px', fontSize: 13 }} onClick={() => onChange(null)}>
-          Borrar
+          Cambiar firma
         </button>
       </div>
     </div>
