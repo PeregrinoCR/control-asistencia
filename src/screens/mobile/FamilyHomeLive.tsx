@@ -87,6 +87,11 @@ function Home({ f }: { f: FamilyCtx }) {
           <h1 className="display" style={{ fontSize: 28, letterSpacing: -0.4 }}>
             {f.me.first}
           </h1>
+          {!f.me.self && (
+            <span className="text-sm muted">
+              Encargado/a de {f.kid.name}
+            </span>
+          )}
         </div>
 
         <KidPicker f={f} />
@@ -160,15 +165,21 @@ function Home({ f }: { f: FamilyCtx }) {
               </span>
             </div>
           ) : exit && exit.estado === 'rechazada' ? (
-            <div className="perm-link" style={{ cursor: 'default' }}>
-              <span className="perm-link__icon">
-                <Icon name="logout" />
-              </span>
-              <span className="stack grow">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>Salida no autorizada</span>
-                <span className="text-sm muted">Motivo: {exit.motivo_rechazo ?? 'sin detalle'}.</span>
-              </span>
-            </div>
+            <>
+              <div className="perm-link" style={{ cursor: 'default' }}>
+                <span className="perm-link__icon">
+                  <Icon name="logout" />
+                </span>
+                <span className="stack grow">
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>Salida no autorizada</span>
+                  <span className="text-sm muted">Motivo: {exit.motivo_rechazo ?? 'sin detalle'}.</span>
+                </span>
+              </div>
+              <ButtonLink variant="outline-blue" to={routes.family.earlyExit} size="lg">
+                <Icon name="logout" size={18} />
+                Pedir la salida de nuevo
+              </ButtonLink>
+            </>
           ) : (
             !kid.adult && (
               <ButtonLink variant="outline-blue" to={routes.family.earlyExit} size="lg">
