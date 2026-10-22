@@ -74,7 +74,7 @@ export function TripsLive() {
       db.from('secciones').select('id, nombre').order('nombre'),
       db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, secciones').gte('fecha', today).order('fecha'),
       db.from('encargados').select('usuario_id, nombre').not('usuario_id', 'is', null),
-      db.from('salidas').select('id, hora, modo, motivo, retira_nombre, comprobante, salio, autorizado_por, estudiantes(nombre, secciones(nombre))').eq('fecha', today).order('hora'),
+      db.from('salidas').select('id, hora, modo, motivo, retira_nombre, comprobante, salio, autorizado_por, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
     ]);
     const gmap = new Map((g.data ?? []).map((r) => [r.usuario_id as string, r.nombre as string]));
     setGuardians(gmap);
