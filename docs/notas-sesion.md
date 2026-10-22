@@ -26,34 +26,40 @@
   `padre@cole.local` (familia, encargado de Juan Pérez). Dirección usa su cuenta real.
 - Desarrollo (datos de ejemplo, borrar datos, cuentas demo) se quita antes de la versión final.
 
-## Hecho en esta sesión
-- Menú de dirección por grupos (Día a día, Académico, Familias, Administración). Horarios y cargas en `/direccion/horarios`.
-- Raíz `/` lleva a la pantalla según el rol; el catálogo de pantallas está en `/catalogo`.
-- Calendario de pruebas agrupado (una prueba para varias secciones), aula por sección, filtro de adecuación.
-- Secciones en orden 7-1, 7-2… 11-2 (`src/lib/secciones.ts`).
-- Aulas: catálogo, aula fija por grupo, eventos de traslado; el horario del estudiante muestra el aula del día.
-- Adecuación: lecciones distintas por estudiante, aula de adecuación por prueba, duración 1–6 lecciones.
-- Cuido de exámenes: un cuidador por aula cuando es posible; relevos dentro de la misma tarjeta con etiqueta y línea
-  de tiempo; aviso de choque de aula.
-- Horarios especiales: salida anticipada con hora de término; alcance por secciones o nivel.
-- Firma dibujada: el recuadro sigue editable entre trazos; «Confirmar firma» guarda el PNG.
-- Salidas tempranas: la familia pide; dirección autoriza o no (con motivo); el portón solo ve las autorizadas; avisos a
-  familia y docente. La familia ve el estado real en inicio e historial, con «Pedir la salida de nuevo» si fue rechazada.
-  Texto e icono de alerta para no autorizada. Verificado por el usuario.
-- Usuarios y permisos: eliminar una persona del personal (confirmación escrita).
-- Estudiantes: imprimir el carné de una sola persona desde su ficha (con «Reponer carné» si no tiene); lista de
-  hermanos y otros estudiantes del mismo encargado; «Vincular existente» para un encargado ya registrado.
-- Familia: el saludo muestra «Encargado/a de:» y el nombre del estudiante.
+## Hecho en esta sesión (roles, salidas, giras, portón)
+- Roles y accesos (0009): un rol limitado a su sección ya no abre datos de todo el colegio. Permisos propios:
+  `approveExit` (salidas: dirección y administración), `students` (matrícula). El profesor guía no envía avisos
+  ni crea giras. El menú y cada página del panel solo muestran lo que la persona puede usar.
+- Cuenta sin vincular: al entrar, la app ya no vuelve a una ruta de otra área (por ejemplo, `/porton`).
+- Salidas tempranas: la familia pide, dirección autoriza o no; el portón solo ve las autorizadas. La lista de
+  «Giras y salidas» muestra solo las autorizadas de hoy.
+- Giras completas (0010 a 0013):
+  - Dirección edita la gira. Al crearla o editarla: teléfono para pagos y docente organizador.
+  - Lista de estudiantes con filtro: todos, autorizados, pendientes, no autorizados.
+  - La familia elige SINPE Móvil o efectivo. SINPE exige comprobante; sin él la autorización no se envía y
+    dirección ve «Falta comprobante».
+  - Marcar pagado: dirección o el docente organizador. La descripción del pago usa el nombre de la gira y
+    «A nombre de» el organizador (función `nombre_organizador`).
+  - Una gira pagada no se puede desautorizar desde la familia: aparece el aviso de contactar al colegio.
+  - Agregar o quitar estudiantes fuera de las secciones (buscador por cédula o nombre).
+  - Lista impresa de autorizados con el teléfono de contacto (encargado, o el propio si es mayor de edad).
+- Portón: solo entra quien tiene permiso de portón (guarda y dirección). La familia va a su pantalla.
+
+## Migraciones corridas en Supabase
+0001 a 0013, confirmadas por el usuario. Para una instalación nueva usar `supabase/instalar.sql`.
 
 ## Pendientes abiertos
 1. Notificaciones en teléfonos reales (Android y iPhone con la app instalada) y la línea SMS.
 2. Formato oficial de exportación SABER: validar columnas con el MEP.
 3. Horas de lección editables desde la app (hoy fijas en `SHIFT_BLOCKS`, `src/data/settings.ts`).
 4. Cuido: probar con datos reales la noche de la captura (sin aula con dos cuidadores sin relevo visible).
-5. Roles y accesos (migración 0009, hecho en código; falta correrla en Supabase y probar con cuentas de cada rol):
+5. Roles y accesos (migración 0009, corrida y verificada en Supabase):
    salidas con permiso `approveExit` (dirección y administración), `students` para matrícula, y el profesor guía
    sin avisos ni giras. Pendiente: aviso en Usuarios cuando un permiso extra cambia el alcance; `teacherAbs` aún
    deja ver todo el personal.
+11. El organizador de una gira puede buscar cualquier estudiante del colegio (para agregarlo). Revisar si debe
+   limitarse a sus secciones.
+12. La vista previa sin servidor no tiene las funciones de giras y salidas nuevas.
 6. Pase de lista: bloquear después de la hora de salida anticipada (decisión del usuario: por ahora no).
 7. Horario de exámenes sigue dentro de Configuración; el plan era moverlo a Académico.
 8. Email de confirmación de cuentas reales no llega: revisar en Supabase (Authentication › Logs / Users) y considerar
