@@ -17,7 +17,6 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
       { to: routes.admin.today, label: 'Hoy', perm: 'viewAttendance' },
       { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', perm: 'teacherAbs', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
       { to: routes.admin.justifications, label: 'Justificaciones', perm: 'approveJust', count: { n: navCounts.justifications, tone: 'orange' } },
-      { to: routes.admin.trips, label: 'Giras y salidas', perm: ['trips', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
     ],
   },
   {
@@ -32,6 +31,7 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
   {
     title: 'Familias',
     links: [
+      { to: routes.admin.trips, label: 'Giras y salidas', perm: ['trips', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
       { to: routes.admin.notices, label: 'Avisos a familias', perm: 'notices' },
       { to: routes.admin.earlyWarning, label: 'Alerta temprana', perm: 'earlyWarning', count: { n: navCounts.earlyWarning, tone: 'orange' } },
     ],

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Badge, Button, InputField, Segmented, StatusBadge } from '../../components';
+import { Button, InputField, Segmented, StatusBadge } from '../../components';
 import { useLocation } from 'react-router-dom';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { ExitRequests } from './ExitRequests';
@@ -61,7 +61,6 @@ interface ExitRow {
 }
 
 const longDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long' });
-const time = (t: string) => new Date(t).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit' });
 
 /** Opens an uploaded receipt through a short-lived private link. */
 async function openFile(path: string) {
@@ -193,53 +192,8 @@ export function TripsLive() {
           )}
         </div>
       ) : (
-        <div className="stack gap-16" role="tabpanel">
-        <ExitRequests onDecided={load} />
-        <section aria-labelledby="lista-sal" className="card gap-10">
-          <div className="row wrap between gap-8" style={{ alignItems: 'baseline' }}>
-            <h2 id="lista-sal" className="title-section">
-              Salidas autorizadas · {longDate(today)}
-            </h2>
-            <span className="text-sm muted">El guarda del portón ve esta misma lista en su teléfono.</span>
-          </div>
-          {exits.length === 0 ? (
-            <p className="text-sm muted">No hay salidas tempranas autorizadas hoy.</p>
-          ) : (
-            <div className="table-wrap">
-              <table className="table" style={{ minWidth: 760 }}>
-                <thead>
-                  <tr>
-                    <th>Hora</th>
-                    <th>Estudiante</th>
-                    <th>Autorizó</th>
-                    <th>Cómo se retira</th>
-                    <th>Estado</th>
-                    <th>Comprobante</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {exits.map((e) => (
-                    <tr key={e.id}>
-                      <td className="strong tabular">{e.hour}</td>
-                      <td>
-                        <span className="strong">{e.name}</span> <span className="muted">· {e.section}</span>
-                        {e.reason && <span className="text-xs muted" style={{ display: 'block' }}>{e.reason}</span>}
-                      </td>
-                      <td>{e.by}</td>
-                      <td style={{ color: 'var(--ink-2)' }}>{e.how}</td>
-                      <td>
-                        <Badge tone={e.left ? 'green' : 'amber'} size="md">
-                          {e.left ? `Salió ${time(e.left)}` : 'Por salir'}
-                        </Badge>
-                      </td>
-                      <td className="tabular">{e.receipt}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        <div role="tabpanel">
+          <ExitRequests onDecided={load} />
         </div>
       )}
     </AdminLayout>

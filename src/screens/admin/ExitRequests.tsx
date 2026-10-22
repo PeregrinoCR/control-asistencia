@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, InputField, useFlash } from '../../components';
+import { Badge, Button, EmptyState, InputField, useFlash } from '../../components';
 import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
 type Estado = 'pendiente' | 'aprobada' | 'rechazada';
+type Filter = 'all' | 'pendiente' | 'aprobada';
 
 interface Exit {
   id: string;
@@ -16,21 +17,29 @@ interface Exit {
   estado: Estado;
   motivo_rechazo: string | null;
   firma: string | null;
+  comprobante: string | null;
   salio: string | null;
   estudiantes: { nombre: string; secciones: { nombre: string } | null } | null;
 }
 
-const TONE: Record<Estado, 'amber' | 'green' | 'orange'> = { pendiente: 'amber', aprobada: 'green', rechazada: 'orange' };
-const LABEL: Record<Estado, string> = { pendiente: 'Pendiente', aprobada: 'Autorizada', rechazada: 'No autorizada' };
+const time = (iso: string) => new Date(iso).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit' });
+
+/** Badge for one request: asked, authorized (and whether the student already left), or refused. */
+function status(r: Exit): { tone: 'amber' | 'green' | 'orange' | 'blue'; label: string } {
+  if (r.estado === 'pendiente') return { tone: 'amber', label: 'Por decidir' };
+  if (r.estado === 'rechazada') return { tone: 'orange', label: 'No autorizada' };
+  return r.salio ? { tone: 'blue', label: `Salió ${time(r.salio)}` } : { tone: 'green', label: 'Autorizada · por salir' };
+}
 
 /**
- * Early-exit requests waiting for a decision (and today's refusals, which can still be reversed).
- * Lives inside Giras y salidas; authorized exits are listed in the table next to it.
+ * Early exits in one list: today's requests and authorizations, plus older requests still waiting.
+ * Families ask from their app; whoever has the approve permission decides here. The gate guard sees only the authorized ones.
  */
 export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
   const { session, perms } = useAuth();
   const canDecide = perms.includes('approveExit');
   const [rows, setRows] = useState<Exit[] | null>(null);
+  const [filter, setFilter] = useState<Filter>('all');
   const [reason, setReason] = useState<Record<string, string>>({});
   const [msg, setMsg] = useFlash();
   const today = localDate();
@@ -38,8 +47,8 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
   const load = async () => {
     const { data, error } = await supabase!
       .from('salidas')
-      .select('id, fecha, hora, modo, motivo, retira_nombre, estado, motivo_rechazo, firma, salio, estudiantes(nombre, secciones(nombre))')
-      .or(`and(fecha.eq.${today},estado.eq.rechazada),estado.eq.pendiente`)
+      .select('id, fecha, hora, modo, motivo, retira_nombre, estado, motivo_rechazo, firma, comprobante, salio, estudiantes(nombre, secciones(nombre))')
+      .or(`fecha.eq.${today},estado.eq.pendiente`)
       .order('fecha')
       .order('hora');
     if (error) return setMsg({ ok: false, text: error.message });
@@ -69,13 +78,27 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
     onDecided?.();
   };
 
+  const count = (e: Estado) => rows?.filter((r) => r.estado === e).length ?? 0;
+  const shown = rows?.filter((r) => filter === 'all' || r.estado === filter) ?? [];
+
   return (
-    <section aria-labelledby="solic-t" className="card gap-10">
-      <div className="stack gap-2">
-        <h2 id="solic-t" className="title-section">
-          Solicitudes por decidir{rows && rows.length > 0 ? ` · ${rows.length}` : ''}
+    <section aria-labelledby="sal-t" className="card gap-10">
+      <div className="row wrap between gap-8" style={{ alignItems: 'baseline' }}>
+        <h2 id="sal-t" className="title-section">
+          Salidas tempranas
         </h2>
-        <span className="text-sm muted">Las familias piden la salida desde su app; dirección autoriza o no autoriza.</span>
+        <span className="text-sm muted">Las familias piden la salida desde su app. El guarda del portón ve solo las autorizadas.</span>
+      </div>
+      <div className="row wrap gap-8" role="group" aria-label="Filtrar salidas">
+        <button type="button" className="chip" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>
+          Todas · {rows?.length ?? 0}
+        </button>
+        <button type="button" className="chip" aria-pressed={filter === 'pendiente'} onClick={() => setFilter('pendiente')}>
+          Por decidir · {count('pendiente')}
+        </button>
+        <button type="button" className="chip" aria-pressed={filter === 'aprobada'} onClick={() => setFilter('aprobada')}>
+          Autorizadas · {count('aprobada')}
+        </button>
       </div>
       {msg && (
         <p className="notice" role={msg.ok ? 'status' : 'alert'}>
@@ -83,40 +106,49 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
         </p>
       )}
       {rows === null && <p className="text-sm muted">Cargando…</p>}
-      {rows?.length === 0 && <p className="text-sm muted">No hay solicitudes pendientes.</p>}
-      <div className="stack gap-10">
-        {rows?.map((r) => (
-          <div key={r.id} className="row wrap between gap-10" style={{ padding: '12px 0', borderTop: '1px solid var(--border-soft)' }}>
-            <span className="stack" style={{ minWidth: 220 }}>
-              <span className="row gap-8">
-                <strong style={{ fontSize: 15 }}>{r.estudiantes?.nombre ?? '—'}</strong>
-                <Badge tone={TONE[r.estado]}>{LABEL[r.estado]}</Badge>
-              </span>
-              <span className="text-sm muted">
-                {r.estudiantes?.secciones?.nombre ?? '—'} · {r.fecha} · sale a las {r.hora}
-              </span>
-              <span className="text-sm">{r.modo === 'alone' ? 'Sale solo' : `Lo retira: ${r.retira_nombre ?? '—'}`}</span>
-              {r.motivo && <span className="text-sm muted">Motivo: {r.motivo}</span>}
-              {r.estado === 'rechazada' && r.motivo_rechazo && <span className="text-sm ink-orange">Rechazada: {r.motivo_rechazo}</span>}
-            </span>
-            <span className="stack gap-6" style={{ alignItems: 'flex-end', minWidth: 260 }}>
-              {r.firma?.startsWith('data:image') && <img src={r.firma} alt="Firma del encargado" style={{ height: 40 }} />}
-              {canDecide && (
-                <span className="row gap-6">
-                  <Button variant="primary" onClick={() => decide(r, 'aprobada')}>
-                    Autorizar
-                  </Button>
-                  {r.estado === 'pendiente' && (
-                    <>
-                      <InputField id={`mot-${r.id}`} label="Motivo si no autoriza" value={reason[r.id] ?? ''} onChange={(e) => setReason({ ...reason, [r.id]: e.target.value })} />
-                      <Button onClick={() => decide(r, 'rechazada')}>No autorizar</Button>
-                    </>
-                  )}
+      {rows && shown.length === 0 && (
+        <EmptyState title={filter === 'pendiente' ? 'No hay solicitudes por decidir' : 'No hay salidas tempranas hoy'}>
+          Cuando una familia pida una salida, aparecerá aquí para que la autorice.
+        </EmptyState>
+      )}
+      <div className="stack">
+        {shown.map((r) => {
+          const st = status(r);
+          return (
+            <div key={r.id} className="row wrap between gap-10" style={{ padding: '12px 0', borderTop: '1px solid var(--border-soft)' }}>
+              <span className="stack" style={{ minWidth: 220 }}>
+                <span className="row gap-8">
+                  <strong style={{ fontSize: 15 }}>{r.estudiantes?.nombre ?? '—'}</strong>
+                  <Badge tone={st.tone}>{st.label}</Badge>
                 </span>
-              )}
-            </span>
-          </div>
-        ))}
+                <span className="text-sm muted">
+                  {r.estudiantes?.secciones?.nombre ?? '—'} · {r.fecha === today ? 'hoy' : r.fecha} · sale a las {r.hora}
+                </span>
+                <span className="text-sm">{r.modo === 'alone' ? 'Sale solo' : `Lo retira: ${r.retira_nombre ?? '—'}`}</span>
+                {r.motivo && <span className="text-sm muted">Motivo: {r.motivo}</span>}
+                {r.estado === 'aprobada' && r.comprobante && <span className="text-sm muted tabular">Comprobante {r.comprobante}</span>}
+                {r.estado === 'rechazada' && r.motivo_rechazo && <span className="text-sm ink-orange">Rechazada: {r.motivo_rechazo}</span>}
+              </span>
+              <span className="stack gap-6" style={{ alignItems: 'flex-end', minWidth: 260 }}>
+                {r.firma?.startsWith('data:image') && <img src={r.firma} alt="Firma del encargado" style={{ height: 40 }} />}
+                {/* An authorized exit is final: the guard may already be relying on it. */}
+                {canDecide && r.estado !== 'aprobada' && (
+                  <span className="row gap-6">
+                    <Button variant="primary" onClick={() => decide(r, 'aprobada')}>
+                      Autorizar
+                    </Button>
+                    {r.estado === 'pendiente' && (
+                      <>
+                        <InputField id={`mot-${r.id}`} label="Motivo si no autoriza" value={reason[r.id] ?? ''} onChange={(e) => setReason({ ...reason, [r.id]: e.target.value })} />
+                        <Button onClick={() => decide(r, 'rechazada')}>No autorizar</Button>
+                      </>
+                    )}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
