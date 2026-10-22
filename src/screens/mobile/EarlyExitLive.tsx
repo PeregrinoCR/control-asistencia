@@ -155,7 +155,9 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
         >
           {saved.salio
             ? `${kid.short} salió a las ${new Date(saved.salio).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit' })}.`
-            : `${kid.short} podrá salir a las ${saved.hora} p. m. El guarda del portón ya tiene la autorización.`}
+            : saved.estado === 'pendiente'
+              ? `Solicitud de salida de ${kid.short} a las ${saved.hora} p. m. Le avisaremos la decisión de dirección.`
+              : `${kid.short} podrá salir a las ${saved.hora} p. m. El guarda del portón ya tiene la autorización.`}
           {error && <span className="form-error">{error}</span>}
         </DoneState>
       ) : (
