@@ -69,3 +69,5 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<términos en inglés>" --domain ux|style|color|typography`.
   Son recomendaciones: respetar los tokens de `src/styles/tokens.css` y los componentes de `src/components/`.
 - Skill `grilling` en `.claude/skills/grilling/`: Claude entrevista al usuario por rondas de preguntas (con respuesta recomendada) para estresar un plan antes de actuar. Se activa con "grill me" o similar.
+- Skill `frontend-design` en `.claude/skills/frontend-design/` (Anthropic): guía para diseño visual con identidad propia (paleta, tipografía, composición). Usarlo al proponer pantallas nuevas, respetando siempre los tokens de la app.
+
