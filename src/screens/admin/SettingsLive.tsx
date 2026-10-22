@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
-import { borrarDatos, cargarEjemplos } from '../../lib/devData';
+import { borrarDatos, cargarEjemplos, CLAVE_DEMO, CUENTAS_DEMO } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
 import { ordenSecciones } from '../../lib/secciones';
 import { levelOf } from '../../lib/cuidos';
@@ -1012,6 +1012,13 @@ function DevTab({ colegioId }: { colegioId: string }) {
     window.location.reload();
   };
 
+  // Creates (or reuses) the demonstration accounts on the server; they are then linked to the people rows.
+  const crearCuentas = async () => {
+    const { data, error } = await supabase!.functions.invoke<{ error?: string }>('crear-demos');
+    if (error || data?.error) return error?.message ?? data?.error ?? 'No se crearon las cuentas.';
+    return '';
+  };
+
   return (
     <section aria-labelledby="dev-t" className="card card--roomy stack gap-14">
       <div className="stack gap-2">
@@ -1038,6 +1045,35 @@ function DevTab({ colegioId }: { colegioId: string }) {
         <div>
           <Button disabled={busy} onClick={() => run(() => cargarEjemplos(colegioId))}>
             {busy ? 'Cargando…' : 'Cargar datos de ejemplo'}
+          </Button>
+        </div>
+      </div>
+      <div className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
+        <span className="text-sm">
+          <strong>Cuentas de demostración.</strong> Una por rol, con correo confirmado (no llega ningún correo). Entre con
+          la cuenta y compruebe su pantalla. Dirección usa su cuenta real.
+        </span>
+        <table className="table table--dense">
+          <thead>
+            <tr>
+              <th>Rol</th>
+              <th>Correo</th>
+              <th>Contraseña</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CUENTAS_DEMO.map((c) => (
+              <tr key={c.correo}>
+                <td>{c.rol}</td>
+                <td>{c.correo}</td>
+                <td>{CLAVE_DEMO}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div>
+          <Button disabled={busy} onClick={() => run(crearCuentas)}>
+            {busy ? 'Creando…' : 'Crear cuentas de demostración'}
           </Button>
         </div>
       </div>

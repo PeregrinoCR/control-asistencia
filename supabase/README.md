@@ -61,3 +61,12 @@ Cuando esa persona crea su cuenta con el mismo dato, queda unida automáticament
 3. Portón, comprobantes SINPE y bitácora
 4. Avisos push y SMS con línea propia (teléfono Android como enviador)
 5. Copias de seguridad, dominio y piloto
+
+## Cuentas de demostración (una vez, para probar cada rol)
+
+1. **Edge Functions › Deploy a new function › Via Editor**: nombre `crear-demos`, pegar `functions/crear-demos/index.ts`
+   y **Deploy**. Dejar **Verify JWT** activado (la llama dirección, con su sesión).
+2. Cargar los datos de ejemplo (Configuración › Desarrollo) y pulsar **Crear cuentas de demostración**.
+3. Importar `supabase/ejemplos/estudiantes-ejemplo.csv` en Estudiantes › Importar matrícula (la primera familia es `padre@cole.local`).
+4. Cuentas (contraseña `Demo-2026`): `profe@cole.local` (docente), `guia@cole.local` (profesor guía de 7-1),
+   `guarda@cole.local` (portón), `padre@cole.local` (familia). Dirección usa su cuenta real.
