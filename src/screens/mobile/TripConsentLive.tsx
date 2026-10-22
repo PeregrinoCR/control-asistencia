@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Button, ButtonLink, CheckCard, InputField, SignaturePad, SinpePayment } from '../../components';
+import { Button, ButtonLink, CheckCard, InputField, Segmented, SignaturePad, SinpePayment } from '../../components';
 import { DoneState, FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { TRIP_DECLARATIONS } from '../../data/family';
 import { useAuth } from '../../lib/auth';
@@ -19,11 +19,13 @@ interface Trip {
   regreso: string | null;
   costo: string | null;
   fecha_limite: string | null;
+  telefono_pago: string | null;
 }
 
 interface Answer {
   estado: 'ok' | 'no';
   pago: 'none' | 'review' | 'paid';
+  metodo: 'sinpe' | 'efectivo' | null;
 }
 
 interface Payments {
@@ -54,13 +56,13 @@ function Trips({ f }: { f: FamilyCtx }) {
     (async () => {
       const [g, a, c] = await Promise.all([
         kid.sectionId
-          ? db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite').contains('secciones', [kid.sectionId]).gte('fecha', localDate()).order('fecha')
+          ? db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').contains('secciones', [kid.sectionId]).gte('fecha', localDate()).order('fecha')
           : Promise.resolve({ data: [] as Trip[] }),
-        db.from('gira_autorizaciones').select('gira_id, estado, pago').eq('estudiante_id', kid.id),
+        db.from('gira_autorizaciones').select('gira_id, estado, pago, metodo').eq('estudiante_id', kid.id),
         db.from('colegios').select('modulos, config').maybeSingle(),
       ]);
       setTrips((g.data ?? []) as Trip[]);
-      setAnswers(Object.fromEntries((a.data ?? []).map((x) => [x.gira_id, { estado: x.estado, pago: x.pago }])));
+      setAnswers(Object.fromEntries((a.data ?? []).map((x) => [x.gira_id, { estado: x.estado, pago: x.pago, metodo: x.metodo }])));
       const sinpe = c.data?.config?.sinpe ?? {};
       setPayments({ on: !!(c.data?.modulos?.pay ?? c.data?.modulos?.pagos), number: sinpe.numero ?? '', holder: sinpe.titular ?? '' });
     })();
@@ -136,8 +138,10 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(!answer);
+  const [method, setMethod] = useState<'sinpe' | 'efectivo'>(answer?.metodo ?? 'sinpe');
   const ready = checks.every(Boolean) && signed && idNumber.trim();
   const charge = payments.on && trip.costo;
+  const cash = charge && method === 'efectivo';
   const signedAt = new Date().toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' });
 
   const save = async (estado: 'ok' | 'no') => {
@@ -146,7 +150,10 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
     setError('');
     try {
       const comprobante = estado === 'ok' && receiptFile ? await uploadFile(f.schoolId, receiptFile) : null;
-      const pago = comprobante ? 'review' : (answer?.pago ?? 'none');
+      // Cash is confirmed by the school later, so it waits for review like a receipt.
+      const pagoEnEfectivo = estado === 'ok' && cash && answer?.pago !== 'paid';
+      const pago = comprobante || pagoEnEfectivo ? 'review' : (answer?.pago ?? 'none');
+      const metodo = estado === 'ok' && charge ? method : null;
       const { error } = await supabase!.from('gira_autorizaciones').upsert(
         {
           gira_id: trip.id,
@@ -158,12 +165,13 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
           firmado_por: session!.user.id,
           firmado: new Date().toISOString(),
           pago,
+          metodo,
           ...(comprobante ? { comprobante } : {}),
         },
         { onConflict: 'gira_id,estudiante_id' },
       );
       if (error) throw new Error(error.message);
-      onAnswered({ estado, pago });
+      onAnswered({ estado, pago, metodo });
       setEditing(false);
     } catch (e) {
       setError('No se guardó: ' + (e as Error).message);
@@ -199,7 +207,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
         >
           {answer.estado === 'ok'
             ? `El colegio recibió su autorización firmada para "${trip.titulo}".` +
-              (charge ? (answer.pago === 'paid' ? ' El pago ya fue confirmado.' : answer.pago === 'review' ? ' Su comprobante de pago está en revisión.' : ' Recuerde pagar por SINPE Móvil y subir el comprobante.') : '')
+              (charge ? (answer.pago === 'paid' ? ' El pago ya fue confirmado.' : answer.pago === 'review' ? (answer.metodo === 'efectivo' ? ' Su pago en efectivo está por confirmar.' : ' Su comprobante de pago está en revisión.') : answer.metodo === 'efectivo' ? ' Pague en efectivo a la persona organizadora.' : ' Recuerde pagar por SINPE Móvil y subir el comprobante.') : '')
             : `El colegio sabe que ${kid.short} no irá a esta gira.`}
         </DoneState>
       ) : (
@@ -263,17 +271,38 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
             </fieldset>
 
             {charge && (
-              <SinpePayment
-                amount={trip.costo!}
-                number={payments.number || '[NÚMERO SINPE]'}
-                holder={payments.holder || '[TITULAR]'}
-                reference={`Gira ${kid.section} ${kid.name}`}
-                receipt={receipt}
-                onReceipt={(name, file) => {
-                  setReceipt(name);
-                  setReceiptFile(file ?? null);
-                }}
-              />
+              <div className="stack gap-10">
+                <Segmented
+                  label="Forma de pago"
+                  fill
+                  value={method}
+                  onChange={(m) => {
+                    setMethod(m);
+                    setError('');
+                  }}
+                  options={[
+                    { value: 'sinpe', label: 'SINPE Móvil' },
+                    { value: 'efectivo', label: 'Efectivo' },
+                  ]}
+                />
+                {cash ? (
+                  <p className="text-sm" style={{ color: 'var(--ink-2)' }}>
+                    Pague {trip.costo} en efectivo a la persona organizadora de la gira. La escuela confirmará el pago.
+                  </p>
+                ) : (
+                  <SinpePayment
+                    amount={trip.costo!}
+                    number={trip.telefono_pago || payments.number || '[NÚMERO SINPE]'}
+                    holder={payments.holder || '[TITULAR]'}
+                    reference={`Gira ${kid.section} ${kid.name}`}
+                    receipt={receipt}
+                    onReceipt={(name, file) => {
+                      setReceipt(name);
+                      setReceiptFile(file ?? null);
+                    }}
+                  />
+                )}
+              </div>
             )}
 
             <div className="stack gap-8">

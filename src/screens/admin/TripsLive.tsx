@@ -20,6 +20,8 @@ interface Trip {
   costo: string | null;
   fecha_limite: string | null;
   secciones: string[];
+  telefono_pago: string | null;
+  organizador_id: string | null;
 }
 
 interface RosterRow {
@@ -31,6 +33,8 @@ interface RosterRow {
   state: ConsentState;
   health: string;
   signed: string;
+  /** How the family pays: by SINPE Móvil or in cash. */
+  method: 'sinpe' | 'efectivo' | null;
   /** The drawn signature (PNG data URL), when there is one. */
   firma: string | null;
   payment: PaymentState;
@@ -65,17 +69,20 @@ export function TripsLive() {
   const [trips, setTrips] = useState<Trip[] | null>(null);
   const [tripId, setTripId] = useState<string | 'new' | null>(null);
   const [exits, setExits] = useState<ExitRow[] | null>(null);
+  const [staff, setStaff] = useState<Array<{ id: string; nombre: string }>>([]);
   const [guardians, setGuardians] = useState<Map<string, string>>(new Map());
   const today = localDate();
 
   const load = useCallback(async () => {
     const db = supabase!;
-    const [s, t, g, x] = await Promise.all([
+    const [s, t, g, x, p] = await Promise.all([
       db.from('secciones').select('id, nombre').order('nombre'),
-      db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, secciones').gte('fecha', today).order('fecha'),
+      db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, secciones, telefono_pago, organizador_id').gte('fecha', today).order('fecha'),
       db.from('encargados').select('usuario_id, nombre').not('usuario_id', 'is', null),
       db.from('salidas').select('id, hora, modo, motivo, retira_nombre, comprobante, salio, autorizado_por, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
+      db.from('personal').select('id, nombre').eq('activo', true).order('nombre'),
     ]);
+    setStaff(p.data ?? []);
     const gmap = new Map((g.data ?? []).map((r) => [r.usuario_id as string, r.nombre as string]));
     setGuardians(gmap);
     setSections(ordenarSecciones(s.data));
@@ -149,6 +156,7 @@ export function TripsLive() {
           {tripId === 'new' || trips.length === 0 ? (
             <NewTrip
               sections={sections}
+              staff={staff}
               onCancel={trips.length ? () => setTripId(null) : undefined}
               onCreated={async (id) => {
                 await load();
@@ -156,7 +164,17 @@ export function TripsLive() {
               }}
             />
           ) : (
-            trip && <TripDetail key={trip.id} trip={trip} sectionNames={sectionNames(trip.secciones)} guardians={guardians} />
+            trip && (
+              <TripDetail
+                key={trip.id}
+                trip={trip}
+                sectionNames={sectionNames(trip.secciones)}
+                sections={sections}
+                staff={staff}
+                guardians={guardians}
+                onChanged={load}
+              />
+            )
           )}
         </div>
       ) : (
@@ -210,9 +228,25 @@ export function TripsLive() {
   );
 }
 
-function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionNames: string; guardians: Map<string, string> }) {
+function TripDetail({
+  trip,
+  sectionNames,
+  sections,
+  staff,
+  guardians,
+  onChanged,
+}: {
+  trip: Trip;
+  sectionNames: string;
+  sections: Array<{ id: string; nombre: string }>;
+  staff: Array<{ id: string; nombre: string }>;
+  guardians: Map<string, string>;
+  onChanged: () => void;
+}) {
   const [roster, setRoster] = useState<RosterRow[] | null>(null);
   const [error, setError] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [filter, setFilter] = useState<'all' | ConsentState>('all');
 
   const load = useCallback(async () => {
     const db = supabase!;
@@ -220,7 +254,7 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
       trip.secciones.length
         ? db.from('estudiantes').select('id, nombre, nacimiento, secciones(nombre), estudiante_encargado(encargados(nombre))').in('seccion_id', trip.secciones).eq('activo', true).order('nombre')
         : Promise.resolve({ data: [] }),
-      db.from('gira_autorizaciones').select('estudiante_id, estado, salud, firma, firmado, firmado_por, pago, comprobante').eq('gira_id', trip.id),
+      db.from('gira_autorizaciones').select('estudiante_id, estado, salud, firma, firmado, firmado_por, pago, comprobante, metodo').eq('gira_id', trip.id),
     ]);
     const byStudent = new Map((au.data ?? []).map((a) => [a.estudiante_id, a]));
     setRoster(
@@ -239,6 +273,7 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
           firma: a?.firma?.startsWith('data:image') ? a.firma : null,
           payment: a ? (a.pago as PaymentState) : 'none',
           receipt: a?.comprobante ?? null,
+          method: a?.metodo ?? null,
         };
       }),
     );
@@ -254,7 +289,22 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
     load();
   };
 
+  if (editing)
+    return (
+      <NewTrip
+        sections={sections}
+        staff={staff}
+        trip={trip}
+        onCancel={() => setEditing(false)}
+        onCreated={() => {
+          setEditing(false);
+          onChanged();
+        }}
+      />
+    );
+
   const rows = roster ?? [];
+  const shown = filter === 'all' ? rows : rows.filter((r) => r.state === filter);
   const minors = rows.filter((r) => !r.adult);
   const count = (s: ConsentState) => minors.filter((r) => r.state === s).length;
   const share = (n: number) => `${minors.length ? (100 * n) / minors.length : 0}%`;
@@ -278,6 +328,16 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
             {trip.costo && ` · ${trip.costo}`}
           </span>
           {trip.fecha_limite && <span className="text-sm strong ink-orange">Fecha límite para firmar: {longDate(trip.fecha_limite)}</span>}
+          {trip.costo && trip.telefono_pago && (
+            <span className="text-sm" style={{ color: 'var(--ink-2)' }}>
+              Teléfono para pagos: <strong>{trip.telefono_pago}</strong>
+            </span>
+          )}
+          <span>
+            <Button size="sm" onClick={() => setEditing(true)}>
+              Editar gira
+            </Button>
+          </span>
         </div>
         <div className="stack gap-8" style={{ flex: '1 1 320px', maxWidth: 460 }}>
           <div
@@ -305,7 +365,7 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
           </div>
           {trip.costo && (
             <div className="text-sm" style={{ color: 'var(--ink-2)' }}>
-              Pagos por SINPE Móvil: <strong>{paid} pagados</strong> · {inReview} por confirmar
+              Pagos: <strong>{paid} pagados</strong> · {inReview} por confirmar
             </div>
           )}
         </div>
@@ -325,6 +385,18 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
         ) : rows.length === 0 ? (
           <p className="text-sm muted">No hay estudiantes matriculados en esas secciones.</p>
         ) : (
+          <>
+          <Segmented
+            label="Ver estudiantes"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: 'all', label: `Todos · ${rows.length}` },
+              { value: 'ok', label: `Autorizados · ${count('ok')}` },
+              { value: 'wait', label: `Pendientes · ${count('wait')}` },
+              { value: 'no', label: `No autorizados · ${count('no')}` },
+            ]}
+          />
           <div className="table-wrap">
             <table className="table" style={{ minWidth: 900 }}>
               <thead>
@@ -339,7 +411,7 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {shown.map((r) => (
                   <tr key={r.id}>
                     <td className="strong">
                       {r.name}
@@ -359,6 +431,7 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
                       <td>
                         <span className="row wrap gap-8">
                           <StatusBadge status={PAYMENT_STATUS[r.payment]} />
+                          {r.method && <span className="text-xs muted">{r.method === 'efectivo' ? 'Efectivo' : 'SINPE Móvil'}</span>}
                           {r.receipt && (
                             <button type="button" className="link-button text-sm" style={{ fontWeight: 700 }} onClick={() => openFile(r.receipt!)}>
                               Ver comprobante
@@ -377,16 +450,40 @@ function TripDetail({ trip, sectionNames, guardians }: { trip: Trip; sectionName
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
     </>
   );
 }
 
-function NewTrip({ sections, onCreated, onCancel }: { sections: Array<{ id: string; nombre: string }>; onCreated: (id: string) => void; onCancel?: () => void }) {
+/** Creates a trip, or edits one when `trip` is given. */
+function NewTrip({
+  sections,
+  staff,
+  trip,
+  onCreated,
+  onCancel,
+}: {
+  sections: Array<{ id: string; nombre: string }>;
+  staff: Array<{ id: string; nombre: string }>;
+  trip?: Trip;
+  onCreated: (id: string) => void;
+  onCancel?: () => void;
+}) {
   const { school, session } = useAuth();
-  const [f, setF] = useState({ titulo: '', destino: '', fecha: '', salida: '', regreso: '', costo: '', fecha_limite: '' });
-  const [secs, setSecs] = useState<string[]>([]);
+  const [f, setF] = useState({
+    titulo: trip?.titulo ?? '',
+    destino: trip?.destino ?? '',
+    fecha: trip?.fecha ?? '',
+    salida: trip?.salida ?? '',
+    regreso: trip?.regreso ?? '',
+    costo: trip?.costo ?? '',
+    fecha_limite: trip?.fecha_limite ?? '',
+    telefono_pago: trip?.telefono_pago ?? '',
+    organizador_id: trip?.organizador_id ?? '',
+  });
+  const [secs, setSecs] = useState<string[]>(trip?.secciones ?? []);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
@@ -396,23 +493,25 @@ function NewTrip({ sections, onCreated, onCancel }: { sections: Array<{ id: stri
     if (!f.titulo.trim() || !f.fecha || secs.length === 0) return setError('Escriba el nombre, la fecha y elija al menos una sección.');
     setBusy(true);
     const db = supabase!;
-    const { data: me } = await db.from('personal').select('id').eq('usuario_id', session!.user.id).maybeSingle();
-    const { data, error } = await db
-      .from('giras')
-      .insert({
-        colegio_id: school!.id,
-        titulo: f.titulo.trim(),
-        destino: f.destino.trim() || null,
-        fecha: f.fecha,
-        salida: f.salida.trim() || null,
-        regreso: f.regreso.trim() || null,
-        costo: f.costo.trim() || null,
-        fecha_limite: f.fecha_limite || null,
-        secciones: secs,
-        creado_por: me?.id ?? null,
-      })
-      .select('id')
-      .single();
+    const datos = {
+      titulo: f.titulo.trim(),
+      destino: f.destino.trim() || null,
+      fecha: f.fecha,
+      salida: f.salida.trim() || null,
+      regreso: f.regreso.trim() || null,
+      costo: f.costo.trim() || null,
+      fecha_limite: f.fecha_limite || null,
+      telefono_pago: f.telefono_pago.trim() || null,
+      organizador_id: f.organizador_id || null,
+      secciones: secs,
+    };
+    const { data, error } = trip
+      ? await db.from('giras').update(datos).eq('id', trip.id).select('id').single()
+      : await db
+          .from('giras')
+          .insert({ ...datos, colegio_id: school!.id, creado_por: (await db.from('personal').select('id').eq('usuario_id', session!.user.id).maybeSingle()).data?.id ?? null })
+          .select('id')
+          .single();
     setBusy(false);
     if (error) return setError(error.message);
     onCreated(data.id);
@@ -420,7 +519,7 @@ function NewTrip({ sections, onCreated, onCancel }: { sections: Array<{ id: stri
 
   return (
     <form className="card gap-14" style={{ padding: 20, maxWidth: 720 }} onSubmit={submit}>
-      <h2 className="title-section">Nueva gira</h2>
+      <h2 className="title-section">{trip ? 'Editar gira' : 'Nueva gira'}</h2>
       <div className="grid-2">
         <InputField id="t-titulo" label="Nombre de la gira" placeholder="Gira al Museo Nacional" value={f.titulo} onChange={set('titulo')} />
         <InputField id="t-destino" label="Destino" hint="opcional" value={f.destino} onChange={set('destino')} />
@@ -433,7 +532,24 @@ function NewTrip({ sections, onCreated, onCancel }: { sections: Array<{ id: stri
         <InputField id="t-salida" label="Hora de salida" placeholder="7:00 a. m." value={f.salida} onChange={set('salida')} />
         <InputField id="t-regreso" label="Hora de regreso" placeholder="4:00 p. m." value={f.regreso} onChange={set('regreso')} />
       </div>
-      <InputField id="t-costo" label="Costo" hint="vacío si no tiene costo" placeholder="5 000 colones" value={f.costo} onChange={set('costo')} />
+      <div className="grid-2">
+        <InputField id="t-costo" label="Costo" hint="vacío si no tiene costo" placeholder="5 000 colones" value={f.costo} onChange={set('costo')} />
+        <InputField id="t-telefono" label="Teléfono para pagos (SINPE Móvil)" hint="lo verá la familia" placeholder="8888-8888" value={f.telefono_pago} onChange={set('telefono_pago')} />
+      </div>
+      <div className="stack gap-6">
+        <label htmlFor="t-organizador" className="text-sm strong">
+          Docente organizador
+        </label>
+        <select id="t-organizador" className="input" value={f.organizador_id} onChange={set('organizador_id')}>
+          <option value="">Sin organizador</option>
+          {staff.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs muted">Puede marcar los pagos de esta gira como pagados, igual que dirección.</span>
+      </div>
       <fieldset className="fieldset">
         <legend>Secciones que van</legend>
         <div className="row wrap gap-8">
@@ -456,7 +572,7 @@ function NewTrip({ sections, onCreated, onCancel }: { sections: Array<{ id: stri
       <div className="row wrap gap-8" style={{ justifyContent: 'flex-end' }}>
         {onCancel && <Button onClick={onCancel}>Cancelar</Button>}
         <Button type="submit" variant="primary" disabled={busy}>
-          {busy ? 'Guardando…' : 'Crear gira'}
+          {busy ? 'Guardando…' : trip ? 'Guardar cambios' : 'Crear gira'}
         </Button>
       </div>
     </form>

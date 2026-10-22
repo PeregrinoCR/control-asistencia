@@ -27,6 +27,8 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
   Se quita antes de la versión final.
 - `0009_roles_y_accesos.sql`: roles por sección bien aplicados, permisos propios para salidas y
   estudiantes, y el profesor guía sin avisos ni giras.
+- `0010_giras_pagos.sql`: teléfono para pagos y docente organizador por gira; pago en efectivo o SINPE;
+  solo dirección u organizador marcan pagado.
 
 ## Notificaciones y SMS (una sola vez)
 
