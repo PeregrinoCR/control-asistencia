@@ -3,6 +3,9 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # Netlify quedó en desuso (la app se publica en Cloudflare Pages): no construir para no gastar créditos.
+  # Para volver a usarlo, quite la línea siguiente.
+  ignore = "exit 0"
 
 [build.environment]
   NODE_VERSION = "22"
