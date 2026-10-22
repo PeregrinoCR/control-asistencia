@@ -665,7 +665,22 @@
 @media (max-width: 480px) {
   .pipeline__step strong { font-size: 13px; }
 }
+.absence-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-soft);
+}
+.absence-status {
+  order: 1;
+  justify-self: end;
+  text-align: right;
+}
 .absence-lessons {
+  order: 2;
+  grid-column: 1 / -1;
   min-width: 0;
 }
 .absence-lessons > * {

@@ -233,7 +233,7 @@ export function TeacherAbsencesLive() {
       </div>
 
       <div className="split">
-        <div className="split__main stack gap-16">
+        <div className="split__main stack gap-16" style={{ flex: '1 1 420px' }}>
           <section aria-labelledby="inc-t" className="card gap-10">
             <h2 id="inc-t" className="title-section">
               Incapacidades en curso
@@ -338,15 +338,15 @@ export function TeacherAbsencesLive() {
                   const inc = incapacities.find((i) => i.teacher === a.teacher);
                   const free = a.lessons.some((l) => l.type === 'free');
                   return (
-                    <div key={a.id} className="row wrap between gap-10" style={{ padding: '10px 0', borderTop: '1px solid var(--border-soft)' }}>
-                      <span className="stack" style={{ minWidth: 180 }}>
+                    <div key={a.id} className="absence-row">
+                      <span className="stack">
                         <strong style={{ fontSize: 15 }}>{a.teacher}</strong>
                         <span className="text-sm muted">
                           {a.reason}
                           {a.reason === INCAPACITY && inc && ` · día ${lectivos(inc.from, date).length} de ${lectivos(inc.from, inc.to).length}`}
                         </span>
                       </span>
-                      <span className="row wrap gap-6 grow absence-lessons">
+                      <span className="row wrap gap-6 absence-lessons">
                         {a.lessons
                           .sort((x, y) => x.lesson - y.lesson)
                           .map((l) => (
@@ -357,7 +357,7 @@ export function TeacherAbsencesLive() {
                             />
                           ))}
                       </span>
-                      <span className="row gap-8">
+                      <span className="row gap-8 absence-status">
                         {free ? <Badge tone="green">Familias avisadas</Badge> : <span className="text-sm muted">Sin aviso: no cambia nada</span>}
                         <button type="button" className="link-button text-sm" onClick={() => remove(a.id)}>
                           Anular este día
@@ -371,7 +371,7 @@ export function TeacherAbsencesLive() {
           </section>
         </div>
 
-        <aside aria-labelledby="nueva-t" className="card split__side split__side--sticky gap-12" style={{ flexBasis: 340, padding: 20 }}>
+        <aside aria-labelledby="nueva-t" className="card split__side split__side--sticky gap-12" style={{ flex: '1 1 480px', padding: 20 }}>
           <h2 id="nueva-t" className="title-section">
             Registrar ausencia
           </h2>
