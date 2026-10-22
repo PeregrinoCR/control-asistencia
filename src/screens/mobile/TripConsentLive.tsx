@@ -155,6 +155,9 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
 
   const save = async (estado: 'ok' | 'no') => {
     if (estado === 'ok' && !ready) return setError('Marque las tres casillas, firme y escriba su cédula para autorizar.');
+    // A SINPE payment needs its receipt before the authorization is sent.
+    const hasReceipt = !!receiptFile || answer?.pago === 'review' || answer?.pago === 'paid';
+    if (estado === 'ok' && charge && !cash && !hasReceipt) return setError('Suba el comprobante del pago por SINPE Móvil para enviar la autorización.');
     setBusy(true);
     setError('');
     try {

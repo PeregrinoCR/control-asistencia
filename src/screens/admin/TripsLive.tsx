@@ -310,6 +310,7 @@ function TripDetail({
   const share = (n: number) => `${minors.length ? (100 * n) / minors.length : 0}%`;
   const paid = rows.filter((r) => r.payment === 'paid').length;
   const inReview = rows.filter((r) => r.payment === 'review').length;
+  const missingReceipt = rows.filter((r) => r.method === 'sinpe' && r.state === 'ok' && !r.receipt).length;
 
   return (
     <>
@@ -366,6 +367,12 @@ function TripDetail({
           {trip.costo && (
             <div className="text-sm" style={{ color: 'var(--ink-2)' }}>
               Pagos: <strong>{paid} pagados</strong> · {inReview} por confirmar
+              {missingReceipt > 0 && (
+                <>
+                  {' '}
+                  · <strong className="ink-orange">{missingReceipt} sin comprobante</strong>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -432,6 +439,9 @@ function TripDetail({
                         <span className="row wrap gap-8">
                           <StatusBadge status={PAYMENT_STATUS[r.payment]} />
                           {r.method && <span className="text-xs muted">{r.method === 'efectivo' ? 'Efectivo' : 'SINPE Móvil'}</span>}
+                          {r.method === 'sinpe' && r.state === 'ok' && !r.receipt && (
+                            <span className="text-xs strong ink-orange">Falta comprobante: revisar antes de aprobar</span>
+                          )}
                           {r.receipt && (
                             <button type="button" className="link-button text-sm" style={{ fontWeight: 700 }} onClick={() => openFile(r.receipt!)}>
                               Ver comprobante
