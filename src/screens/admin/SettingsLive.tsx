@@ -230,6 +230,19 @@ function InstitutionTab({ f, update }: TabProps) {
             <InputField key={x.id} id={x.id} type={x.type} label={x.label} hint={empty(x.id) ? 'pendiente' : undefined} placeholder={x.placeholder} value={value(x.id)} onChange={(e) => set(x.id, e.target.value)} />
           ))}
         </div>
+        <InputField
+          id="c-incap-dias"
+          label="Días de incapacidad para pedir sustituto"
+          hint="opcional"
+          type="number"
+          min={1}
+          placeholder="Ej.: 5"
+          value={value('c-incap-dias')}
+          onChange={(e) => set('c-incap-dias', e.target.value)}
+        />
+        <span className="text-xs muted" style={{ marginTop: -8 }}>
+          Un docente ausente no se reemplaza; solo una incapacidad larga puede tener sustituto del MEP. Confirme con su Dirección Regional desde cuántos días se pide. Al pasar de ese número, Hoy le sugiere pedirlo.
+        </span>
         <fieldset className="fieldset">
           <legend>Tipo de institución</legend>
           <div className="row wrap gap-8">

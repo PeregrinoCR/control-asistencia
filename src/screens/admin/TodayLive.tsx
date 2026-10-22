@@ -8,6 +8,7 @@ import { fetchAll } from '../../lib/fetchAll';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 import { ordenarSecciones } from '../../lib/secciones';
+import { lectivos } from '../../lib/ausencias';
 import { routes } from '../../routes';
 
 interface SectionRow {
@@ -27,7 +28,10 @@ interface SectionRow {
 interface Pending {
   justifications: { count: number; oldest: string | null };
   exits: Array<{ hour: string; student: string }>;
-  uncovered: Array<{ teacher: string; lessons: number }>;
+  /** Long incapacities where the MEP has not named a substitute yet. */
+  waiting: Array<{ teacher: string; days: number }>;
+  /** Long incapacities nobody has asked a substitute for, past the school's own limit. */
+  suggest: Array<{ teacher: string; days: number }>;
 }
 
 interface Summary {
@@ -128,27 +132,27 @@ export function TodayLive() {
   useEffect(() => {
     const db = supabase!;
     (async () => {
-      const [just, exits, cov] = await Promise.all([
+      const [just, exits, inc, cfg] = await Promise.all([
         db.from('justificaciones').select('enviado', { count: 'exact' }).eq('estado', 'p').order('enviado').limit(1),
         db.from('salidas').select('hora, estudiantes(nombre)').eq('estado', 'pendiente').order('fecha').order('hora'),
-        db
-          .from('coberturas')
-          .select('ausencia_id, ausencias_docentes!inner(fecha, personal(nombre))')
-          .eq('ausencias_docentes.fecha', date)
-          .eq('tipo', 'sub')
-          .is('sustituto_id', null),
+        db.from('incapacidades').select('desde, hasta, sustitucion, creado, personal!incapacidades_docente_id_fkey(nombre)').gte('hasta', date),
+        db.from('colegios').select('config').maybeSingle(),
       ]);
-      const byAbsence = new Map<string, { teacher: string; lessons: number }>();
+      // The school sets after how many school days of incapacity it usually asks the MEP for a substitute; empty = no suggestion.
+      const limit = Number(cfg.data?.config?.institucion?.['c-incap-dias']) || 0;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((cov.data ?? []) as any[]).forEach((r) => {
-        const cur = byAbsence.get(r.ausencia_id) ?? { teacher: r.ausencias_docentes?.personal?.nombre ?? 'Docente', lessons: 0 };
-        byAbsence.set(r.ausencia_id, { ...cur, lessons: cur.lessons + 1 });
-      });
+      const incapacities = ((inc.data ?? []) as any[]).map((r) => ({
+        teacher: r.personal?.nombre ?? 'Docente',
+        state: r.sustitucion as string,
+        total: lectivos(r.desde, r.hasta).length,
+        asked: Math.max(0, Math.floor((Date.now() - new Date(r.creado).getTime()) / 86400000)),
+      }));
       setPending({
         justifications: { count: just.count ?? 0, oldest: just.data?.[0]?.enviado ?? null },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         exits: ((exits.data ?? []) as any[]).map((r) => ({ hour: r.hora, student: r.estudiantes?.nombre ?? '' })),
-        uncovered: [...byAbsence.values()],
+        waiting: incapacities.filter((x) => x.state === 'esperando').map((x) => ({ teacher: x.teacher, days: x.asked })),
+        suggest: limit > 0 ? incapacities.filter((x) => x.state === 'ninguno' && x.total >= limit).map((x) => ({ teacher: x.teacher, days: x.total })) : [],
       });
     })();
   }, [date]);
@@ -190,15 +194,27 @@ export function TodayLive() {
       to: `${routes.admin.trips}?ver=salidas`,
     });
   }
-  if (pending && perms.includes('teacherAbs') && pending.uncovered.length > 0) {
-    const first = pending.uncovered[0];
+  if (pending && perms.includes('teacherAbs') && pending.waiting.length > 0) {
+    const first = pending.waiting[0];
     items.push({
       id: 'sustitutos',
-      count: pending.uncovered.length,
-      title: plural(pending.uncovered.length, 'Docente sin sustituto', 'Docentes sin sustituto'),
-      lines: [first.teacher + (pending.uncovered.length > 1 ? ` y ${pending.uncovered.length - 1} más` : ''), `${first.lessons} ${plural(first.lessons, 'lección', 'lecciones')} sin sustituto`],
+      count: pending.waiting.length,
+      title: plural(pending.waiting.length, 'Incapacidad esperando sustituto', 'Incapacidades esperando sustituto'),
+      lines: [first.teacher + (pending.waiting.length > 1 ? ` y ${pending.waiting.length - 1} más` : ''), `Pedido al MEP hace ${first.days} ${plural(first.days, 'día', 'días')}`],
       tone: 'warn',
-      cta: 'Asignar sustituto',
+      cta: 'Ver incapacidades',
+      to: routes.admin.teacherAbsences,
+    });
+  }
+  if (pending && perms.includes('teacherAbs') && pending.suggest.length > 0) {
+    const first = pending.suggest[0];
+    items.push({
+      id: 'sugerencia',
+      count: pending.suggest.length,
+      title: plural(pending.suggest.length, 'Incapacidad larga sin sustituto', 'Incapacidades largas sin sustituto'),
+      lines: [first.teacher + (pending.suggest.length > 1 ? ` y ${pending.suggest.length - 1} más` : ''), `${first.days} días lectivos: quizá convenga pedirlo al MEP`],
+      tone: 'warn',
+      cta: 'Revisar',
       to: routes.admin.teacherAbsences,
     });
   }

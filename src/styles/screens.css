@@ -625,3 +625,50 @@
 .attn-card .btn {
   margin-top: 6px;
 }
+
+/* ---------- Docentes ausentes · incapacidades ---------- */
+
+.incap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.incap[data-waiting='true'] {
+  border: 2px solid var(--amber);
+}
+.pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.pipeline__step {
+  border-top: 4px solid var(--border-choice);
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: var(--muted);
+}
+.pipeline__step strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+.pipeline__step[data-state='done'] { border-top-color: var(--green); color: var(--ink-2); }
+.pipeline__step[data-state='current'] { border-top-color: var(--amber); color: var(--ink-2); }
+.pipeline__step[data-state='current'] strong { color: var(--amber-ink); }
+@media (max-width: 480px) {
+  .pipeline__step strong { font-size: 13px; }
+}
+.absence-lessons {
+  min-width: 0;
+}
+.absence-lessons > * {
+  white-space: normal;
+  max-width: 100%;
+}
