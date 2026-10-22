@@ -15,7 +15,7 @@
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .tally strong {
@@ -47,20 +47,19 @@
   gap: 10px;
 }
 .roll-row__name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 .mark-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 52px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--border-choice);
   background: var(--surface);
   color: var(--ink-3);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
 }
 .mark-btn[aria-pressed='true'] {
@@ -155,7 +154,7 @@
   padding: 0;
 }
 .cal__tag {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.3px;
 }
@@ -379,31 +378,46 @@
 /* ---------- Portón ---------- */
 
 .gate-result {
-  border-radius: var(--radius-2xl);
-  padding: 16px;
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: center;
+  gap: 18px;
+  overflow-y: auto;
 }
 .gate-result[data-kind='ok'] { background: var(--green-bg); --gate-ink: var(--green-ink); --gate: var(--green); }
 .gate-result[data-kind='warn'] { background: var(--amber-bg); --gate-ink: var(--amber-ink); --gate: var(--amber); }
 .gate-result[data-kind='deny'] { background: var(--orange-bg); --gate-ink: var(--orange-ink); --gate: var(--orange); }
 .gate-result__title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 30px;
+  line-height: 1.1;
   font-weight: 700;
   color: var(--gate-ink);
 }
 .gate-result__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
   background: var(--gate);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+.gate-result__name {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.gate-result__detail {
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ink-2);
 }
 
 .scanner {
@@ -469,7 +483,7 @@
   color: #fff;
 }
 .day-tabs__today {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.4px;
   text-transform: uppercase;

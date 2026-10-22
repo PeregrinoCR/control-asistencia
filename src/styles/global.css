@@ -81,10 +81,10 @@ p {
   color: var(--muted);
 }
 .text-sm {
-  font-size: 13px;
+  font-size: 14px;
 }
 .text-xs {
-  font-size: 12px;
+  font-size: 13px;
 }
 .tabular {
   font-variant-numeric: tabular-nums;
@@ -946,4 +946,44 @@ p {
 /* A card laid out horizontally */
 .card.row {
   flex-direction: row;
+}
+
+/* ---------- Accessibility ---------- */
+
+/* Visible keyboard focus everywhere (the browser default is removed by resets on some controls). */
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.btn--primary:focus-visible,
+.mark-btn[aria-pressed='true']:focus-visible {
+  outline-color: var(--ink);
+}
+
+/* On touch screens every control is at least 44px tall. */
+@media (pointer: coarse) {
+  .btn--sm,
+  .btn--md,
+  .chip,
+  .chip--sm,
+  .segmented__item {
+    min-height: 44px;
+  }
+  .link-button {
+    min-height: 44px;
+    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

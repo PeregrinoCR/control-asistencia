@@ -110,9 +110,9 @@ function GateSample() {
 
         {result && (
           <section className="gate-result" data-kind={result.kind} role="status" aria-live="assertive">
-            <div className="row gap-12">
+            <div className="stack gap-12">
               <span className="gate-result__icon">
-                <Icon name={RESULT_ICON[result.kind]} size={24} strokeWidth={2.4} />
+                <Icon name={RESULT_ICON[result.kind]} size={40} strokeWidth={2.6} />
               </span>
               <span className="gate-result__title">{result.title}</span>
             </div>
@@ -120,14 +120,14 @@ function GateSample() {
               <div className="row gap-10">
                 <Avatar name={result.card.name} />
                 <span className="stack">
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>{result.card.name}</span>
-                  <span className="text-sm" style={{ color: 'var(--ink-2)' }}>
+                  <span className="gate-result__name">{result.card.name}</span>
+                  <span style={{ fontSize: 16, color: 'var(--ink-2)' }}>
                     Sección {result.card.section} · {result.card.age} años
                   </span>
                 </span>
               </div>
             )}
-            <p style={{ fontSize: 15, lineHeight: 1.45, color: 'var(--ink-2)' }}>{result.detail}</p>
+            <p className="gate-result__detail">{result.detail}</p>
             {result.kind === 'warn' && (
               <Button
                 variant="dark"
@@ -140,6 +140,9 @@ function GateSample() {
                 {result.confirm}
               </Button>
             )}
+          <Button variant="secondary" size="xl" onClick={() => setResult(null)}>
+              {result.kind === 'warn' ? 'Cancelar' : 'Listo · siguiente carné'}
+            </Button>
           </section>
         )}
 
