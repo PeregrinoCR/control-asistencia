@@ -3,9 +3,18 @@ import { Avatar, Button, Meter, Segmented, Stat, StatusBadge } from '../../compo
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { FOLLOW_UP, ROLL_STATE, SECTIONS_TODAY } from '../../data/admin';
 import { supabase } from '../../lib/supabase';
+import { routes } from '../../routes';
+import { AttentionCards, type AttentionItem } from './AttentionCards';
 import { TodayLive } from './TodayLive';
 
 type Shift = 'diu' | 'noc' | 'all';
+
+const SAMPLE_ATTENTION: AttentionItem[] = [
+  { id: 'listas', count: 1, title: 'Lista sin pasar', lines: ['11-2 · Karla Montero', '3.ª lección en curso o ya pasada'], tone: 'urgent', cta: 'Ver el pase de lista', href: '#secciones-t' },
+  { id: 'justificaciones', count: 6, title: 'Justificaciones por revisar', lines: ['La más antigua: viernes 16 de octubre'], tone: 'warn', cta: 'Revisar', to: routes.admin.justifications },
+  { id: 'salidas', count: 2, title: 'Salidas por decidir', lines: ['Mateo Brenes y Sofía Brenes', 'Primera a las 8:00 p. m.'], tone: 'warn', cta: 'Decidir', to: `${routes.admin.trips}?ver=salidas` },
+  { id: 'sustitutos', count: 1, title: 'Docente sin sustituto', lines: ['Ricardo Mora', '2 lecciones sin sustituto'], tone: 'warn', cta: 'Asignar sustituto', to: routes.admin.teacherAbsences },
+];
 
 /** Dirección · Panel del día */
 export function Today() {
@@ -38,6 +47,8 @@ function TodaySample() {
           </>
         }
       />
+
+      <AttentionCards items={SAMPLE_ATTENTION} />
 
       <div className="grid-tiles">
         <Stat label="Asistencia general" value="93,8 %" note="286 de 305 estudiantes" />
