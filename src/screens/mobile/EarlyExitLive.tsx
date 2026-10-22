@@ -111,6 +111,8 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
       <ScreenHeader title="Salida temprana" subtitle={`${kid.name} · ${kid.section} · hoy, ${longDay(date)}`} />
       {saved ? (
         <DoneState
+          tone={saved.estado === 'rechazada' ? 'alert' : 'success'}
+          icon={saved.estado === 'rechazada' ? 'alert' : 'check'}
           title={
             saved.estado === 'pendiente'
               ? 'Solicitud enviada'

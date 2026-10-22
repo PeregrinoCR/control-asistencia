@@ -40,7 +40,7 @@ export function ScreenHeader({ title, subtitle, backTo = routes.family.home, bac
 interface DoneStateProps {
   title: string;
   children: ReactNode;
-  tone?: 'success' | 'neutral';
+  tone?: 'success' | 'neutral' | 'alert';
   icon?: IconName;
   actions: ReactNode;
 }
