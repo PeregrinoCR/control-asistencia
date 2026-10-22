@@ -63,6 +63,9 @@ export function homeFor(roles: string[], family = false) {
   return routes.admin.today;
 }
 
+/** The first part of a route, such as '/familia' or '/porton'. A saved route is only reused within the same area. */
+export const areaOf = (path: string) => '/' + (path.split('/')[1] ?? '');
+
 /** Whether the person can use the administration panel (guide teachers see their own section). */
 export const hasPanel = (roles: string[]) => roles.some((r) => ['dir', 'ori', 'adm', 'gui'].includes(r));
 

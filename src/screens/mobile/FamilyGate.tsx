@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Segmented } from '../../components';
 import { FamilyTabBar, MobileScreen } from '../../layouts/MobileScreen';
-import { signOut, useAuth } from '../../lib/auth';
+import { homeFor, signOut, useAuth } from '../../lib/auth';
 import { useFamily, type Kid, type Me } from '../../lib/family';
 import { routes } from '../../routes';
 
@@ -30,11 +30,13 @@ function Message({ children, tabs }: { children: ReactNode; tabs?: boolean }) {
  * family's data and explains when the account isn't linked to any student yet.
  */
 export function FamilyGate({ children }: { children: (f: FamilyCtx) => ReactNode }) {
-  const { ready, session, school } = useAuth();
+  const { ready, session, school, roles, family } = useAuth();
   const location = useLocation();
   const { me, kids, kid, setKidId, error } = useFamily();
 
   if (ready && !session) return <Navigate to={routes.login} replace state={{ from: location.pathname }} />;
+  // Staff who open a family page by mistake go to their own screen, not to the family message.
+  if (ready && roles.length > 0 && !family) return <Navigate to={homeFor(roles)} replace />;
   if (error) return <Message>{<p className="text-sm ink-orange">No se pudo cargar: {error}</p>}</Message>;
   if (!ready || !kids) return <Message>{<p className="text-sm muted">Cargando…</p>}</Message>;
   if (!me || !kid || !school)

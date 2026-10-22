@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Button, Icon, InputField, Segmented } from '../components';
-import { homeFor, useAuth } from '../lib/auth';
+import { areaOf, homeFor, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
@@ -16,7 +16,10 @@ const ERRORS: Record<string, string> = {
 /** Inicio de sesión del personal del colegio (correo y contraseña). */
 export function Login() {
   const { ready, session, roles, family } = useAuth();
-  const from = (useLocation().state as { from?: string } | null)?.from ?? homeFor(roles, family);
+  // A route saved by an earlier screen (such as the gate) must not send this account to another area.
+  const home = homeFor(roles, family);
+  const saved = (useLocation().state as { from?: string } | null)?.from;
+  const from = saved && areaOf(saved) === areaOf(home) ? saved : home;
   const [mode, setMode] = useState<Mode>('in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
