@@ -220,8 +220,25 @@ type Editing = null | 'student' | 'withdraw' | { guardian: string | 'new' };
 
 function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; onClose: () => void }) {
   const adult = isAdult(s);
+  const { school } = useAuth();
   const [editing, setEditing] = useState<Editing>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [sinCarne, setSinCarne] = useState(false);
+
+  // Prints this student's card only (the same card as «Imprimir carnés» in the list).
+  const imprimirCarne = async () => {
+    const { data: carne } = await supabase!.from('carnes').select('codigo').eq('estudiante_id', s.id).eq('revocado', false).maybeSingle();
+    if (!carne) return setSinCarne(true);
+    printCards([s], { nombre: school?.nombre ?? '', logo: school?.logo ?? null });
+  };
+
+  // Gives the student a new card, then prints it.
+  const reponerCarne = async () => {
+    const { error } = await supabase!.rpc('reponer_carne', { estudiante: s.id });
+    if (error) return setMsg({ ok: false, text: 'No se pudo reponer el carné: ' + error.message });
+    setSinCarne(false);
+    printCards([s], { nombre: school?.nombre ?? '', logo: school?.logo ?? null });
+  };
 
   const done = (error: string, ok: string) => {
     setMsg(error ? { ok: false, text: 'No se guardó: ' + error } : { ok: true, text: ok });
@@ -253,6 +270,20 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
           {msg.text}
         </span>
       )}
+
+      <div className="stack gap-8">
+        <Button regular onClick={imprimirCarne}>
+          Imprimir carné
+        </Button>
+        {sinCarne && (
+          <div className="row wrap gap-8" style={{ alignItems: 'center' }}>
+            <span className="text-sm ink-orange">Este estudiante no tiene carné vigente.</span>
+            <Button regular onClick={reponerCarne}>
+              Reponer carné e imprimir
+            </Button>
+          </div>
+        )}
+      </div>
 
       {editing === 'student' ? (
         <StudentForm
