@@ -84,13 +84,17 @@ function Home({ f }: { f: FamilyCtx }) {
           <span className="muted" style={{ fontSize: 14 }}>
             {hello}
           </span>
-          <h1 className="display" style={{ fontSize: 28, letterSpacing: -0.4 }}>
-            {f.me.first}
-          </h1>
-          {!f.me.self && (
-            <span className="text-sm muted">
-              Encargado/a de {f.kid.name}
-            </span>
+          {f.me.self ? (
+            <h1 className="display" style={{ fontSize: 28, letterSpacing: -0.4 }}>
+              {f.me.first}
+            </h1>
+          ) : (
+            <>
+              <span className="text-sm muted">Encargado/a de:</span>
+              <h1 className="display" style={{ fontSize: 28, letterSpacing: -0.4 }}>
+                {f.kid.name}
+              </h1>
+            </>
           )}
         </div>
 
