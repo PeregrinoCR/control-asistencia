@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, InputField } from '../../components';
+import { Button, InputField, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { useAuth } from '../../lib/auth';
 import { leerAulas, SIN_CONFIG, type AulasConfig, type EventoAula } from '../../lib/aulas';
@@ -13,7 +13,7 @@ export function RoomsLive() {
   const [cfg, setCfg] = useState<AulasConfig>(SIN_CONFIG);
   const [sections, setSections] = useState<string[]>([]);
   const [name, setName] = useState('');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {

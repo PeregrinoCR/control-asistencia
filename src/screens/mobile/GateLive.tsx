@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Avatar, Badge, Button, Icon, QrScanner, Segmented, type IconName } from '../../components';
+import { Avatar, Badge, Button, EmptyState, Icon, QrScanner, Segmented, type IconName } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
 import { cardCode, checkCard, type GateMode, type GateResult, type StudentCard } from '../../data/gate';
 import { homeFor, signOut, useAuth } from '../../lib/auth';
@@ -250,7 +250,7 @@ export function GateLive() {
           <h2 id="sal-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Salidas autorizadas hoy
           </h2>
-          {exits.length === 0 && <span className="text-sm muted">Ninguna por ahora.</span>}
+          {exits.length === 0 && <EmptyState title="Ninguna salida autorizada">Las familias la piden desde su app; aparecerá aquí.</EmptyState>}
           {exits.map((x) => (
             <div key={x.id} className="list-row" style={{ padding: '8px 0' }}>
               <span className="stack grow">
@@ -268,7 +268,7 @@ export function GateLive() {
           <h2 id="log-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Últimos registros
           </h2>
-          {log.length === 0 && <span className="text-sm muted">Sin registros hoy.</span>}
+          {log.length === 0 && <EmptyState title="Aún no hay registros hoy">Escanee un carné para empezar.</EmptyState>}
           {log.map((l, i) => (
             <div key={i} className="list-row" style={{ padding: '8px 0' }}>
               <span className="stack grow">

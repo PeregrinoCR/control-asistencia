@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch } from '../../components';
+import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch, useToast } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { LESSONS } from '../../lib/schedule';
 import { useAuth } from '../../lib/auth';
@@ -77,6 +77,7 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | RoleId>('all');
   const [selectedId, setSelectedId] = useState<User['id'] | 'new'>(staff.live ? (users[0]?.id ?? 'new') : 2);
+  const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const sections = staff.live ? staff.sections : SECTION_IDS;
@@ -93,10 +94,10 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
   };
 
   const save = async () => {
-    if (!staff.live || !selected) return setSaved(true);
+    if (!staff.live || !selected) return toast('Cambios guardados');
     const error = await staff.save(selected);
     setSaveError(error);
-    setSaved(!error);
+    if (!error) toast('Cambios guardados');
   };
 
   // Removes the selected person from the staff; the list falls back to the first remaining one.

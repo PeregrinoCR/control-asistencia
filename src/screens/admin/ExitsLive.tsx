@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, InputField } from '../../components';
+import { Badge, Button, InputField, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
@@ -30,7 +30,7 @@ export function ExitsLive() {
   const { session } = useAuth();
   const [rows, setRows] = useState<Exit[] | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const today = localDate();
 
   const load = async () => {

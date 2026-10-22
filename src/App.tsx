@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Link, MemoryRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { routes } from './routes';
 import { AuthProvider } from './lib/auth';
+import { ToastProvider } from './components';
 import { Login } from './screens/Login';
 import { ScreenIndex } from './screens/ScreenIndex';
 import { Inicio } from './screens/Inicio';
@@ -57,6 +58,7 @@ function ScrollToTop() {
 export function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
     <Router>
       <ScrollToTop />
       {inPreview && <PreviewHome />}
@@ -97,6 +99,7 @@ export function App() {
         <Route path="*" element={<Navigate to={routes.index} replace />} />
       </Routes>
     </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

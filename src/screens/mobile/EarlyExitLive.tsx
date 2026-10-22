@@ -56,11 +56,14 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
       .then(({ data }) => setSaved(data as Saved | null));
   }, [kid, date]);
 
+  // Field errors only appear after the first try to send.
+  const [tried, setTried] = useState(false);
   const ready = accepted && signed && (way === 'alone' || (pickupName.trim() && pickupId.trim()));
   const hourLabel = `${EXIT_HOURS[hour]} p. m.`;
   const signedAt = new Date().toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' });
 
   const submit = async () => {
+    if (!ready) setTried(true);
     if (!ready) return setError('Complete quién lo retira, acepte el descargo y firme para enviar la autorización.');
     setBusy(true);
     const { data, error } = await supabase!
@@ -203,8 +206,8 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
               ))}
               {way === 'pickup' && (
                 <div className="grid-2" style={{ paddingTop: 4 }}>
-                  <InputField id="s-quien" touch label={smallLabel('Nombre de quien retira')} style={inputStyle} value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
-                  <InputField id="s-qced" touch label={smallLabel('Cédula')} style={inputStyle} value={pickupId} onChange={(e) => setPickupId(e.target.value)} />
+                  <InputField id="s-quien" touch label={smallLabel('Nombre de quien retira')} error={tried && !pickupName.trim() ? 'Escriba el nombre' : undefined} style={inputStyle} value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
+                  <InputField id="s-qced" touch label={smallLabel('Cédula')} error={tried && !pickupId.trim() ? 'Escriba la cédula' : undefined} style={inputStyle} value={pickupId} onChange={(e) => setPickupId(e.target.value)} />
                 </div>
               )}
             </fieldset>

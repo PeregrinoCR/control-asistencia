@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
+import { Badge, Button, InputField, Segmented, SettingRow, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos, CLAVE_DEMO, CUENTAS_DEMO } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
@@ -91,7 +91,7 @@ export function SettingsLive() {
   const [tab, setTab] = useState<Tab>('inst');
   const [form, setForm] = useState<Form | null>(null);
   const [sections, setSections] = useState<string[]>([]);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -372,7 +372,7 @@ function SmsLine() {
   const [limit, setLimit] = useState('100');
   const [phone, setPhone] = useState('');
   const [stats, setStats] = useState({ hour: 0, waiting: 0, failed: 0 });
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
 
   const load = async () => {
     const db = supabase!;

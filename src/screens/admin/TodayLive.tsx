@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Avatar, Stat, StatusBadge, type Status } from '../../components';
+import { Avatar, ButtonLink, EmptyState, Stat, StatusBadge, type Status } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { pct } from '../../data/school';
 import { fetchAll } from '../../lib/fetchAll';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 import { ordenarSecciones } from '../../lib/secciones';
+import { routes } from '../../routes';
 
 interface SectionRow {
   id: string;
@@ -126,9 +127,23 @@ export function TodayLive() {
                 Pase de lista por sección
               </h2>
               {data.sections.length === 0 ? (
-                <p className="text-sm muted">
-                  {day ? 'Ninguna sección tiene lecciones hoy. Cargue los horarios en Horarios y cargas.' : 'Hoy no hay lecciones.'}
-                </p>
+                day ? (
+                  <EmptyState
+                    title="Ninguna sección tiene lecciones hoy"
+                    icon="calendar"
+                    action={
+                      <ButtonLink variant="secondary" to={routes.admin.schedules}>
+                        Ir a Horarios y cargas
+                      </ButtonLink>
+                    }
+                  >
+                    Cargue los horarios para ver aquí el pase de lista.
+                  </EmptyState>
+                ) : (
+                  <EmptyState title="Hoy no hay lecciones" icon="calendar">
+                    Vuelva el próximo día lectivo.
+                  </EmptyState>
+                )
               ) : (
                 <div className="table-wrap">
                   <table className="table table--cards" style={{ minWidth: 640 }}>
@@ -172,7 +187,7 @@ export function TodayLive() {
                 <span className="text-sm muted">3 o más lecciones ausentes este mes</span>
               </div>
               <div className="stack">
-                {data.followUp.length === 0 && <span className="text-sm muted">Nadie por ahora.</span>}
+                {data.followUp.length === 0 && <EmptyState title="Nadie por ahora">Aquí aparece quien acumule 3 o más ausencias sin justificar.</EmptyState>}
                 {data.followUp.map((s) => (
                   <div key={s.name} className="list-row">
                     <Avatar name={s.name} size="md" tone="orange" />
