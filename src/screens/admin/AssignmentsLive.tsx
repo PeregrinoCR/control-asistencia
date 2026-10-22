@@ -203,22 +203,48 @@ export function AssignmentsLive() {
       ) : (
         <>
           <div className="row wrap gap-10" style={{ alignItems: 'flex-end' }}>
-            <div className="row wrap gap-6" role="group" aria-label="Sección">
-              {sections.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className="chip"
-                  aria-pressed={s.id === sectionId}
-                  onClick={() => {
-                    if (dirty && !confirm('Hay cambios sin guardar en esta sección. ¿Salir sin guardar?')) return;
-                    setSectionId(s.id);
-                  }}
-                >
-                  {s.nombre}
-                  {pendingOf(s.id) > 0 && <span className="ink-orange"> · faltan {pendingOf(s.id)}</span>}
-                </button>
-              ))}
+            <div
+              role="group"
+              aria-label="Sección"
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8, flex: '1 1 100%' }}
+            >
+              {sections.map((s) => {
+                const planned = (loads[s.id] ?? []).reduce((n, l) => n + l.lecciones, 0);
+                const left = pendingOf(s.id);
+                const on = s.id === sectionId;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      if (dirty && !confirm('Hay cambios sin guardar en esta sección. ¿Salir sin guardar?')) return;
+                      setSectionId(s.id);
+                    }}
+                    style={{
+                      all: 'unset',
+                      boxSizing: 'border-box',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: '10px 12px',
+                      minHeight: 72,
+                      borderRadius: 12,
+                      border: on ? '2px solid var(--blue)' : '1px solid var(--border)',
+                      background: on ? 'var(--blue-bg)' : 'var(--surface)',
+                    }}
+                  >
+                    <strong style={{ fontSize: 18 }}>{s.nombre}</strong>
+                    <span className={planned === 0 ? 'text-xs strong muted' : left > 0 ? 'text-xs strong ink-orange' : 'text-xs strong ink-green'}>
+                      {planned === 0 ? 'sin materias' : left > 0 ? `faltan ${left}` : 'completa'}
+                    </span>
+                    <span style={{ height: 6, borderRadius: 99, background: 'var(--neutral-bg)', overflow: 'hidden', display: 'block' }}>
+                      <span style={{ display: 'block', height: '100%', width: `${planned ? 100 - (100 * left) / planned : 0}%`, background: left > 0 ? 'var(--orange)' : 'var(--green)' }} />
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <div className="field" style={{ minWidth: 180 }}>
               <label htmlFor="h-copiar" className="field__label">
@@ -244,11 +270,11 @@ export function AssignmentsLive() {
             </p>
           )}
 
-          <div className="row gap-16" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <aside aria-label={`Carga de la sección ${sectionName}`} className="stack gap-10" style={{ flex: '0 1 280px', minWidth: 240 }}>
+            <section aria-label={`Materias de la sección ${sectionName}`} className="card stack gap-8" style={{ padding: '12px 14px' }}>
               <span className="eyebrow">
-                {sectionName} · {toPlace ? `por colocar ${toPlace}` : 'todo colocado'}
+                {sectionName} · {lines.length === 0 ? 'sin materias' : toPlace ? `por colocar ${toPlace}` : 'todo colocado'}
               </span>
+              <div className="row wrap gap-8" style={{ alignItems: 'stretch' }}>
               {lines.length === 0 && <span className="text-sm muted">Agregue las materias de esta sección: cada una se vuelve una tarjeta.</span>}
               {lines.map((l) => {
                 const left = l.lecciones - placedOf(l);
@@ -263,6 +289,7 @@ export function AssignmentsLive() {
                     }}
                     className="card"
                     style={{
+                      flex: '0 1 230px',
                       padding: '10px 12px',
                       gap: 4,
                       border: on ? '2px solid var(--blue)' : undefined,
@@ -292,7 +319,11 @@ export function AssignmentsLive() {
                 );
               })}
               <AddLine subjects={data.subjects} teachers={data.teachers} onAdd={(l) => setLines([...lines, l])} />
-            </aside>
+              </div>
+              <span className="text-xs muted">Toque una materia y luego una casilla verde, o arrástrela.</span>
+            </section>
+
+          <div className="row gap-16" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
             <section aria-label={`Semana de la sección ${sectionName}`} className="card gap-8" style={{ flex: '999 1 560px', minWidth: 0, padding: 16 }}>
               <div className="table-wrap">
