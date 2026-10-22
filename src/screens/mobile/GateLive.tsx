@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { Avatar, Badge, Button, Icon, QrScanner, Segmented, type IconName } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
 import { cardCode, checkCard, type GateMode, type GateResult, type StudentCard } from '../../data/gate';
-import { signOut, useAuth } from '../../lib/auth';
+import { homeFor, signOut, useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { ageOn } from '../../lib/students';
 import { supabase } from '../../lib/supabase';
@@ -34,7 +34,7 @@ const shiftMinutes = () => new Date().getHours() * 60 + new Date().getMinutes() 
 
 /** Guarda · Portón, checking real cards and saving every entry and exit. */
 export function GateLive() {
-  const { ready, session, school } = useAuth();
+  const { ready, session, school, perms, roles, family } = useAuth();
   const location = useLocation();
   const [mode, setMode] = useState<GateMode>('out');
   const [scanning, setScanning] = useState(false);
@@ -135,6 +135,8 @@ export function GateLive() {
   const onScan = useCallback(handle, [mode, today, me, school]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (ready && !session) return <Navigate to={routes.login} replace state={{ from: location.pathname }} />;
+  // Only the guard and the director (anyone with the gate permission) use the gate; families and others go to their own screen.
+  if (ready && session && supabase && !perms.includes('gate')) return <Navigate to={homeFor(roles, family)} replace />;
 
   return (
     <MobileScreen>
