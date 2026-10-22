@@ -1,5 +1,6 @@
 export const routes = {
   index: '/',
+  catalog: '/catalogo',
   login: '/entrar',
   teacher: {
     rollCall: '/docente/pase-de-lista',

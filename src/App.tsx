@@ -4,6 +4,7 @@ import { routes } from './routes';
 import { AuthProvider } from './lib/auth';
 import { Login } from './screens/Login';
 import { ScreenIndex } from './screens/ScreenIndex';
+import { Inicio } from './screens/Inicio';
 import { Assignments } from './screens/admin/Assignments';
 import { Rooms } from './screens/admin/Rooms';
 import { Exits } from './screens/admin/Exits';
@@ -37,9 +38,9 @@ const Router = inPreview ? MemoryRouter : BrowserRouter;
 /** With no address bar in the preview, this is the way back to the screen list. */
 function PreviewHome() {
   const { pathname } = useLocation();
-  if (pathname === routes.index) return null;
+  if (pathname === routes.catalog) return null;
   return (
-    <Link to={routes.index} className="btn btn--dark btn--md preview-home">
+    <Link to={routes.catalog} className="btn btn--dark btn--md preview-home">
       Todas las pantallas
     </Link>
   );
@@ -60,7 +61,8 @@ export function App() {
       <ScrollToTop />
       {inPreview && <PreviewHome />}
       <Routes>
-        <Route path={routes.index} element={<ScreenIndex />} />
+        <Route path={routes.index} element={<Inicio />} />
+        <Route path={routes.catalog} element={<ScreenIndex />} />
         <Route path={routes.login} element={<Login />} />
 
         <Route path={routes.teacher.rollCall} element={<RollCall />} />
