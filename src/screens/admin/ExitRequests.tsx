@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Badge, Button, InputField, useFlash } from '../../components';
-import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
-import { EarlyExitSample } from '../mobile/EarlyExit';
 
 type Estado = 'pendiente' | 'aprobada' | 'rechazada';
 
@@ -25,9 +23,13 @@ interface Exit {
 const TONE: Record<Estado, 'amber' | 'green' | 'orange'> = { pendiente: 'amber', aprobada: 'green', rechazada: 'orange' };
 const LABEL: Record<Estado, string> = { pendiente: 'Pendiente', aprobada: 'Autorizada', rechazada: 'No autorizada' };
 
-/** Dirección · Salidas tempranas de hoy y solicitudes pendientes. */
-export function ExitsLive() {
-  const { session } = useAuth();
+/**
+ * Early-exit requests waiting for a decision (and today's refusals, which can still be reversed).
+ * Lives inside Giras y salidas; authorized exits are listed in the table next to it.
+ */
+export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
+  const { session, perms } = useAuth();
+  const canDecide = perms.includes('approveExit');
   const [rows, setRows] = useState<Exit[] | null>(null);
   const [reason, setReason] = useState<Record<string, string>>({});
   const [msg, setMsg] = useFlash();
@@ -37,7 +39,7 @@ export function ExitsLive() {
     const { data, error } = await supabase!
       .from('salidas')
       .select('id, fecha, hora, modo, motivo, retira_nombre, estado, motivo_rechazo, firma, salio, estudiantes(nombre, secciones(nombre))')
-      .or(`fecha.eq.${today},estado.eq.pendiente`)
+      .or(`and(fecha.eq.${today},estado.eq.rechazada),estado.eq.pendiente`)
       .order('fecha')
       .order('hora');
     if (error) return setMsg({ ok: false, text: error.message });
@@ -64,26 +66,31 @@ export function ExitsLive() {
     if (error) return setMsg({ ok: false, text: 'No se guardó: ' + error.message });
     setMsg({ ok: true, text: estado === 'aprobada' ? 'Salida autorizada. Se avisó a la familia.' : 'Salida no autorizada. Se avisó a la familia.' });
     load();
+    onDecided?.();
   };
 
   return (
-    <AdminLayout>
-      <PageHeader kicker={`Hoy, ${today}`} title="Salidas tempranas" />
+    <section aria-labelledby="solic-t" className="card gap-10">
+      <div className="stack gap-2">
+        <h2 id="solic-t" className="title-section">
+          Solicitudes por decidir{rows && rows.length > 0 ? ` · ${rows.length}` : ''}
+        </h2>
+        <span className="text-sm muted">Las familias piden la salida desde su app; dirección autoriza o no autoriza.</span>
+      </div>
       {msg && (
         <p className="notice" role={msg.ok ? 'status' : 'alert'}>
           {msg.text}
         </p>
       )}
-      <section aria-label="Solicitudes" className="stack gap-10">
-        {rows === null && <p className="text-sm muted">Cargando…</p>}
-        {rows?.length === 0 && <p className="card text-sm muted">No hay salidas tempranas hoy ni solicitudes pendientes.</p>}
+      {rows === null && <p className="text-sm muted">Cargando…</p>}
+      {rows?.length === 0 && <p className="text-sm muted">No hay solicitudes pendientes.</p>}
+      <div className="stack gap-10">
         {rows?.map((r) => (
-          <div key={r.id} className="card row wrap between gap-10" style={{ padding: '12px 16px' }}>
+          <div key={r.id} className="row wrap between gap-10" style={{ padding: '12px 0', borderTop: '1px solid var(--border-soft)' }}>
             <span className="stack" style={{ minWidth: 220 }}>
               <span className="row gap-8">
                 <strong style={{ fontSize: 15 }}>{r.estudiantes?.nombre ?? '—'}</strong>
                 <Badge tone={TONE[r.estado]}>{LABEL[r.estado]}</Badge>
-                {r.salio && <Badge tone="blue">Ya salió</Badge>}
               </span>
               <span className="text-sm muted">
                 {r.estudiantes?.secciones?.nombre ?? '—'} · {r.fecha} · sale a las {r.hora}
@@ -94,7 +101,7 @@ export function ExitsLive() {
             </span>
             <span className="stack gap-6" style={{ alignItems: 'flex-end', minWidth: 260 }}>
               {r.firma?.startsWith('data:image') && <img src={r.firma} alt="Firma del encargado" style={{ height: 40 }} />}
-              {r.estado !== 'aprobada' && (
+              {canDecide && (
                 <span className="row gap-6">
                   <Button variant="primary" onClick={() => decide(r, 'aprobada')}>
                     Autorizar
@@ -110,17 +117,7 @@ export function ExitsLive() {
             </span>
           </div>
         ))}
-      </section>
-
-      <section aria-labelledby="prev-t" className="card stack gap-8" style={{ marginTop: 8 }}>
-        <h2 id="prev-t" style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
-          Formulario de la familia
-        </h2>
-        <span className="text-xs muted">Así lo llena la familia en su app (vista previa, no se puede enviar desde aquí).</span>
-        <div inert aria-label="Vista previa del formulario de la familia" style={{ maxWidth: 420, pointerEvents: 'none' }}>
-          <EarlyExitSample />
-        </div>
-      </section>
-    </AdminLayout>
+      </div>
+    </section>
   );
 }

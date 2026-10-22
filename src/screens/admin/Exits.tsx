@@ -1,16 +1,7 @@
-import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
-import { EarlyExitSample } from '../mobile/EarlyExit';
-import { supabase } from '../../lib/supabase';
-import { ExitsLive } from './ExitsLive';
+import { Navigate } from 'react-router-dom';
+import { routes } from '../../routes';
 
-/** Dirección · Salidas tempranas: las solicitudes de las familias, para aprobar o rechazar. Needs the server. */
+/** Salidas tempranas now live inside Giras y salidas; this keeps old links and bookmarks working. */
 export function Exits() {
-  if (supabase) return <ExitsLive />;
-  return (
-    <AdminLayout>
-      <PageHeader kicker="Familias piden, dirección decide" title="Salidas tempranas" />
-      <p className="card text-sm muted">Esta pantalla funciona con las solicitudes reales de las familias.</p>
-      <EarlyExitSample />
-    </AdminLayout>
-  );
+  return <Navigate to={`${routes.admin.trips}?ver=salidas`} replace />;
 }
