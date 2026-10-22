@@ -1,11 +1,12 @@
 import type { Status } from '../components';
+import type { Sustitucion } from '../lib/ausencias';
 
 /** What happens with a lesson when its teacher is absent. */
 export type Coverage = 'free' | 'sub' | 'task';
 
 export const COVERAGE: Record<Coverage, Status & { help: string }> = {
   free: { label: 'Lección libre', tone: 'amber', help: 'No hay lección. Si es la última, los menores pueden salir antes con autorización.' },
-  sub: { label: 'Con sustituto', tone: 'blue', help: 'Otro docente cubre la lección y pasa lista.' },
+  sub: { label: 'Sustituto del MEP', tone: 'blue', help: 'La da el sustituto que nombró el MEP; él pasa lista.' },
   task: { label: 'Trabajo asignado', tone: 'neutral', help: 'El grupo trabaja en el aula con una guía; se pasa lista igual.' },
 };
 
@@ -29,6 +30,8 @@ export interface TeacherAbsence {
   reportedBy: string;
   lessons: Array<AffectedLesson & { coverage: Coverage; substitute?: string }>;
   notified: boolean;
+  /** Only when the reason is a long incapacity. */
+  incapacity?: { from: string; to: string; days: number; substitution: Sustitucion; substitute?: string };
 }
 
 export const ABSENCE_REASONS = ['Incapacidad', 'Cita médica', 'Permiso con goce', 'Capacitación', 'Asunto personal', 'Otro'];
@@ -65,9 +68,10 @@ export const TEACHER_ABSENCES: TeacherAbsence[] = [
     date: 'Lun 19 oct',
     reportedBy: 'Dirección · 4:15 p. m.',
     lessons: [
-      { ...TEACHER_LESSONS_TODAY['Jorge Céspedes'][0], coverage: 'sub', substitute: 'Marta Vindas' },
+      { ...TEACHER_LESSONS_TODAY['Jorge Céspedes'][0], coverage: 'free' },
       { ...TEACHER_LESSONS_TODAY['Jorge Céspedes'][1], coverage: 'free' },
     ],
     notified: true,
+    incapacity: { from: 'lun 19 oct', to: 'vie 30 oct', days: 10, substitution: 'esperando' },
   },
 ];

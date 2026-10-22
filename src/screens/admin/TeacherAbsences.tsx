@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Badge, Button, StatusBadge, Switch } from '../../components';
+import { Badge, Button, InputField, StatusBadge, Switch } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { lectivos, SUSTITUCION, type Sustitucion } from '../../lib/ausencias';
 import { supabase } from '../../lib/supabase';
 import { TeacherAbsencesLive } from './TeacherAbsencesLive';
 import { SCHOOL_NAME } from '../../data/school';
 import {
   ABSENCE_REASONS,
   COVERAGE,
-  SUBSTITUTES,
   TEACHERS_WITH_LESSONS,
   TEACHER_ABSENCES,
   TEACHER_LESSONS_TODAY,
@@ -15,10 +15,13 @@ import {
   type TeacherAbsence,
 } from '../../data/teacherAbsences';
 
-type Plan = Record<number, { coverage: Coverage; substitute: string }>;
+type Plan = Record<number, { coverage: Coverage }>;
+
+/** A colleague no longer covers lessons: they stay free, or the group works in the classroom. */
+const OPTIONS: Coverage[] = ['free', 'task'];
 
 const freshPlan = (teacher: string): Plan =>
-  Object.fromEntries(TEACHER_LESSONS_TODAY[teacher].map((l, i) => [i, { coverage: l.last ? 'free' : 'sub', substitute: SUBSTITUTES[0] }]));
+  Object.fromEntries(TEACHER_LESSONS_TODAY[teacher].map((_, i) => [i, { coverage: 'free' }]));
 
 /** Families get a message only for lessons that change for them. */
 function familyMessage(a: Pick<TeacherAbsence, 'lessons'>, earlyExit: boolean) {
@@ -44,7 +47,12 @@ export function TeacherAbsences() {
 function TeacherAbsencesSample() {
   const [absences, setAbsences] = useState(TEACHER_ABSENCES);
   const [teacher, setTeacher] = useState('Karla Montero');
-  const [reason, setReason] = useState(ABSENCE_REASONS[0]);
+  const [reason, setReason] = useState(ABSENCE_REASONS[1]);
+  const [from] = useState('2026-10-19');
+  const [until, setUntil] = useState('2026-10-30');
+  const [substitution, setSubstitution] = useState<Sustitucion>('ninguno');
+  const isIncapacity = reason === 'Incapacidad';
+  const days = lectivos(from, until).length;
   const [plan, setPlan] = useState<Plan>(freshPlan('Karla Montero'));
   const [earlyExit, setEarlyExit] = useState(true);
   const [justSaved, setJustSaved] = useState<string | null>(null);
@@ -70,11 +78,18 @@ function TeacherAbsencesSample() {
         reason,
         date: 'Lun 19 oct',
         reportedBy: 'Dirección · ahora',
-        lessons: draft.lessons.map((l) => ({ ...l, substitute: l.coverage === 'sub' ? l.substitute : undefined })),
+        lessons: draft.lessons,
         notified: families > 0,
+        incapacity: isIncapacity ? { from: 'lun 19 oct', to: 'vie 30 oct', days, substitution } : undefined,
       },
     ]);
-    setJustSaved(families > 0 ? `Ausencia registrada. Se avisó a ${families} familias y estudiantes.` : 'Ausencia registrada. Los sustitutos verán las lecciones en su pase de lista.');
+    setJustSaved(
+      isIncapacity
+        ? `Incapacidad registrada: ${days} días lectivos. Las lecciones quedan libres y se avisa a las familias cada día.`
+        : families > 0
+          ? `Ausencia registrada. Se avisó a ${families} familias y estudiantes.`
+          : 'Ausencia registrada. El grupo queda con trabajo asignado.',
+    );
   };
 
   return (
@@ -115,6 +130,28 @@ function TeacherAbsencesSample() {
             </span>
           </fieldset>
 
+          {isIncapacity ? (
+            <>
+              <div className="row wrap gap-12">
+                <InputField id="d-desde" label="Desde" type="date" value={from} readOnly style={{ width: 180 }} />
+                <InputField id="d-hasta" label="Hasta" type="date" min={from} value={until} onChange={(e) => setUntil(e.target.value)} style={{ width: 180 }} />
+              </div>
+              <div className="notice">{days} días lectivos (de lunes a viernes; los feriados se cuentan, ajuste la fecha final si hace falta).</div>
+              <fieldset className="fieldset">
+                <legend>¿Habrá sustituto del MEP?</legend>
+                <div className="row wrap gap-8">
+                  {(Object.keys(SUSTITUCION) as Sustitucion[]).map((x) => (
+                    <button key={x} type="button" className="chip" aria-pressed={substitution === x} onClick={() => setSubstitution(x)}>
+                      {x === 'ninguno' ? 'No por ahora' : x === 'esperando' ? 'Lo estoy pidiendo al MEP' : 'Ya hay un sustituto nombrado'}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-sm muted" style={{ display: 'block', marginTop: 8 }}>
+                  {SUSTITUCION[substitution].help}
+                </span>
+              </fieldset>
+            </>
+          ) : (
           <div className="stack gap-10">
             <h3 style={{ fontSize: 14, fontWeight: 700 }}>Lecciones de hoy</h3>
             {lessons.map((l, i) => {
@@ -133,43 +170,26 @@ function TeacherAbsencesSample() {
                     <StatusBadge status={COVERAGE[p.coverage]} />
                   </div>
                   <div className="row wrap gap-8" role="group" aria-label={`Qué pasa con ${l.subject} ${l.section}`}>
-                    {(Object.keys(COVERAGE) as Coverage[]).map((c) => (
+                    {OPTIONS.map((c) => (
                       <button
                         key={c}
                         type="button"
                         className="chip chip--square"
                         aria-pressed={p.coverage === c}
-                        onClick={() => setPlan({ ...plan, [i]: { ...p, coverage: c } })}
+                        onClick={() => setPlan({ ...plan, [i]: { coverage: c } })}
                       >
                         {COVERAGE[c].label}
                       </button>
                     ))}
                   </div>
-                  {p.coverage === 'sub' && (
-                    <div className="row wrap gap-8">
-                      <label htmlFor={`sub-${i}`} className="text-sm" style={{ fontWeight: 600 }}>
-                        Sustituto
-                      </label>
-                      <select
-                        id={`sub-${i}`}
-                        className="input"
-                        style={{ height: 40, minWidth: 200 }}
-                        value={p.substitute}
-                        onChange={(e) => setPlan({ ...plan, [i]: { ...p, substitute: e.target.value } })}
-                      >
-                        {SUBSTITUTES.map((s) => (
-                          <option key={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
                   <span className="text-xs muted">{COVERAGE[p.coverage].help}</span>
                 </div>
               );
             })}
           </div>
+          )}
 
-          {draft.lessons.some((l) => l.coverage === 'free' && l.last) && (
+          {!isIncapacity && draft.lessons.some((l) => l.coverage === 'free' && l.last) && (
             <div className="setting-row">
               <span className="stack grow">
                 <span className="setting-row__label">Ofrecer salida anticipada</span>
@@ -188,11 +208,11 @@ function TeacherAbsencesSample() {
               </span>
             ) : (
               <span className="text-sm muted">
-                {alreadyReported ? 'Este docente ya tiene una ausencia registrada hoy.' : 'Los sustitutos reciben las lecciones en su pase de lista.'}
+                {alreadyReported ? 'Este docente ya tiene una ausencia registrada hoy.' : 'Un docente ausente no se reemplaza: sus lecciones quedan libres.'}
               </span>
             )}
             <Button variant="primary" style={{ height: 48, padding: '0 22px' }} onClick={save} disabled={!!justSaved}>
-              {families > 0 ? `Registrar y avisar a ${families} familias` : 'Registrar ausencia'}
+              {isIncapacity ? 'Registrar incapacidad' : families > 0 ? `Registrar y avisar a ${families} familias` : 'Registrar ausencia'}
             </Button>
           </div>
         </section>
@@ -244,7 +264,17 @@ function TeacherAbsencesSample() {
               {absences.map((a) => (
                 <tr key={a.id}>
                   <td className="strong">{a.teacher}</td>
-                  <td>{a.reason}</td>
+                  <td>
+                    {a.reason}
+                    {a.incapacity && (
+                      <span className="stack gap-4" style={{ marginTop: 4 }}>
+                        <span className="text-sm muted">
+                          {a.incapacity.from} a {a.incapacity.to} · {a.incapacity.days} días
+                        </span>
+                        <StatusBadge status={SUSTITUCION[a.incapacity.substitution]} />
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <span className="stack gap-4">
                       {a.lessons.map((l) => (

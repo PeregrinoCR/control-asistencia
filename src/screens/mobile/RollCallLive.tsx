@@ -5,6 +5,7 @@ import { MobileScreen } from '../../layouts/MobileScreen';
 import type { Mark } from '../../data/school';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { hasPanel, signOut, useAuth } from '../../lib/auth';
+import { prepararCoberturas } from '../../lib/ausencias';
 import { LESSONS, localDate, todayId } from '../../lib/schedule';
 import { ageOn } from '../../lib/students';
 import type { Exam } from '../admin/SettingsLive';
@@ -72,6 +73,8 @@ export function RollCallLive() {
         setCares(c ?? []);
       }
       if (!p || !day) return setLessons([]);
+      // A named substitute's lessons are prepared by the server; make sure today's exist.
+      await prepararCoberturas();
       const [{ data, error }, cover] = await Promise.all([
         db.from('horario').select('leccion, seccion_id, secciones(nombre), materias(nombre)').eq('docente_id', p.id).eq('dia', day).order('leccion'),
         // Lessons this teacher covers today for an absent colleague.
