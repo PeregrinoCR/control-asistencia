@@ -75,6 +75,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
           retira_nombre: way === 'pickup' ? pickupName.trim() : null,
           firma,
           estado: 'pendiente',
+          motivo_rechazo: null,
           retira_cedula: way === 'pickup' ? pickupId.trim() : null,
           autorizado_por: session!.user.id,
         },
@@ -128,6 +129,19 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
                     ? `Motivo: ${saved.motivo_rechazo ?? 'sin detalle'}.`
                     : `Comprobante n.º ${saved.comprobante} · descargo firmado y guardado.`}
               </div>
+              {saved.estado === 'rechazada' && (
+                <Button
+                  variant="dark"
+                  size="lg"
+                  onClick={() => {
+                    setSaved(null);
+                    setFirma(null);
+                    setAccepted(false);
+                  }}
+                >
+                  Pedir la salida de nuevo
+                </Button>
+              )}
               <ButtonLink variant="dark" size="lg" to={routes.family.home}>
                 Volver al inicio
               </ButtonLink>
