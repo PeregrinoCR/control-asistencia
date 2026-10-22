@@ -200,7 +200,7 @@ export function ToJustifyView({ items, error, onJustify, onUndo }: ViewProps) {
                 <div className="stack gap-10" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
                   <label className="row gap-10" style={{ minHeight: 44, fontWeight: 600 }}>
                     <input type="checkbox" checked={seen} onChange={(e) => setSeen(e.target.checked)} style={{ width: 22, height: 22 }} />
-                    Vi el comprobante en papel
+                    Presento comprobante
                   </label>
                   <TextareaField
                     id={`n-${g.key}`}
