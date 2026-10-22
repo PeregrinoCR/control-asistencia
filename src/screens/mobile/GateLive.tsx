@@ -53,6 +53,8 @@ export function GateLive() {
       db.from('porton').select('tipo, cuando, estudiantes(nombre, secciones(nombre))').gte('cuando', start).order('cuando', { ascending: false }).limit(20),
       db.from('salidas').select('id, estudiante_id, hora, modo, retira_nombre, salio, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
     ]);
+    // A failed refresh (no signal) keeps the lists the guard already sees instead of emptying them.
+    if (p.error || s.error) return;
     setLog(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ((p.data ?? []) as any[]).map((r) => ({ name: r.estudiantes?.nombre ?? '', section: r.estudiantes?.secciones?.nombre ?? '', mode: r.tipo, time: clock(new Date(r.cuando)) })),
@@ -80,6 +82,18 @@ export function GateLive() {
       .maybeSingle()
       .then(({ data }) => setMe(data?.id ?? null));
     loadLists();
+    // Direction can authorize an exit while this screen is open: refresh every minute, and at once when the phone wakes up.
+    const timer = setInterval(() => {
+      if (!document.hidden) loadLists();
+    }, 60_000);
+    const onVisible = () => {
+      if (!document.hidden) loadLists();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [session, loadLists]);
 
   /** Saves the entry or exit, and marks an authorized early exit as used. */
@@ -284,7 +298,7 @@ export function GateLive() {
           ))}
         </section>
         <span className="text-xs muted" style={{ textAlign: 'center' }}>
-          Hora actual {clock()}
+          Hora actual {clock()} · las listas se actualizan solas cada minuto
         </span>
       </div>
     </MobileScreen>
