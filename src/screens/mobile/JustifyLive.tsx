@@ -3,80 +3,69 @@ import { useLocation } from 'react-router-dom';
 import { Button, ButtonLink, Icon, TextareaField } from '../../components';
 import { DoneState, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { JUSTIFY_REASONS } from '../../data/family';
-import { useAuth } from '../../lib/auth';
-import { kidRecords, longDay, uploadFile } from '../../lib/family';
+import { kidRecords, longDay } from '../../lib/family';
+import { avisarMotivo, DEFAULT_JUSTIF, loadJustifConfig, ultimoDia, type JustifConfig } from '../../lib/justificaciones';
 import { LESSONS, localDate } from '../../lib/schedule';
-import { supabase } from '../../lib/supabase';
 import { routes } from '../../routes';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
 
-/** Familia · Justificar ausencia o llegada tardía, sent to the school. */
+/**
+ * Familia · Avisar el motivo de una ausencia. It only informs: the student shows the paper proof to each teacher,
+ * and each teacher decides whether to justify their lesson.
+ */
 export function JustifyLive() {
   return <FamilyGate>{(f) => <Justify f={f} />}</FamilyGate>;
 }
 
 function Justify({ f }: { f: FamilyCtx }) {
   const { kid } = f;
-  const { session } = useAuth();
   const preset = (useLocation().state as { date?: string } | null)?.date;
   const [date, setDate] = useState(preset ?? localDate());
   const [marks, setMarks] = useState<Array<{ lesson: number; mark: string }> | null>(null);
   const [reason, setReason] = useState(0);
   const [comment, setComment] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [rules, setRules] = useState<JustifConfig>(DEFAULT_JUSTIF);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    loadJustifConfig().then(setRules);
+  }, []);
 
   useEffect(() => {
     setMarks(null);
     kidRecords(kid.id, date, date).then((r) => setMarks(r.days.get(date)?.marks ?? []));
   }, [kid, date]);
 
-  const missed = (marks ?? []).filter((m) => m.mark === 'A');
-  const late = (marks ?? []).filter((m) => m.mark === 'T');
-  const kind = missed.length ? 'Ausencia' : 'Tardía';
-  const affected = missed.length ? missed : late;
-  const lessons = affected.map((m) => LESSONS[m.lesson - 1]?.name.replace(' lección', '')).join(', ');
+  // Missed lessons, justified or not: the family can tell the reason either way.
+  const missed = (marks ?? []).filter((m) => m.mark === 'A' || m.mark === 'J');
+  const lessons = missed.map((m) => LESSONS[m.lesson - 1]?.name.replace(' lección', '')).join(', ');
+  const deadline = ultimoDia(date, rules.diasFamilia, rules.noLectivos);
 
   const send = async () => {
-    if (!affected.length) return setError('Ese día no tiene ausencias ni llegadas tardías registradas.');
+    if (!missed.length) return setError('Ese día no tiene ausencias registradas.');
     setBusy(true);
     setError('');
-    try {
-      const documento = file ? await uploadFile(f.schoolId, file) : null;
-      const { error } = await supabase!.from('justificaciones').insert({
-        estudiante_id: kid.id,
-        tipo: kind,
-        desde: date,
-        hasta: date,
-        lecciones: `${lessons} (${affected.length} ${affected.length === 1 ? 'lección' : 'lecciones'})`,
-        motivo: JUSTIFY_REASONS[reason],
-        comentario: comment.trim() || null,
-        documento,
-        enviado_por: session!.user.id,
-      });
-      if (error) throw new Error(error.message);
-      setDone(true);
-    } catch (e) {
-      setError((e as Error).message);
-    }
+    const msg = await avisarMotivo(f.schoolId, kid.id, date, JUSTIFY_REASONS[reason], comment);
     setBusy(false);
+    if (msg) return setError(msg);
+    setDone(true);
   };
 
   return (
     <MobileScreen>
-      <ScreenHeader title={kind === 'Tardía' && affected.length ? 'Justificar llegada tardía' : 'Justificar ausencia'} />
+      <ScreenHeader title="Avisar el motivo" />
       {done ? (
         <DoneState
-          title="Justificación enviada"
+          title="Aviso enviado"
           actions={
             <ButtonLink variant="dark" to={routes.family.history} size="lg">
               Ver historial
             </ButtonLink>
           }
         >
-          Motivo: {JUSTIFY_REASONS[reason].toLowerCase()}. El colegio la revisará y verá el resultado en el historial.
+          Motivo: {JUSTIFY_REASONS[reason].toLowerCase()}. Esto solo informa a los profesores. Para justificar la ausencia, presente el comprobante a cada profesor en el colegio antes del {longDay(deadline)}.
         </DoneState>
       ) : (
         <>
@@ -98,7 +87,7 @@ function Justify({ f }: { f: FamilyCtx }) {
               <div className="row between" style={{ fontSize: 14 }}>
                 <span className="muted">Registro</span>
                 <span className="strong">
-                  {!marks ? 'Cargando…' : affected.length ? `${kind}: ${lessons}` : 'Sin ausencias ese día'}
+                  {!marks ? 'Cargando…' : missed.length ? `Ausencia: ${lessons}` : 'Sin ausencias ese día'}
                 </span>
               </div>
             </div>
@@ -121,23 +110,18 @@ function Justify({ f }: { f: FamilyCtx }) {
               id="nota"
               touch
               rows={4}
-              label={<span style={{ fontSize: 15 }}>Comentario para el colegio</span>}
+              label={<span style={{ fontSize: 15 }}>Comentario para los profesores</span>}
               hint="opcional"
               placeholder="Ej.: Tenía fiebre desde anoche; vuelve mañana."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
 
-            <div className="stack gap-8">
-              <span style={{ fontSize: 15, fontWeight: 700 }}>Comprobante</span>
-              <label className="dropzone" style={{ minHeight: 64, justifyContent: 'flex-start', gap: 12, padding: '0 16px', color: 'var(--ink)', textAlign: 'left', cursor: 'pointer' }}>
-                <Icon name="paperclip" size={22} style={{ color: 'var(--blue)' }} />
-                <span className="stack grow">
-                  <span style={{ fontSize: 15, fontWeight: 600 }}>{file ? file.name : 'Adjuntar foto o PDF'}</span>
-                  <span className="text-sm muted">{file ? 'Toque para cambiarlo' : 'Dictamen médico o constancia (opcional)'}</span>
-                </span>
-                <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-              </label>
+            <div className="notice">
+              <Icon name="paperclip" size={20} />
+              <span>
+                El comprobante se presenta en papel a cada profesor con quien faltó, hasta el <strong>{longDay(deadline)}</strong>. Cada profesor decide si justifica su lección.
+              </span>
             </div>
           </div>
           <div className="screen-footer">
@@ -152,7 +136,7 @@ function Justify({ f }: { f: FamilyCtx }) {
               </span>
             )}
             <Button variant="primary" size="xl" block disabled={busy || !marks} onClick={send}>
-              {busy ? 'Enviando…' : 'Enviar justificación'}
+              {busy ? 'Enviando…' : 'Enviar aviso'}
             </Button>
           </div>
         </>

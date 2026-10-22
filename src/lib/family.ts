@@ -157,9 +157,11 @@ export async function kidRecords(kidId: string, from: string, to: string) {
 /** Totals for a set of day records. */
 export function monthTotals(days: Map<string, DayRecord>) {
   const all = [...days.values()].flatMap((d) => d.marks);
-  const absences = all.filter((m) => m.mark === 'A').length;
+  // A justified absence is still an absence for the percentage; it is only counted apart from the unjustified ones.
+  const justified = all.filter((m) => m.mark === 'J').length;
+  const absences = all.filter((m) => m.mark === 'A').length + justified;
   const lates = all.filter((m) => m.mark === 'T').length;
-  return { absences, lates, pct: all.length ? Math.round((100 * (all.length - absences)) / all.length) : null };
+  return { absences, justified, lates, pct: all.length ? Math.round((100 * (all.length - absences)) / all.length) : null };
 }
 
 /** The section's lessons for one weekday, with subject and teacher. */

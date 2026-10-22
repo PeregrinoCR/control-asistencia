@@ -11,10 +11,11 @@ const TITLES: Record<Exclude<DayKind, 'O'>, string> = {
   P: 'Presente',
   T: 'Llegada tardía',
   A: 'Ausente',
+  J: 'Ausencia justificada',
   F: 'Feriado',
   X: 'Sin registro todavía',
 };
-const TAGS: Partial<Record<DayKind, string>> = { T: 'T', A: 'A', F: 'FER' };
+const TAGS: Partial<Record<DayKind, string>> = { T: 'T', A: 'A', J: 'J', F: 'FER' };
 
 /** Familia · Historial del mes */
 export function History() {

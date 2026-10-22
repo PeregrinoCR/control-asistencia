@@ -7,12 +7,14 @@ export const SCHOOL_PHONE = '+50600000000';
 export const navCounts = { trips: 3, justifications: 6, earlyWarning: 14, teacherAbsences: 1 };
 
 /** Attendance marks used by the roll call, the family app and reports. */
-export type Mark = 'P' | 'T' | 'A';
+/** P presente, T tarde, A ausente sin justificar, J ausente justificada por el docente. */
+export type Mark = 'P' | 'T' | 'A' | 'J';
 
 export const MARK_STATUS: Record<Mark | 'N', Status> = {
   P: { label: 'Presente', tone: 'blue' },
   T: { label: 'Tarde', tone: 'amber' },
   A: { label: 'Ausente', tone: 'orange' },
+  J: { label: 'Justificada', tone: 'green' },
   N: { label: 'Pendiente', tone: 'neutral' },
 };
 

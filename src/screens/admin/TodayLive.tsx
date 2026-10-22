@@ -108,8 +108,9 @@ export function TodayLive() {
             teachers: [...new Set(mine.map((x) => x.personal?.nombre).filter((n): n is string => !!n))],
             lessons: mine.length,
             done: new Set(m.map((x) => x.leccion)).size,
-            present: sets.filter((x) => !x.has('A')).length,
-            absent: sets.filter((x) => x.has('A')).length,
+            // A justified absence (J) is still an absence in the day's count.
+            present: sets.filter((x) => !x.has('A') && !x.has('J')).length,
+            absent: sets.filter((x) => x.has('A') || x.has('J')).length,
             late: sets.filter((x) => x.has('T')).length,
           };
         });

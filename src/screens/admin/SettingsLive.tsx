@@ -23,6 +23,7 @@ import {
 import { ruleState } from '../../data/school';
 import { useAuth } from '../../lib/auth';
 import { LESSONS, localDate } from '../../lib/schedule';
+import { justifConfigOf, type JustifConfig } from '../../lib/justificaciones';
 import { supabase } from '../../lib/supabase';
 import { ordenarSecciones } from '../../lib/secciones';
 
@@ -81,6 +82,8 @@ interface Form {
   aulas: string[];
   aulasGrupo: Record<string, string>;
   eventosAula: EventoAula[];
+  /** How long a student has to show the proof and a teacher to decide, and the days that do not count. */
+  justificacion: JustifConfig;
 }
 
 const shortDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -123,6 +126,7 @@ export function SettingsLive() {
         aulas: cfg.aulas ?? [],
         aulasGrupo: cfg.aulasGrupo ?? {},
         eventosAula: cfg.eventosAula ?? [],
+        justificacion: justifConfigOf(cfg),
       });
       setSections(ordenarSecciones(s.data).map((x) => x.nombre));
     })();
@@ -257,6 +261,7 @@ function InstitutionTab({ f, update }: TabProps) {
 
       <aside className="split__side stack gap-16">
         <Logo />
+        <JustificationRules f={f} update={update} />
         <section aria-labelledby="curso-t" className="card gap-10">
           <h2 id="curso-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Curso lectivo {new Date().getFullYear()}
@@ -1104,6 +1109,48 @@ function DevTab({ colegioId }: { colegioId: string }) {
           {error}
         </span>
       )}
+    </section>
+  );
+}
+
+/** How absences are justified: who decides, and the deadlines in school days. */
+function JustificationRules({ f, update }: TabProps) {
+  const [day, setDay] = useState('');
+  const j = f.justificacion;
+  const set = (patch: Partial<JustifConfig>) => update({ justificacion: { ...j, ...patch } });
+  const add = () => {
+    if (!day || j.noLectivos.includes(day)) return;
+    set({ noLectivos: [...j.noLectivos, day].sort() });
+    setDay('');
+  };
+  return (
+    <section aria-labelledby="just-t" className="card gap-10">
+      <h2 id="just-t" style={{ fontSize: 16, fontWeight: 700 }}>
+        Justificar ausencias
+      </h2>
+      <span className="text-sm muted">El estudiante presenta el comprobante en papel a cada profesor con quien faltó, y cada profesor decide por su lección.</span>
+      <div className="grid-2">
+        <InputField id="j-fam" label="Plazo de la familia" hint="días hábiles" type="number" min={1} value={String(j.diasFamilia)} onChange={(e) => set({ diasFamilia: Number(e.target.value) || 1 })} />
+        <InputField id="j-doc" label="Plazo del docente" hint="días hábiles" type="number" min={1} value={String(j.diasDocente)} onChange={(e) => set({ diasDocente: Number(e.target.value) || 1 })} />
+      </div>
+      <div className="stack gap-6">
+        <span className="field__label">Días sin lecciones (feriados, asuetos)</span>
+        <span className="text-xs muted">No se cuentan como días hábiles en los plazos.</span>
+        <div className="row wrap gap-6">
+          {j.noLectivos.length === 0 && <span className="text-sm muted">Ninguno agregado.</span>}
+          {j.noLectivos.map((d) => (
+            <button key={d} type="button" className="chip chip--sm" onClick={() => set({ noLectivos: j.noLectivos.filter((x) => x !== d) })} aria-label={`Quitar ${shortDate(d)}`}>
+              {shortDate(d)} ✕
+            </button>
+          ))}
+        </div>
+        <div className="row gap-8" style={{ alignItems: 'flex-end' }}>
+          <InputField id="j-dia" label="Agregar un día" type="date" value={day} onChange={(e) => setDay(e.target.value)} style={{ width: 170 }} />
+          <Button onClick={add} disabled={!day}>
+            Agregar
+          </Button>
+        </div>
+      </div>
     </section>
   );
 }

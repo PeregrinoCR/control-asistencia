@@ -60,7 +60,7 @@ export function EarlyWarningLive() {
     const days = schoolDays(20);
     const from = days[0];
     const marks = fetchAll<{ estudiante_id: string; fecha: string; marca: string }>((a, b) =>
-      db.from('asistencia').select('estudiante_id, fecha, marca').gte('fecha', from).in('marca', ['A', 'T']).range(a, b),
+      db.from('asistencia').select('estudiante_id, fecha, marca').gte('fecha', from).in('marca', ['A', 'T', 'J']).range(a, b),
     ).then((data) => ({ data, error: null }), (e: Error) => ({ data: null, error: e }));
     const [c, att, js, st, notes, staff, secs] = await Promise.all([
       db.from('colegios').select('config').maybeSingle(),
@@ -90,6 +90,8 @@ export function EarlyWarningLive() {
       const strip = days.map((d) => {
         const m = mine.filter((a) => a.fecha === d);
         if (m.some((a) => a.marca === 'A')) return justified(s.id, d) ? 'J' : 'A';
+        // Every absence that day was justified by its teacher.
+        if (m.some((a) => a.marca === 'J')) return 'J';
         return m.length ? 'T' : 'P';
       });
       const unexcused = strip.filter((k) => k === 'A').length;

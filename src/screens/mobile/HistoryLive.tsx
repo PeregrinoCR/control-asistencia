@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { ButtonLink, IconButton, MiniStat } from '../../components';
 import { MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { MARK_STATUS } from '../../data/school';
+import { DEFAULT_JUSTIF, loadJustifConfig, ultimoDia } from '../../lib/justificaciones';
 import { kidRecords, longDay, monthTotals, type DayRecord, type Exit, type Justif } from '../../lib/family';
 import { LESSONS, localDate } from '../../lib/schedule';
 import { routes } from '../../routes';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
 
-type Kind = 'P' | 'T' | 'A' | 'X' | 'O';
+type Kind = 'P' | 'T' | 'A' | 'J' | 'X' | 'O';
 
-const TITLES: Record<Exclude<Kind, 'O'>, string> = { P: 'Presente', T: 'Llegada tardía', A: 'Ausente', X: 'Sin registro' };
-const TAGS: Partial<Record<Kind, string>> = { T: 'T', A: 'A' };
+const TITLES: Record<Exclude<Kind, 'O'>, string> = { P: 'Presente', T: 'Llegada tardía', A: 'Ausente', J: 'Ausencia justificada', X: 'Sin registro' };
+const TAGS: Partial<Record<Kind, string>> = { T: 'T', A: 'A', J: 'J' };
 const JUST_LABEL = { p: 'en revisión', a: 'aprobada', r: 'rechazada', i: 'el colegio pidió más información' };
 
 const iso = (d: Date) => localDate(d);
@@ -39,6 +40,11 @@ function History({ f }: { f: FamilyCtx }) {
   const now = new Date();
   const [ym, setYm] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [selected, setSelected] = useState(localDate());
+  const [rules, setRules] = useState(DEFAULT_JUSTIF);
+
+  useEffect(() => {
+    loadJustifConfig().then(setRules);
+  }, []);
   const [data, setData] = useState<{ days: Map<string, DayRecord>; justifs: Justif[]; exits: Exit[] } | null>(null);
 
   const grid = monthGrid(ym.y, ym.m);
@@ -55,6 +61,7 @@ function History({ f }: { f: FamilyCtx }) {
     if (!inMonth) return 'O';
     const marks = data?.days.get(date)?.marks ?? [];
     if (marks.some((m) => m.mark === 'A')) return 'A';
+    if (marks.some((m) => m.mark === 'J')) return 'J';
     if (marks.some((m) => m.mark === 'T')) return 'T';
     return marks.length ? 'P' : 'X';
   };
@@ -150,10 +157,15 @@ function History({ f }: { f: FamilyCtx }) {
                   : `Salida temprana no autorizada${exit.motivo_rechazo ? `: ${exit.motivo_rechazo}` : ''}.`}
             </p>
           )}
-          {(kind === 'A' || kind === 'T') && !justif && (
-            <ButtonLink variant="danger" size="lg" to={routes.family.justify} state={{ date: selected }} block>
-              Justificar {kind === 'A' ? 'esta ausencia' : 'esta llegada tardía'}
-            </ButtonLink>
+          {kind === 'A' && (
+            <>
+              <p className="text-sm muted">
+                Para justificarla, presente el comprobante en papel a cada profesor con quien faltó, hasta el {longDay(ultimoDia(selected, rules.diasFamilia, rules.noLectivos))}.
+              </p>
+              <ButtonLink variant="outline-blue" size="lg" to={routes.family.justify} state={{ date: selected }} block>
+                Avisar el motivo de esta ausencia
+              </ButtonLink>
+            </>
           )}
         </section>
       </div>

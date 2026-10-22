@@ -119,11 +119,11 @@ function Home({ f }: { f: FamilyCtx }) {
             </div>
             <p style={{ fontSize: 15, lineHeight: 1.45, color: 'var(--ink-2)' }}>
               {flagged.subject}
-              {flagged.teacher && `, con ${flagged.teacher}`}. {flagged.mark === 'A' ? 'Puede justificar la ausencia desde aquí.' : ''}
+              {flagged.teacher && `, con ${flagged.teacher}`}. {flagged.mark === 'A' ? 'Para justificarla, presente el comprobante a ese profesor en el colegio. Aquí puede avisar el motivo.' : ''}
             </p>
             {flagged.mark === 'A' && (
               <ButtonLink variant="danger" size="lg" to={routes.family.justify} state={{ date: today }}>
-                Justificar
+                Avisar el motivo
               </ButtonLink>
             )}
           </section>

@@ -161,6 +161,7 @@
 .cal__day[data-kind='P'] { background: var(--blue-bg); border-color: var(--blue-bg); color: var(--blue-ink); }
 .cal__day[data-kind='T'] { background: var(--amber-bg); border-color: var(--amber-bg); color: var(--amber-ink); }
 .cal__day[data-kind='A'] { background: var(--orange); border-color: var(--orange); color: #fff; }
+.cal__day[data-kind='J'] { background: var(--green-bg); border-color: var(--green-bg); color: var(--green-ink); }
 .cal__day[data-kind='F'] { background: var(--neutral-bg); border-color: var(--neutral-bg); color: var(--ink-3); }
 .cal__day[data-kind='O'] { color: var(--faint); cursor: default; }
 .cal__day[aria-pressed='true'] { border-color: var(--ink); }

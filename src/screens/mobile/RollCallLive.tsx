@@ -40,6 +40,7 @@ const SUB: Record<Mark, { text: string; tone: string }> = {
   P: { text: 'Presente', tone: 'var(--blue-ink)' },
   T: { text: 'Llegó tarde', tone: 'var(--amber-ink)' },
   A: { text: 'Ausente', tone: 'var(--orange-ink)' },
+  J: { text: 'Ausencia justificada', tone: 'var(--green-ink)' },
 };
 
 /** Docente · Pase de lista, with the teacher's real lessons for today. */
@@ -141,7 +142,8 @@ export function RollCallLive() {
     setMarks(next);
     setState('idle');
   };
-  const toggle = (id: string, mark: Mark) => update({ ...marks, [id]: marks[id] === mark ? undefined : mark });
+  // A justified absence is changed from Por justificar (it has a deadline), not from the roll call.
+  const toggle = (id: string, mark: Mark) => marks[id] !== 'J' && update({ ...marks, [id]: marks[id] === mark ? undefined : mark });
   const count = (m: Mark | undefined) => list.filter((s) => marks[s.id] === m).length;
   const unmarked = count(undefined);
 
@@ -149,7 +151,7 @@ export function RollCallLive() {
     if (!lesson) return;
     setState('saving');
     const rows = list
-      .filter((s) => marks[s.id])
+      .filter((s) => marks[s.id] && marks[s.id] !== 'J')
       .map((s) => ({
         estudiante_id: s.id,
         seccion_id: lesson.sectionId,
@@ -225,7 +227,7 @@ export function RollCallLive() {
                 <strong>{count('T')}</strong>Tarde
               </span>
               <span className="tally" data-tone="orange">
-                <strong>{count('A')}</strong>Ausentes
+                <strong>{count('A') + count('J')}</strong>Ausentes
               </span>
               <span className="tally" data-tone="neutral">
                 <strong>{unmarked}</strong>Sin marcar
@@ -283,6 +285,7 @@ export function RollCallLive() {
                         data-mark={m.mark}
                         aria-label={m.label}
                         aria-pressed={mark === m.mark}
+                        disabled={mark === 'J'}
                         onClick={() => toggle(s.id, m.mark)}
                       >
                         {m.mark}
