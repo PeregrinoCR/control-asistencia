@@ -38,6 +38,8 @@ interface RosterRow {
   method: 'sinpe' | 'efectivo' | null;
   /** Added by hand, not through the trip's sections. */
   extra: boolean;
+  /** Emergency contact: the guardian's phone, or the student's own when adult. */
+  phone: string;
   /** The drawn signature (PNG data URL), when there is one. */
   firma: string | null;
   payment: PaymentState;
@@ -265,7 +267,7 @@ function TripDetail({
     ];
     const [st, au] = await Promise.all([
       filters.length
-        ? db.from('estudiantes').select('id, nombre, nacimiento, secciones(nombre), estudiante_encargado(encargados(nombre))').or(filters.join(',')).eq('activo', true).order('nombre')
+        ? db.from('estudiantes').select('id, nombre, nacimiento, telefono, secciones(nombre), estudiante_encargado(encargados(nombre, telefono))').or(filters.join(',')).eq('activo', true).order('nombre')
         : Promise.resolve({ data: [] }),
       db.from('gira_autorizaciones').select('estudiante_id, estado, salud, firma, firmado, firmado_por, pago, comprobante, metodo').eq('gira_id', trip.id),
     ]);
@@ -288,6 +290,7 @@ function TripDetail({
           receipt: a?.comprobante ?? null,
           method: a?.metodo ?? null,
           extra: extraIds.includes(s.id),
+          phone: (ageOn(s.nacimiento) ?? 0) >= 18 ? (s.telefono ?? '') : (s.estudiante_encargado?.[0]?.encargados?.telefono ?? ''),
         };
       }),
     );
@@ -328,8 +331,8 @@ function TripDetail({
   const printList = () => {
     const ok = (roster ?? []).filter((r) => r.state === 'ok');
     const body = `<p>${ok.length} estudiantes autorizados · ${esc(longDate(trip.fecha))}${trip.salida ? ` · salida ${esc(trip.salida)}` : ''}</p>${tableHtml(
-      ['☐', 'Estudiante', 'Sección', 'Encargado', 'Salud'],
-      ok.map((r) => ['☐', r.name, r.section, r.adult ? 'Mayor de edad' : r.guardian, r.health || '—']),
+      ['☐', 'Estudiante', 'Sección', 'Encargado', 'Teléfono de contacto', 'Salud'],
+      ok.map((r) => ['☐', r.name, r.section, r.adult ? 'Mayor de edad' : r.guardian, r.phone || 'Sin teléfono', r.health || '—']),
     )}`;
     printDocument(`Autorizados: ${trip.titulo}`, body, { school: school?.nombre });
   };

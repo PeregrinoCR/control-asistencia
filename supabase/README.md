@@ -31,6 +31,7 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
   solo dirección u organizador marcan pagado.
 - `0011_organizador_nombre.sql`: nombre del docente organizador para la familia que paga (función).
 - `0012_gira_extras.sql`: estudiantes agregados a mano a una gira; una gira pagada no se puede desautorizar desde la familia.
+- `0013_telefono_emergencia.sql`: el organizador de la gira ve el teléfono del encargado de cada estudiante (para la lista impresa).
 
 ## Notificaciones y SMS (una sola vez)
 
