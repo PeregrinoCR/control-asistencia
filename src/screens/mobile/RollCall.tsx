@@ -65,31 +65,27 @@ function RollCallSample() {
           <span className="text-sm muted strong">{ROLL_SECTION.date}</span>
           <IconButton icon="search" label="Buscar estudiante" />
         </div>
-        <div className="stack gap-2">
-          <h1 className="display" style={{ fontSize: 30, letterSpacing: -0.5 }}>
-            Sección {ROLL_SECTION.id}
-          </h1>
-          <span className="muted" style={{ fontSize: 15 }}>
-            {ROLL_SECTION.subject} · {ROLL_SECTION.shift} · {ROLL_STUDENTS.length} estudiantes
+        <div className="stack gap-4">
+          <label htmlFor="lesson-pick" className="eyebrow" style={{ letterSpacing: 0.4, fontSize: 12 }}>
+            Lección
+          </label>
+          <select id="lesson-pick" className="lesson-pick" defaultValue="1">
+            <option value="1">1.ª · Sección {ROLL_SECTION.id}</option>
+            <option value="2">2.ª · Sección 11-2</option>
+          </select>
+          <span className="text-xs muted strong">
+            {ROLL_SECTION.subject} · {ROLL_SECTION.shift}
           </span>
         </div>
-        <div className="grid-4">
-          <span className="tally" data-tone="blue">
-            <strong>{count('P')}</strong>Presentes
-          </span>
-          <span className="tally" data-tone="amber">
-            <strong>{count('T')}</strong>Tarde
-          </span>
-          <span className="tally" data-tone="orange">
-            <strong>{count('A')}</strong>Ausentes
-          </span>
-          <span className="tally" data-tone="neutral">
-            <strong>{unmarked}</strong>Sin marcar
-          </span>
+        <div className="tally-row">
+          <span data-tone="blue">{count('P')} Presentes</span>
+          <span data-tone="amber">{count('T')} Tarde</span>
+          <span data-tone="orange">{count('A')} Ausentes</span>
+          <span data-tone="neutral">{unmarked} Faltan</span>
         </div>
       </div>
 
-      <div className="row between" style={{ padding: '14px 20px 6px' }}>
+      <div className="row between" style={{ padding: '8px 16px' }}>
         <span className="eyebrow" style={{ letterSpacing: 0.6 }}>
           Lista
         </span>

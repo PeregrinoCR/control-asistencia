@@ -200,38 +200,28 @@ export function RollCallLive() {
         )}
         {lesson ? (
           <>
-            <div className="stack gap-2">
-              <h1 className="display" style={{ fontSize: 30, letterSpacing: -0.5 }}>
-                Sección {lesson.section}
-              </h1>
-              <span className="muted" style={{ fontSize: 15 }}>
+            <div className="stack gap-4">
+              <label htmlFor="lesson-pick" className="eyebrow" style={{ letterSpacing: 0.4, fontSize: 12 }}>
+                Lección
+              </label>
+              <select id="lesson-pick" className="lesson-pick" value={current} onChange={(e) => setCurrent(Number(e.target.value))}>
+                {lessons!.map((l, i) => (
+                  <option key={i} value={i}>
+                    {l.lesson}.ª · Sección {l.section}
+                    {l.substitute ? ' · sustitución' : ''}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs muted strong">
                 {lesson.substitute && 'Sustitución · '}
-                {lesson.subject} · {dayName} · {LESSONS[lesson.lesson - 1]?.name} {LESSONS[lesson.lesson - 1]?.start} · {list.length} estudiantes
+                {lesson.subject} · {dayName} · {LESSONS[lesson.lesson - 1]?.start}
               </span>
             </div>
-            {lessons!.length > 1 && (
-              <div className="row wrap gap-6" role="group" aria-label="Lecciones de hoy">
-                {lessons!.map((l, i) => (
-                  <button key={i} type="button" className="chip" aria-pressed={i === current} onClick={() => setCurrent(i)}>
-                    {l.lesson}.ª · {l.section}
-                    {l.substitute && ' · sust.'}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="grid-4">
-              <span className="tally" data-tone="blue">
-                <strong>{count('P')}</strong>Presentes
-              </span>
-              <span className="tally" data-tone="amber">
-                <strong>{count('T')}</strong>Tarde
-              </span>
-              <span className="tally" data-tone="orange">
-                <strong>{count('A') + count('J')}</strong>Ausentes
-              </span>
-              <span className="tally" data-tone="neutral">
-                <strong>{unmarked}</strong>Sin marcar
-              </span>
+            <div className="tally-row">
+              <span data-tone="blue">{count('P')} Presentes</span>
+              <span data-tone="amber">{count('T')} Tarde</span>
+              <span data-tone="orange">{count('A') + count('J')} Ausentes</span>
+              <span data-tone="neutral">{unmarked} Faltan</span>
             </div>
           </>
         ) : (
@@ -247,9 +237,9 @@ export function RollCallLive() {
         centered('Cargando estudiantes…')
       ) : (
         <>
-          <div className="row between" style={{ padding: '14px 20px 6px' }}>
+          <div className="row between" style={{ padding: '8px 16px' }}>
             <span className="eyebrow" style={{ letterSpacing: 0.6 }}>
-              Lista
+              Lista · {list.length} {list.length === 1 ? 'estudiante' : 'estudiantes'}
             </span>
             <button
               type="button"
@@ -302,17 +292,12 @@ export function RollCallLive() {
                 No se guardó: {error}
               </p>
             )}
-            {state === 'saved' ? (
-              <div className="notice notice--success" role="status">
-                <Icon name="check" strokeWidth={2.2} />
-                <span>Lista guardada. Puede corregirla y volver a guardar.</span>
-              </div>
-            ) : (
-              <p className="text-sm muted" style={{ textAlign: 'center' }}>
-                {unmarked > 0 ? `Faltan ${unmarked} por marcar. ` : ''}Al guardar se avisa al encargado de cada menor ausente o tarde.
+            {state !== 'saved' && (
+              <p className="text-xs muted" style={{ textAlign: 'center' }}>
+                {unmarked > 0 ? `Faltan ${unmarked} por marcar. ` : ''}Al guardar se avisa a las familias de ausentes y tardías.
               </p>
             )}
-            <Button variant="primary" size="xl" onClick={save} disabled={state === 'saving' || list.length === 0}>
+            <Button variant="primary" size="lg" onClick={save} disabled={state === 'saving' || list.length === 0}>
               <Icon name="check" />
               <span>{state === 'saving' ? 'Guardando…' : state === 'saved' ? 'Lista guardada' : 'Guardar lista'}</span>
             </Button>
