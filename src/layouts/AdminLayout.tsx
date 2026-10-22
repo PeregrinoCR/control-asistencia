@@ -46,6 +46,24 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
   },
 ];
 
+/** The permission each page needs. Pages not in the menu (Configuración) are included too. */
+const PAGE_PERMS: Array<[string, PermissionId]> = [
+  [routes.admin.today, 'viewAttendance'],
+  [routes.admin.schedules, 'assign'],
+  [routes.admin.rooms, 'assign'],
+  [routes.admin.exits, 'approveExit'],
+  [routes.admin.teacherAbsences, 'teacherAbs'],
+  [routes.admin.examCare, 'assign'],
+  [routes.admin.trips, 'trips'],
+  [routes.admin.students, 'viewAttendance'],
+  [routes.admin.justifications, 'approveJust'],
+  [routes.admin.notices, 'notices'],
+  [routes.admin.earlyWarning, 'earlyWarning'],
+  [routes.admin.reports, 'reports'],
+  [routes.admin.users, 'users'],
+  [routes.admin.settings, 'settings'],
+];
+
 /** Most used pages, one tap away in the phone's bottom bar. */
 const QUICK: Array<{ to: string; label: string; icon: IconName; perm: PermissionId }> = [
   { to: routes.admin.today, label: 'Hoy', icon: 'home', perm: 'viewAttendance' },
@@ -80,6 +98,21 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const allowed = (perm: PermissionId) => !supabase || perms.includes(perm);
   const visibleGroups = GROUPS.map((g) => ({ ...g, links: g.links.filter((l) => allowed(l.perm)) })).filter((g) => g.links.length > 0);
   const visibleQuick = QUICK.filter((q) => allowed(q.perm));
+
+  // Each page needs its permission, so a typed address can't open a module that wasn't assigned.
+  const page = PAGE_PERMS.find(([to]) => (to === routes.admin.today ? pathname === to : pathname === to || pathname.startsWith(to + '/')));
+  if (supabase && page && !perms.includes(page[1])) {
+    const first = visibleGroups[0]?.links[0]?.to;
+    if (first) return <Navigate to={first} replace />;
+    return (
+      <div className="screen-body" style={{ justifyContent: 'center', textAlign: 'center' }}>
+        <p className="text-sm muted">No tiene asignado ningún módulo del panel. Pida a dirección que le asigne sus permisos.</p>
+        <button type="button" className="link-button" onClick={() => signOut()}>
+          Salir
+        </button>
+      </div>
+    );
+  }
 
   const brand = (
     <div className="admin__brand">
