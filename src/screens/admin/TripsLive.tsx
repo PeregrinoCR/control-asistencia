@@ -6,6 +6,7 @@ import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { ageOn } from '../../lib/students';
 import { supabase } from '../../lib/supabase';
+import { esc, printDocument, tableHtml } from '../../lib/print';
 import { ordenarSecciones } from '../../lib/secciones';
 
 type Tab = 'trip' | 'exits';
@@ -35,6 +36,8 @@ interface RosterRow {
   signed: string;
   /** How the family pays: by SINPE Móvil or in cash. */
   method: 'sinpe' | 'efectivo' | null;
+  /** Added by hand, not through the trip's sections. */
+  extra: boolean;
   /** The drawn signature (PNG data URL), when there is one. */
   firma: string | null;
   payment: PaymentState;
@@ -247,12 +250,22 @@ function TripDetail({
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
   const [filter, setFilter] = useState<'all' | ConsentState>('all');
+  const [query, setQuery] = useState('');
+  const [found, setFound] = useState<Array<{ id: string; nombre: string; cedula: string | null; secciones: { nombre: string } | null }> | null>(null);
+  const { school } = useAuth();
 
   const load = useCallback(async () => {
     const db = supabase!;
+    // Students of the trip's sections, plus any added by hand.
+    const ex = await db.from('gira_estudiantes').select('estudiante_id').eq('gira_id', trip.id);
+    const extraIds = (ex.data ?? []).map((r) => r.estudiante_id as string);
+    const filters = [
+      ...(trip.secciones.length ? [`seccion_id.in.(${trip.secciones.join(',')})`] : []),
+      ...(extraIds.length ? [`id.in.(${extraIds.join(',')})`] : []),
+    ];
     const [st, au] = await Promise.all([
-      trip.secciones.length
-        ? db.from('estudiantes').select('id, nombre, nacimiento, secciones(nombre), estudiante_encargado(encargados(nombre))').in('seccion_id', trip.secciones).eq('activo', true).order('nombre')
+      filters.length
+        ? db.from('estudiantes').select('id, nombre, nacimiento, secciones(nombre), estudiante_encargado(encargados(nombre))').or(filters.join(',')).eq('activo', true).order('nombre')
         : Promise.resolve({ data: [] }),
       db.from('gira_autorizaciones').select('estudiante_id, estado, salud, firma, firmado, firmado_por, pago, comprobante, metodo').eq('gira_id', trip.id),
     ]);
@@ -274,6 +287,7 @@ function TripDetail({
           payment: a ? (a.pago as PaymentState) : 'none',
           receipt: a?.comprobante ?? null,
           method: a?.metodo ?? null,
+          extra: extraIds.includes(s.id),
         };
       }),
     );
@@ -282,6 +296,43 @@ function TripDetail({
   useEffect(() => {
     load();
   }, [load]);
+
+  const removeExtra = async (id: string) => {
+    const { error } = await supabase!.from('gira_estudiantes').delete().eq('gira_id', trip.id).eq('estudiante_id', id);
+    if (error) return setError(error.message);
+    load();
+  };
+
+  const addStudent = async (id: string) => {
+    const { error } = await supabase!.from('gira_estudiantes').insert({ gira_id: trip.id, estudiante_id: id });
+    if (error) return setError(error.message);
+    setFound(null);
+    setQuery('');
+    load();
+  };
+
+  const searchStudents = async () => {
+    const q = query.trim().replace(/[,()]/g, ' ');
+    if (!q) return setFound(null);
+    const { data, error } = await supabase!
+      .from('estudiantes')
+      .select('id, nombre, cedula, secciones(nombre)')
+      .or(`nombre.ilike.%${q}%,cedula.ilike.%${q}%`)
+      .eq('activo', true)
+      .order('nombre')
+      .limit(8);
+    if (error) return setError(error.message);
+    setFound((data ?? []) as unknown as typeof found);
+  };
+
+  const printList = () => {
+    const ok = (roster ?? []).filter((r) => r.state === 'ok');
+    const body = `<p>${ok.length} estudiantes autorizados · ${esc(longDate(trip.fecha))}${trip.salida ? ` · salida ${esc(trip.salida)}` : ''}</p>${tableHtml(
+      ['☐', 'Estudiante', 'Sección', 'Encargado', 'Salud'],
+      ok.map((r) => ['☐', r.name, r.section, r.adult ? 'Mayor de edad' : r.guardian, r.health || '—']),
+    )}`;
+    printDocument(`Autorizados: ${trip.titulo}`, body, { school: school?.nombre });
+  };
 
   const markPaid = async (id: string) => {
     const { error } = await supabase!.from('gira_autorizaciones').update({ pago: 'paid' }).eq('gira_id', trip.id).eq('estudiante_id', id);
@@ -379,9 +430,42 @@ function TripDetail({
       </div>
 
       <section aria-labelledby="lista-gira" className="card gap-10">
-        <h2 id="lista-gira" className="title-section">
-          Estudiantes de las secciones de la gira
-        </h2>
+        <div className="row wrap between gap-8">
+          <h2 id="lista-gira" className="title-section">
+            Estudiantes de la gira
+          </h2>
+          <Button size="sm" onClick={printList} disabled={!roster}>
+            Imprimir lista de autorizados
+          </Button>
+        </div>
+        <section aria-label="Agregar estudiante" className="stack gap-8">
+          <div className="row wrap gap-8" style={{ alignItems: 'flex-end' }}>
+            <InputField id="g-buscar" label="Agregar estudiante por cédula o nombre" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <Button onClick={searchStudents}>Buscar</Button>
+          </div>
+          {found && (
+            <div className="stack gap-6">
+              {found.length === 0 && <span className="text-sm muted">No se encontró ningún estudiante activo con ese dato.</span>}
+              {found.map((st) => {
+                const already = (roster ?? []).some((r) => r.id === st.id);
+                return (
+                  <span key={st.id} className="row wrap between gap-8">
+                    <span className="text-sm">
+                      <strong>{st.nombre}</strong> · {st.secciones?.nombre ?? '—'} {st.cedula ? `· ${st.cedula}` : ''}
+                    </span>
+                    {already ? (
+                      <span className="text-xs muted">Ya está en la gira</span>
+                    ) : (
+                      <Button size="sm" variant="primary" onClick={() => addStudent(st.id)}>
+                        Agregar a gira
+                      </Button>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </section>
         {error && (
           <p className="text-sm ink-orange" role="alert">
             {error}
@@ -423,6 +507,14 @@ function TripDetail({
                     <td className="strong">
                       {r.name}
                       {r.adult && <span className="text-xs muted"> · mayor</span>}
+                      {r.extra && (
+                        <>
+                          <span className="text-xs muted"> · agregado</span>{' '}
+                          <button type="button" className="link-button text-xs" onClick={() => removeExtra(r.id)}>
+                            Quitar
+                          </button>
+                        </>
+                      )}
                     </td>
                     <td>{r.section}</td>
                     <td>{r.adult ? 'Él/ella mismo(a)' : r.guardian}</td>

@@ -10,6 +10,8 @@ import { supabase } from '../../lib/supabase';
 import { routes } from '../../routes';
 import { FamilyGate, KidPicker, type FamilyCtx } from './FamilyGate';
 
+const PAID_LOCKED = 'La gira ha sido pagada y autorizada, para cambiar el estado de esta gira debe contactar con el Colegio.';
+
 interface Trip {
   id: string;
   titulo: string;
@@ -54,14 +56,21 @@ function Trips({ f }: { f: FamilyCtx }) {
     const db = supabase!;
     setTrips(null);
     (async () => {
-      const [g, a, c] = await Promise.all([
+      const [g, a, c, x] = await Promise.all([
         kid.sectionId
           ? db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').contains('secciones', [kid.sectionId]).gte('fecha', localDate()).order('fecha')
           : Promise.resolve({ data: [] as Trip[] }),
         db.from('gira_autorizaciones').select('gira_id, estado, pago, metodo').eq('estudiante_id', kid.id),
         db.from('colegios').select('modulos, config').maybeSingle(),
+        db.from('gira_estudiantes').select('gira_id').eq('estudiante_id', kid.id),
       ]);
-      setTrips((g.data ?? []) as Trip[]);
+      // Trips the school added this student to by hand, besides the ones for their section.
+      const extraIds = (x.data ?? []).map((r) => r.gira_id as string);
+      const extra = extraIds.length
+        ? await db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').in('id', extraIds).gte('fecha', localDate()).order('fecha')
+        : { data: [] as Trip[] };
+      const all = [...((g.data ?? []) as Trip[]), ...((extra.data ?? []) as Trip[])];
+      setTrips(all.filter((t, i) => all.findIndex((o) => o.id === t.id) === i).sort((u, v) => u.fecha.localeCompare(v.fecha)));
       setAnswers(Object.fromEntries((a.data ?? []).map((x) => [x.gira_id, { estado: x.estado, pago: x.pago, metodo: x.metodo }])));
       const sinpe = c.data?.config?.sinpe ?? {};
       setPayments({ on: !!(c.data?.modulos?.pay ?? c.data?.modulos?.pagos), number: sinpe.numero ?? '', holder: sinpe.titular ?? '' });
@@ -154,6 +163,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
   const signedAt = new Date().toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' });
 
   const save = async (estado: 'ok' | 'no') => {
+    if (estado === 'no' && answer?.pago === 'paid') return setError(PAID_LOCKED);
     if (estado === 'ok' && !ready) return setError('Marque las tres casillas, firme y escriba su cédula para autorizar.');
     // A SINPE payment needs its receipt before the authorization is sent.
     const hasReceipt = !!receiptFile || answer?.pago === 'review' || answer?.pago === 'paid';
