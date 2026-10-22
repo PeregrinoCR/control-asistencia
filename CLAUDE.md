@@ -36,6 +36,16 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 - Permisos y roles: `src/data/users.ts` (16 permisos, 6 roles, permisos extra por persona).
 - Vista previa en línea: se construye con `VITE_ROUTER=memory` (MemoryRouter).
 
+## Publicación
+
+- El usuario autorizó subir **directo a `main`** (`git push origin HEAD:main`); Cloudflare Pages publica `main`
+  y ya no hace vistas previas de ramas. Sin pull requests salvo que el usuario los pida.
+- Reglas: (1) nunca subir con una migración pendiente: avisar, esperar a que el usuario la corra en Supabase y
+  recién entonces subir; (2) subir solo pantallas terminadas y probadas (`tsc`, `build`, Playwright);
+  (3) un push por pantalla, para no gastar publicaciones (500/mes); (4) avisar antes de subir si el cambio
+  toca avisos a familias, portón o pagos.
+- Si una sesión asigna una rama y prohíbe subir a `main`, respetarlo hasta que el usuario lo vuelva a autorizar.
+
 ## Pendiente
 
 - **Servidor** (Supabase, ver `supabase/README.md`): Fase 1 hecha (tablas, permisos, vincular cuentas).
