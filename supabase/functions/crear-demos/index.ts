@@ -13,10 +13,18 @@ const CUENTAS = [
 ];
 const CLAVE = 'Demo-2026';
 
+// The browser calls this function, so answer the CORS preflight and send the CORS headers on every reply.
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   const token = req.headers.get('Authorization');
   if (!token) return json({ error: 'Inicie sesión para crear las cuentas.' }, 401);
 
