@@ -52,7 +52,7 @@ function TodaySample() {
             Pase de lista por sección
           </h2>
           <div className="table-wrap">
-            <table className="table" style={{ minWidth: 640 }}>
+            <table className="table table--cards" style={{ minWidth: 640 }}>
               <thead>
                 <tr>
                   <th>Sección</th>
@@ -69,15 +69,15 @@ function TodaySample() {
                   const pending = r.state === 'pending';
                   return (
                     <tr key={r.section}>
-                      <td className="strong">{r.section}</td>
-                      <td>{r.teacher}</td>
-                      <td>
+                      <td className="strong" data-label="Sección">{r.section}</td>
+                      <td data-wide data-label="Docente">{r.teacher}</td>
+                      <td data-wide data-label="Lista">
                         <StatusBadge status={ROLL_STATE[r.state]} size="md" />
                       </td>
-                      <td className="num">{pending ? '—' : r.present}</td>
-                      <td className="num strong ink-orange">{pending ? '—' : r.absent}</td>
-                      <td className="num strong ink-amber">{pending ? '—' : r.late}</td>
-                      <td>
+                      <td className="num" data-label="Presentes">{pending ? '—' : r.present}</td>
+                      <td className="num strong ink-orange" data-label="Ausentes">{pending ? '—' : r.absent}</td>
+                      <td className="num strong ink-amber" data-label="Tarde">{pending ? '—' : r.late}</td>
+                      <td data-wide data-label="Avisos leídos">
                         <Meter
                           percent={r.noticesSent ? Math.round((100 * r.noticesRead) / r.noticesSent) : 0}
                           label={r.noticesSent ? `${r.noticesRead} de ${r.noticesSent}` : '—'}

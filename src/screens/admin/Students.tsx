@@ -105,7 +105,7 @@ function StudentsSample() {
           </span>
         </section>
 
-        <aside aria-labelledby="ficha-t" className="card split__side gap-16" style={{ padding: 20 }}>
+        <aside aria-labelledby="ficha-t" className="card split__side split__side--sticky gap-16" style={{ padding: 20 }}>
           <div className="row gap-14">
             <Avatar name={s.name} size="lg" tone="blue" />
             <div className="stack">

@@ -131,7 +131,7 @@ export function TodayLive() {
                 </p>
               ) : (
                 <div className="table-wrap">
-                  <table className="table" style={{ minWidth: 640 }}>
+                  <table className="table table--cards" style={{ minWidth: 640 }}>
                     <thead>
                       <tr>
                         <th>Sección</th>
@@ -147,14 +147,14 @@ export function TodayLive() {
                         const none = r.done === 0;
                         return (
                           <tr key={r.id}>
-                            <td className="strong">{r.name}</td>
-                            <td className="text-sm">{r.teachers.join(', ') || '—'}</td>
-                            <td>
+                            <td className="strong" data-label="Sección">{r.name}</td>
+                            <td className="text-sm" data-wide data-label="Docentes">{r.teachers.join(', ') || '—'}</td>
+                            <td data-wide data-label="Lista">
                               <StatusBadge status={rollStatus(r)} size="md" />
                             </td>
-                            <td className="num">{none ? '—' : r.present}</td>
-                            <td className="num strong ink-orange">{none ? '—' : r.absent}</td>
-                            <td className="num strong ink-amber">{none ? '—' : r.late}</td>
+                            <td className="num" data-label="Presentes">{none ? '—' : r.present}</td>
+                            <td className="num strong ink-orange" data-label="Ausentes">{none ? '—' : r.absent}</td>
+                            <td className="num strong ink-amber" data-label="Tarde">{none ? '—' : r.late}</td>
                           </tr>
                         );
                       })}

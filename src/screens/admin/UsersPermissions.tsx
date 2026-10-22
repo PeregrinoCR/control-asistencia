@@ -365,11 +365,16 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
             Sin roles, esta persona solo tendrá los permisos extra.
           </span>
         )}
-        {PERMISSION_GROUPS.map((g) => (
-          <div key={g.id} className="stack">
-            <span className="text-xs strong muted" style={{ padding: '8px 0 2px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-              {g.label}
-            </span>
+        {PERMISSION_GROUPS.map((g) => {
+          const active = g.permissions.filter((p) => all.has(p.id)).length;
+          return (
+          <details key={g.id} className="perm-group" open={active > 0}>
+            <summary className="perm-group__head">
+              <span>{g.label}</span>
+              <span className="perm-group__count" data-on={active > 0}>
+                {active} de {g.permissions.length}
+              </span>
+            </summary>
             {g.permissions.map((p) => {
               const byRole = fromRoles.has(p.id);
               const has = all.has(p.id);
@@ -395,8 +400,9 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
                 </label>
               );
             })}
-          </div>
-        ))}
+          </details>
+          );
+        })}
       </div>
 
       <div className="row wrap between gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>

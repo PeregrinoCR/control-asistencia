@@ -77,6 +77,9 @@ function Home({ f }: { f: FamilyCtx }) {
   const hour = new Date().getHours();
   const hello = hour < 12 ? 'Buenos días,' : hour < 18 ? 'Buenas tardes,' : 'Buenas noches,';
 
+  // Permissions only jump to the top when there is something to sign.
+  const pendingTrips = trips.some((t) => !t.answer);
+
   return (
     <MobileScreen>
       <div className="screen-body gap-16" style={{ padding: '24px 16px 16px' }}>
@@ -131,7 +134,7 @@ function Home({ f }: { f: FamilyCtx }) {
           </section>
         )}
 
-        <section className="card card--mobile gap-10">
+        <section className="card card--mobile gap-10" style={{ order: pendingTrips ? 0 : 2 }}>
           <h2 style={{ fontSize: 17, fontWeight: 700 }}>Permisos y autorizaciones</h2>
           {trips.map((t) => (
             <Link key={t.id} to={routes.family.trip} state={{ id: t.id }} className="perm-link">
@@ -194,7 +197,7 @@ function Home({ f }: { f: FamilyCtx }) {
           )}
         </section>
 
-        <section className="card card--mobile">
+        <section className="card card--mobile" style={{ order: 1 }}>
           <div className="row between" style={{ alignItems: 'baseline' }}>
             <h2 style={{ fontSize: 17, fontWeight: 700 }}>Hoy, lección por lección</h2>
             <Link to={routes.family.schedule} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
@@ -233,7 +236,7 @@ function Home({ f }: { f: FamilyCtx }) {
           )}
         </section>
 
-        <section className="card card--mobile">
+        <section className="card card--mobile" style={{ order: 3 }}>
           <div className="row between" style={{ alignItems: 'baseline' }}>
             <h2 style={{ fontSize: 17, fontWeight: 700 }}>Este mes</h2>
             <Link to={routes.family.history} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
@@ -248,7 +251,7 @@ function Home({ f }: { f: FamilyCtx }) {
         </section>
 
         {notices.length > 0 && (
-          <section className="card card--mobile gap-10" aria-labelledby="avisos-t">
+          <section className="card card--mobile gap-10" aria-labelledby="avisos-t" style={{ order: 4 }}>
             <h2 id="avisos-t" style={{ fontSize: 17, fontWeight: 700 }}>
               Avisos del colegio
             </h2>

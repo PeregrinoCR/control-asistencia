@@ -529,3 +529,49 @@
   text-decoration: line-through;
   color: var(--muted);
 }
+
+/* ---------- Permisos agrupados (Usuarios) ---------- */
+
+.perm-group {
+  border-top: 1px solid var(--border-soft);
+}
+.perm-group__head {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.perm-group__head::-webkit-details-marker { display: none; }
+.perm-group__head::after {
+  content: '▾';
+  margin-left: 4px;
+  transition: transform 0.15s;
+}
+.perm-group:not([open]) .perm-group__head::after { transform: rotate(-90deg); }
+.perm-group__count {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+.perm-group__count[data-on='true'] { color: var(--blue-ink); }
+.perm-group > label { margin-left: 2px; }
+
+.full-text > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--blue);
+  font-weight: 700;
+  cursor: pointer;
+}
