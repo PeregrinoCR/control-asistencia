@@ -247,6 +247,19 @@ function InstitutionTab({ f, update }: TabProps) {
         <span className="text-xs muted" style={{ marginTop: -8 }}>
           Un docente ausente no se reemplaza; solo una incapacidad larga puede tener sustituto del MEP. Confirme con su Dirección Regional desde cuántos días se pide. Al pasar de ese número, Hoy le sugiere pedirlo.
         </span>
+        <InputField
+          id="c-carga-max"
+          label="Máximo de lecciones por semana por docente"
+          hint="opcional"
+          type="number"
+          min={1}
+          placeholder="Ej.: 30"
+          value={value('c-carga-max')}
+          onChange={(e) => set('c-carga-max', e.target.value)}
+        />
+        <span className="text-xs muted" style={{ marginTop: -8 }}>
+          En Horarios y cargas, un docente que pase de este número aparece en naranja y se le avisa al colocar sus lecciones. Si lo deja vacío se usan 30.
+        </span>
         <fieldset className="fieldset">
           <legend>Tipo de institución</legend>
           <div className="row wrap gap-8">

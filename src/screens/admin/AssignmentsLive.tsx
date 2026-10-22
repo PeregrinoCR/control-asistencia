@@ -6,8 +6,8 @@ import { useAuth } from '../../lib/auth';
 import { LESSONS, slotKey, useSchedule, type LoadLine, type Loads, type PlacedLesson, type Week } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
-/** Weekly lessons above which a teacher's load shows in orange. */
-const MAX_LOAD = 30;
+/** Weekly lessons above which a teacher's load shows in orange, unless the school sets another number in Configuración. */
+const DEFAULT_MAX_LOAD = 30;
 
 const cellBase: CSSProperties = {
   height: 72,
@@ -52,6 +52,15 @@ export function AssignmentsLive() {
   const [dirty, setDirty] = useState(false);
   const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
+  const [maxLoad, setMaxLoad] = useState(DEFAULT_MAX_LOAD);
+
+  useEffect(() => {
+    supabase!
+      .from('colegios')
+      .select('config')
+      .maybeSingle()
+      .then(({ data: c }) => setMaxLoad(Number(c?.config?.institucion?.['c-carga-max']) || DEFAULT_MAX_LOAD));
+  }, []);
 
   useEffect(() => {
     if (!sectionId && sections[0]) setSectionId(sections[0].id);
@@ -81,6 +90,16 @@ export function AssignmentsLive() {
   // Lessons the teacher already gives in another section at that hour.
   const elsewhere = (teacherId: string, key: string) => others.find((o) => o.teacherId === teacherId && o.key === key);
 
+  // Lessons a teacher already has placed in the whole school, this section included.
+  const teacherTotal = (id: string) => others.filter((o) => o.teacherId === id).length + Object.values(week).filter((x) => x.teacherId === id).length;
+
+  // Lessons still to place per section, from its load and the lessons saved for it (this section: what is on screen).
+  const pendingOf = (sid: string) => {
+    const planned = (loads[sid] ?? []).reduce((n, l) => n + l.lecciones, 0);
+    const placed = sid === sectionId ? Object.keys(week).length : others.filter((o) => o.sectionId === sid).length;
+    return Math.max(0, planned - placed);
+  };
+
   const change = (next: Week) => {
     setWeek(next);
     setDirty(true);
@@ -93,6 +112,8 @@ export function AssignmentsLive() {
     const clash = elsewhere(l.docenteId, key);
     if (clash) return setMsg({ ok: false, text: `${teacherName(l.docenteId)} ya da ${clash.subject} en ${sections.find((s) => s.id === clash.sectionId)?.nombre} a esa hora.` });
     change({ ...week, [key]: { subject: l.materia, teacherId: l.docenteId } });
+    const total = teacherTotal(l.docenteId) + 1;
+    if (total > maxLoad) setMsg({ ok: false, text: `${teacherName(l.docenteId)} llega a ${total} lecciones por semana; el máximo es ${maxLoad}.` });
     // Keep the card in hand until all its lessons are placed.
     if (placedOf(l) + 1 >= l.lecciones) setPicked(null);
   };
@@ -195,6 +216,7 @@ export function AssignmentsLive() {
                   }}
                 >
                   {s.nombre}
+                  {pendingOf(s.id) > 0 && <span className="ink-orange"> · faltan {pendingOf(s.id)}</span>}
                 </button>
               ))}
             </div>
@@ -347,7 +369,7 @@ export function AssignmentsLive() {
               <span className="text-xs muted">Lecciones colocadas en todas las secciones / lecciones de su carga. Toque uno para ver sus lecciones aquí.</span>
               {teacherRows.length === 0 && <span className="text-sm muted">Aún no hay lecciones asignadas.</span>}
               {teacherRows.map((t) => {
-                const over = t.placed > MAX_LOAD;
+                const over = t.placed > maxLoad;
                 const on = focusTeacher === t.id;
                 return (
                   <button
@@ -374,7 +396,7 @@ export function AssignmentsLive() {
                     </span>
                     <Meter wide percent={t.planned ? Math.min(100, (100 * t.placed) / t.planned) : 0} label={
                         over
-                          ? `Más de ${MAX_LOAD}`
+                          ? `Más de ${maxLoad}`
                           : t.placed === t.planned
                             ? 'Completa'
                             : t.placed > t.planned

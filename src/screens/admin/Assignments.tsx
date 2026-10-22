@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Avatar, Badge, Button, Icon, StatusBadge } from '../../components';
+import { Avatar, Badge, Button, Icon } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
-import { SECTIONS, SHIFTS, SUBJECT_SCHEDULE, TEACHERS, sectionPlan } from '../../data/admin';
+import { SECTIONS, SUBJECT_SCHEDULE, TEACHERS, sectionPlan } from '../../data/admin';
 import { supabase } from '../../lib/supabase';
 import { AssignmentsLive } from './AssignmentsLive';
 
@@ -30,29 +30,6 @@ function AssignmentsSample() {
           </>
         }
       />
-
-      <section aria-labelledby="jornadas-t" className="stack gap-12">
-        <h2 id="jornadas-t" className="title-section">
-          Jornadas y horarios
-        </h2>
-        <div className="grid-tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          {SHIFTS.map((j) => (
-            <div key={j.name} className="card gap-6" style={{ padding: 16, borderWidth: 1.5, borderColor: j.active ? 'var(--blue)' : undefined }}>
-              <div className="row between gap-8">
-                <span style={{ fontSize: 16, fontWeight: 700 }}>{j.name}</span>
-                <StatusBadge status={j.status} />
-              </div>
-              <span className="display" style={{ fontSize: 22 }}>
-                {j.range}
-              </span>
-              <span className="text-sm muted">{j.detail}</span>
-              <Button size="sm" style={{ marginTop: 4, alignSelf: 'flex-start' }}>
-                {j.action}
-              </Button>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <div className="split">
         <section aria-labelledby="sec-t" className="card gap-8" style={{ flex: '1 1 380px', minWidth: 0 }}>
