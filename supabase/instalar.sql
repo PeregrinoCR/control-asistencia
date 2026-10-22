@@ -1201,6 +1201,15 @@ drop policy if exists cambiar on gira_autorizaciones;
 create policy cambiar on gira_autorizaciones for update
   using (estudiante_id in (select mis_estudiantes()) or tiene_permiso('payments') or tiene_permiso('trips') or es_organizador(gira_id));
 
+-- Nombre del docente organizador para la familia que paga una gira (la tabla de personal no es legible para familias).
+-- Solo devuelve el nombre, y solo a quien pertenece al colegio de la gira. Se puede correr más de una vez.
+
+create or replace function nombre_organizador(gira uuid) returns text
+language sql stable security definer set search_path = public as $$
+  select p.nombre from giras g join personal p on p.id = g.organizador_id
+  where g.id = gira and g.colegio_id = mi_colegio()
+$$;
+
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 
 insert into roles (id, nombre, permisos, limitado_a_seccion) values

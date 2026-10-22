@@ -145,6 +145,12 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
   const ready = checks.every(Boolean) && signed && idNumber.trim();
   const charge = !!trip.costo;
   const cash = charge && (method === 'efectivo' || !sinpe);
+  // Name of the organizer the family pays, when the trip has one.
+  const [organizer, setOrganizer] = useState<string | null>(null);
+  useEffect(() => {
+    if (!charge) return;
+    supabase!.rpc('nombre_organizador', { gira: trip.id }).then(({ data }) => setOrganizer((data as string | null) ?? null));
+  }, [trip.id, charge]);
   const signedAt = new Date().toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' });
 
   const save = async (estado: 'ok' | 'no') => {
@@ -298,8 +304,8 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
                   <SinpePayment
                     amount={trip.costo!}
                     number={sinpeNumber}
-                    holder={payments.holder || '[TITULAR]'}
-                    reference={`Gira ${kid.section} ${kid.name}`}
+                    holder={organizer || payments.holder || '[TITULAR]'}
+                    reference={trip.titulo}
                     receipt={receipt}
                     onReceipt={(name, file) => {
                       setReceipt(name);

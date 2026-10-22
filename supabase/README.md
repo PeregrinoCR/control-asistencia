@@ -29,6 +29,7 @@ Si ya instaló antes, solo corra en el SQL Editor los archivos nuevos de `migrat
   estudiantes, y el profesor guía sin avisos ni giras.
 - `0010_giras_pagos.sql`: teléfono para pagos y docente organizador por gira; pago en efectivo o SINPE;
   solo dirección u organizador marcan pagado.
+- `0011_organizador_nombre.sql`: nombre del docente organizador para la familia que paga (función).
 
 ## Notificaciones y SMS (una sola vez)
 
