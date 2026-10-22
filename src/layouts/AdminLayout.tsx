@@ -2,54 +2,55 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Navigate, useLocation } from 'react-router-dom';
 import { Icon, cx, type IconName } from '../components';
 import { SCHOOL_NAME, navCounts } from '../data/school';
+import type { PermissionId } from '../data/users';
 import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
-type MenuLink = { to: string; label: string; count?: { n: number; tone: 'blue' | 'orange' } };
+type MenuLink = { to: string; label: string; perm: PermissionId; count?: { n: number; tone: 'blue' | 'orange' } };
 
 /** The menu, by what the staff does with each page: day to day, the school year, families, administration. */
 const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
   {
     title: 'Día a día',
     links: [
-      { to: routes.admin.today, label: 'Hoy' },
-      { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
-      { to: routes.admin.justifications, label: 'Justificaciones', count: { n: navCounts.justifications, tone: 'orange' } },
-      { to: routes.admin.trips, label: 'Giras y salidas', count: { n: navCounts.trips, tone: 'blue' } },
+      { to: routes.admin.today, label: 'Hoy', perm: 'viewAttendance' },
+      { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', perm: 'teacherAbs', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
+      { to: routes.admin.justifications, label: 'Justificaciones', perm: 'approveJust', count: { n: navCounts.justifications, tone: 'orange' } },
+      { to: routes.admin.trips, label: 'Giras y salidas', perm: 'trips', count: { n: navCounts.trips, tone: 'blue' } },
     ],
   },
   {
     title: 'Académico',
     links: [
-      { to: routes.admin.schedules, label: 'Horarios y cargas' },
-      { to: routes.admin.rooms, label: 'Aulas y grupos' },
-      { to: routes.admin.students, label: 'Estudiantes' },
-      { to: routes.admin.examCare, label: 'Cuido de exámenes' },
+      { to: routes.admin.schedules, label: 'Horarios y cargas', perm: 'assign' },
+      { to: routes.admin.rooms, label: 'Aulas y grupos', perm: 'assign' },
+      { to: routes.admin.students, label: 'Estudiantes', perm: 'viewAttendance' },
+      { to: routes.admin.examCare, label: 'Cuido de exámenes', perm: 'assign' },
     ],
   },
   {
     title: 'Familias',
     links: [
-      { to: routes.admin.exits, label: 'Salidas tempranas' },
-      { to: routes.admin.notices, label: 'Avisos a familias' },
-      { to: routes.admin.earlyWarning, label: 'Alerta temprana', count: { n: navCounts.earlyWarning, tone: 'orange' } },
+      { to: routes.admin.exits, label: 'Salidas tempranas', perm: 'approveExit' },
+      { to: routes.admin.notices, label: 'Avisos a familias', perm: 'notices' },
+      { to: routes.admin.earlyWarning, label: 'Alerta temprana', perm: 'earlyWarning', count: { n: navCounts.earlyWarning, tone: 'orange' } },
     ],
   },
   {
     title: 'Administración',
     links: [
-      { to: routes.admin.reports, label: 'Reportes' },
-      { to: routes.admin.users, label: 'Usuarios y permisos' },
+      { to: routes.admin.reports, label: 'Reportes', perm: 'reports' },
+      { to: routes.admin.users, label: 'Usuarios y permisos', perm: 'users' },
     ],
   },
 ];
 
 /** Most used pages, one tap away in the phone's bottom bar. */
-const QUICK: Array<{ to: string; label: string; icon: IconName }> = [
-  { to: routes.admin.today, label: 'Hoy', icon: 'home' },
-  { to: routes.admin.students, label: 'Estudiantes', icon: 'users' },
-  { to: routes.admin.justifications, label: 'Justificaciones', icon: 'fileCheck' },
+const QUICK: Array<{ to: string; label: string; icon: IconName; perm: PermissionId }> = [
+  { to: routes.admin.today, label: 'Hoy', icon: 'home', perm: 'viewAttendance' },
+  { to: routes.admin.students, label: 'Estudiantes', icon: 'users', perm: 'viewAttendance' },
+  { to: routes.admin.justifications, label: 'Justificaciones', icon: 'fileCheck', perm: 'approveJust' },
 ];
 
 /**
@@ -57,7 +58,7 @@ const QUICK: Array<{ to: string; label: string; icon: IconName }> = [
  * Phones: a slim top bar, the menu as a drawer, and a bottom bar with the most used pages.
  */
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const { ready, session, school, roles, family } = useAuth();
+  const { ready, session, school, roles, family, perms } = useAuth();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
 
@@ -74,6 +75,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   if (supabase && ready && !session) return <Navigate to={routes.login} replace />;
   if (supabase && !ready) return null;
   if (supabase && school && !hasPanel(roles)) return <Navigate to={homeFor(roles, family)} replace />;
+
+  // The menu shows only the pages this person can use (the preview without a server shows them all).
+  const allowed = (perm: PermissionId) => !supabase || perms.includes(perm);
+  const visibleGroups = GROUPS.map((g) => ({ ...g, links: g.links.filter((l) => allowed(l.perm)) })).filter((g) => g.links.length > 0);
+  const visibleQuick = QUICK.filter((q) => allowed(q.perm));
 
   const brand = (
     <div className="admin__brand">
@@ -103,7 +109,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       {open && <button type="button" className="admin__scrim" aria-label="Cerrar menú" onClick={() => setOpen(false)} />}
       <nav id="menu-direccion" aria-label="Menú de dirección" className="admin__nav">
         {brand}
-        {GROUPS.map((g) => (
+        {visibleGroups.map((g) => (
           <div key={g.title} className="admin__group">
             <span className="admin__group-title">{g.title}</span>
             {g.links.map((l) => (
@@ -133,7 +139,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
       <nav aria-label="Accesos rápidos" className="admin__tabs">
-        {QUICK.map((q) => (
+        {visibleQuick.map((q) => (
           <NavLink key={q.to} to={q.to} end className="admin__tab">
             <Icon name={q.icon} size={22} />
             {q.label}

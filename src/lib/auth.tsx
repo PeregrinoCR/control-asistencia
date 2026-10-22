@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { ROLES, effectivePermissions, type PermissionId } from '../data/users';
 import { routes } from '../routes';
 import { supabase } from './supabase';
 
@@ -20,26 +21,30 @@ interface AuthState {
   roles: string[];
   /** A guardian or an adult student with their own account. */
   family: boolean;
+  /** What the signed-in staff member can do: their roles' permissions plus individual extras. */
+  perms: PermissionId[];
 }
 
-const AuthContext = createContext<AuthState>({ ready: true, session: null, school: null, roles: [], family: false });
+const AuthContext = createContext<AuthState>({ ready: true, session: null, school: null, roles: [], family: false, perms: [] });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ ready: !supabase, session: null, school: null, roles: [], family: false });
+  const [state, setState] = useState<AuthState>({ ready: !supabase, session: null, school: null, roles: [], family: false, perms: [] });
 
   useEffect(() => {
     if (!supabase) return;
     const db = supabase;
     const load = async (session: Session | null) => {
-      if (!session) return setState({ ready: true, session, school: null, roles: [], family: false });
+      if (!session) return setState({ ready: true, session, school: null, roles: [], family: false, perms: [] });
       const uid = session.user.id;
       const [school, me, guardian, adult] = await Promise.all([
         db.from('colegios').select('id, nombre, logo:config->>logo').maybeSingle(),
-        db.from('personal').select('roles').eq('usuario_id', uid).maybeSingle(),
+        db.from('personal').select('roles, permisos_extra').eq('usuario_id', uid).maybeSingle(),
         db.from('encargados').select('id').eq('usuario_id', uid).maybeSingle(),
         db.from('estudiantes').select('id').eq('usuario_id', uid).maybeSingle(),
       ]);
-      setState({ ready: true, session, school: school.data, roles: me.data?.roles ?? [], family: !!(guardian.data || adult.data) });
+      const roles = me.data?.roles ?? [];
+      const perms = me.data ? [...effectivePermissions({ roles, extra: me.data.permisos_extra ?? [] }, ROLES).all] : [];
+      setState({ ready: true, session, school: school.data, roles, family: !!(guardian.data || adult.data), perms });
     };
     db.auth.getSession().then(({ data }) => load(data.session));
     const { data } = db.auth.onAuthStateChange((event, session) => {
