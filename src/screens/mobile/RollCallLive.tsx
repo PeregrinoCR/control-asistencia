@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Avatar, Button, Icon } from '../../components';
-import { MobileScreen } from '../../layouts/MobileScreen';
+import { MobileScreen, TeacherTabBar } from '../../layouts/MobileScreen';
 import type { Mark } from '../../data/school';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { hasPanel, signOut, useAuth } from '../../lib/auth';
@@ -319,6 +319,7 @@ export function RollCallLive() {
           </div>
         </>
       )}
+      <TeacherTabBar />
     </MobileScreen>
   );
 }

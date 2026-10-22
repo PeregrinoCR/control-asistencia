@@ -91,3 +91,88 @@ export async function avisarMotivo(colegioId: string, estudiante: string, fecha:
     .upsert({ colegio_id: colegioId, estudiante_id: estudiante, fecha, motivo, comentario: comentario.trim() || null, enviado_por: data.user?.id }, { onConflict: 'estudiante_id,fecha' });
   return error?.message ?? '';
 }
+
+/** One absence still open to decide (or already decided), with who decides it and how long they have. */
+export interface Ausencia extends AbsenceKey {
+  id: string;
+  nombre: string;
+  seccion: string;
+  marca: 'A' | 'J';
+  materia: string;
+  docenteId: string;
+  docente: string;
+  /** Reason the family told, if they did. */
+  aviso: string;
+  nota: string;
+  /** Last school day the teacher can decide. */
+  vence: string;
+  /** School days left for the teacher; negative once past. */
+  restan: number;
+}
+
+/** Absences from the last `dias` calendar days, with the teacher of each lesson. Teachers only see their own through RLS + `soloDocente`. */
+export async function cargarAusencias(cfg: JustifConfig, soloDocente?: string, dias = 40): Promise<Ausencia[] | string> {
+  const db = supabase!;
+  const today = new Date();
+  const hoy = iso(today);
+  const from = new Date(today);
+  from.setDate(from.getDate() - dias);
+  const [as, hs, avisos] = await Promise.all([
+    db
+      .from('asistencia')
+      .select('id, estudiante_id, seccion_id, fecha, leccion, marca, registrado_por, nota_justificacion, estudiantes(nombre), secciones(nombre)')
+      .in('marca', ['A', 'J'])
+      .gte('fecha', iso(from))
+      .order('fecha', { ascending: false })
+      .limit(5000),
+    db.from('horario').select('seccion_id, dia, leccion, docente_id, materias(nombre), personal(nombre)'),
+    db.from('ausencia_avisos').select('estudiante_id, fecha, motivo').gte('fecha', iso(from)),
+  ]);
+  if (as.error) return as.error.message;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const slot = new Map<string, any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const h of (hs.data ?? []) as any[]) slot.set(`${h.seccion_id}|${h.dia}|${h.leccion}`, h);
+  const told = new Map((avisos.data ?? []).map((a: { estudiante_id: string; fecha: string; motivo: string }) => [`${a.estudiante_id}|${a.fecha}`, a.motivo]));
+  const dayIds = ['D', 'L', 'K', 'M', 'J', 'V', 'S'];
+  const out: Ausencia[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const r of as.data as any[]) {
+    const h = slot.get(`${r.seccion_id}|${dayIds[new Date(r.fecha + 'T12:00:00').getDay()]}|${r.leccion}`);
+    const docenteId = h?.docente_id ?? r.registrado_por ?? '';
+    if (soloDocente && docenteId !== soloDocente) continue;
+    out.push({
+      id: r.id,
+      estudiante: r.estudiante_id,
+      nombre: r.estudiantes?.nombre ?? '—',
+      seccion: r.secciones?.nombre ?? '—',
+      fecha: r.fecha,
+      leccion: r.leccion,
+      marca: r.marca,
+      materia: h?.materias?.nombre ?? '',
+      docenteId,
+      docente: h?.personal?.nombre ?? 'Sin docente asignado',
+      aviso: told.get(`${r.estudiante_id}|${r.fecha}`) ?? '',
+      nota: r.nota_justificacion ?? '',
+      vence: ultimoDia(r.fecha, cfg.diasDocente, cfg.noLectivos),
+      restan: diasRestantes(r.fecha, cfg.diasDocente, hoy, cfg.noLectivos),
+    });
+  }
+  return out;
+}
+
+export const fechaCorta = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' });
+
+/** "Vence mañana", "Quedan 3 días", "Venció el …". */
+export function plazoTexto(restan: number, vence: string) {
+  if (restan < 0) return `Venció el ${fechaCorta(vence)}`;
+  if (restan === 0) return 'Vence hoy';
+  if (restan === 1) return 'Vence mañana';
+  return `Quedan ${restan} días`;
+}
+
+/** Dirección reminds a teacher of the absences they still have to decide. Resolves to an error message, or '' when sent. */
+export async function recordarDocente(docente: string): Promise<string> {
+  const { error } = await supabase!.rpc('recordar_docente', { p_docente: docente });
+  return error?.message ?? '';
+}

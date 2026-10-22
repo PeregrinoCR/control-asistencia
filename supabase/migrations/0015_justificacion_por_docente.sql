@@ -242,7 +242,7 @@ begin
     group by p.usuario_id, p.telefono, p.colegio_id
   loop
     perform encolar(r.colegio_id, r.usuario_id, r.telefono, 'recordatorio', 'Ausencias por justificar',
-      'Le quedan 2 días hábiles para decidir ' || r.pendientes || ' ausencias de sus lecciones.', '/docente/pase-de-lista', false);
+      'Le quedan 2 días hábiles para decidir ' || r.pendientes || ' ausencias de sus lecciones.', '/docente/por-justificar', false);
     n := n + 1;
   end loop;
   return n;
@@ -270,3 +270,22 @@ from asistencia
 where fecha >= date_trunc('month', current_date)
 group by estudiante_id;
 grant select on asistencia_mes to authenticated;
+
+-- ---------- Dirección recuerda a un docente sus pendientes ----------
+create or replace function recordar_docente(p_docente uuid) returns integer language plpgsql security definer set search_path = public as $$
+declare
+  p personal;
+  pendientes integer;
+begin
+  if not tiene_permiso('approveJust') then raise exception 'Sin permiso.'; end if;
+  select * into p from personal where id = p_docente and colegio_id = mi_colegio();
+  if not found or p.usuario_id is null then raise exception 'Ese docente no tiene cuenta en la app.'; end if;
+  select count(*) into pendientes from asistencia a
+    where a.marca = 'A' and a.registrado_por = p.id
+      and dias_habiles(p.colegio_id, a.fecha, cr_hoy()) <= plazo_docente(p.colegio_id);
+  perform encolar(p.colegio_id, p.usuario_id, p.telefono, 'recordatorio', 'Ausencias por justificar',
+    'Dirección le recuerda decidir ' || pendientes || ' ausencias de sus lecciones.', '/docente/por-justificar', false);
+  return pendientes;
+end
+$$;
+grant execute on function recordar_docente(uuid) to authenticated;

@@ -60,6 +60,7 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   (cada minuto por pg_cron) envía push (claves VAPID en `ajustes_privados`) y SMS por "SMS Gateway for Android".
   App instalable (PWA: `public/manifest.webmanifest`, `public/sw.js`, `src/lib/push.ts`). Docentes ausentes con
   sustitutos (`coberturas`); logo en bucket `publico`; impresión/PDF con `src/lib/print.ts`. Piloto: un colegio.
+- Justificaciones (migración 0015, `src/lib/justificaciones.ts`): el docente decide cada ausencia de su lección (`ToJustify.tsx`, `/docente/por-justificar`); dirección supervisa y reabre vencidas con motivo (`Justifications.tsx`). Falta: que el usuario corra 0015 en Supabase antes de subir a `main`.
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Probar notificaciones en teléfonos reales (Android y iPhone instalada) y la línea SMS.
 - Cambiar horas de lecciones desde la app (hoy fijas en `SHIFT_BLOCKS`); firma dibujada en salidas y giras.

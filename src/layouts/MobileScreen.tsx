@@ -78,3 +78,22 @@ export function FamilyTabBar() {
     </nav>
   );
 }
+
+const TEACHER_TABS: Array<{ to: string; label: string; icon: IconName }> = [
+  { to: routes.teacher.rollCall, label: 'Lista', icon: 'check' },
+  { to: routes.teacher.toJustify, label: 'Por justificar', icon: 'fileCheck' },
+];
+
+/** Bottom bar of the teacher's app. */
+export function TeacherTabBar() {
+  return (
+    <nav aria-label="Navegación del docente" className="tab-bar" style={{ gridTemplateColumns: `repeat(${TEACHER_TABS.length}, minmax(0, 1fr))` }}>
+      {TEACHER_TABS.map((t) => (
+        <NavLink key={t.to} to={t.to} end className="tab-bar__item">
+          <Icon name={t.icon} size={22} />
+          {t.label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}

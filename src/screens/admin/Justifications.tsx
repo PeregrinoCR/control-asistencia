@@ -1,256 +1,188 @@
-import { useState } from 'react';
-import { Badge, Button, Icon, Segmented, StatusBadge, TextareaField } from '../../components';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button, EmptyState, InputField, Stat, useToast } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
-import { JUSTIFICATIONS, JUST_STATUS, type JustState, type Justification } from '../../data/admin';
+import { fechaCorta, type Ausencia, type JustifConfig } from '../../lib/justificaciones';
+import { LESSONS } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
+import { routes } from '../../routes';
 import { JustificationsLive } from './JustificationsLive';
 
-type Inbox = 'p' | 'a' | 'r';
+const lessonName = (n: number) => LESSONS[n - 1]?.name.replace(' lección', '') ?? `${n}.ª`;
 
-/** "Pendientes" also holds requests waiting for more information. */
-const inInbox = (state: JustState, inbox: Inbox) => (inbox === 'p' ? state === 'p' || state === 'i' : state === inbox);
-
-/** Dirección · Justificaciones */
+/** Dirección · Justificaciones: each teacher decides their lessons; dirección supervises and reopens the expired ones. */
 export function Justifications() {
-  return supabase ? <JustificationsLive /> : <JustificationsView items={JUSTIFICATIONS} />;
+  return supabase ? <JustificationsLive /> : <JustificationsView items={SAMPLE} rules={{ diasFamilia: 5, diasDocente: 10, noLectivos: [] }} onRemind={async () => ''} onReopen={async () => ''} />;
 }
 
 interface ViewProps {
-  items: Justification[];
-  /** Saves a decision; resolves to an error message, or '' when saved. Sample data omits it. */
-  onDecide?: (id: Justification['id'], state: JustState) => Promise<string>;
-  /** Shown instead of the list while loading or on errors. */
-  status?: string;
+  items: Ausencia[] | null;
+  rules: JustifConfig;
+  error?: string;
+  onRemind: (docenteId: string) => Promise<string>;
+  onReopen: (a: Ausencia, motivo: string) => Promise<string>;
 }
 
-export function JustificationsView({ items, onDecide, status }: ViewProps) {
-  const [overrides, setOverrides] = useState<Record<string, JustState>>({});
-  const [inbox, setInbox] = useState<Inbox>('p');
-  const [selectedId, setSelectedId] = useState<Justification['id'] | null>(null);
-  const [error, setError] = useState('');
+export function JustificationsView({ items, rules, error, onRemind, onReopen }: ViewProps) {
+  const flash = useToast();
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [problem, setProblem] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState('');
 
-  const stateOf = (j: Justification) => overrides[j.id] ?? j.state;
-  const list = items.filter((j) => inInbox(stateOf(j), inbox));
-  const count = (k: Inbox) => items.filter((j) => inInbox(stateOf(j), k)).length;
+  const open = (items ?? []).filter((a) => a.marca === 'A');
+  const expired = open.filter((a) => a.restan < 0);
+  const soon = open.filter((a) => a.restan >= 0 && a.restan <= 3);
+  const justified = (items ?? []).filter((a) => a.marca === 'J').length;
 
-  const d = items.find((j) => j.id === (selectedId ?? list[0]?.id)) ?? list[0];
-  const dState = d && stateOf(d);
-  const setState = async (v: JustState) => {
-    const before = dState;
-    setOverrides({ ...overrides, [d.id]: v });
-    const err = onDecide ? await onDecide(d.id, v) : '';
-    setError(err);
-    if (err) setOverrides((o) => ({ ...o, [d.id]: before }));
+  const byTeacher = useMemo(() => {
+    const m = new Map<string, { id: string; name: string; pending: number; soon: number; expired: number }>();
+    for (const a of open) {
+      const t = m.get(a.docenteId) ?? { id: a.docenteId, name: a.docente, pending: 0, soon: 0, expired: 0 };
+      if (a.restan < 0) t.expired++;
+      else {
+        t.pending++;
+        if (a.restan <= 3) t.soon++;
+      }
+      m.set(a.docenteId, t);
+    }
+    return [...m.values()].sort((x, y) => y.expired - x.expired || y.soon - x.soon || y.pending - x.pending);
+  }, [open]);
+
+  const remind = async (id: string, name: string) => {
+    const msg = await onRemind(id);
+    flash(msg ? `No se pudo avisar: ${msg}` : `Se le recordó a ${name}`);
   };
-  const resolved = dState === 'a' || dState === 'r';
+
+  const reopen = async (a: Ausencia) => {
+    const motivo = (reasons[a.id] ?? '').trim();
+    if (!motivo) return setProblem({ ...problem, [a.id]: 'Escriba el motivo de la excepción.' });
+    setBusy(a.id);
+    const msg = await onReopen(a, motivo);
+    setBusy('');
+    if (msg) return setProblem({ ...problem, [a.id]: msg });
+    flash('Ausencia justificada por excepción. Quedó en la bitácora.');
+  };
 
   return (
     <AdminLayout>
-      <PageHeader
-        kicker="Plazo para justificar: [N.º] días hábiles según el reglamento vigente"
-        title="Justificaciones"
-        actions={
-          <Segmented
-            label="Estado"
-            mode="tabs"
-            size="lg"
-            value={inbox}
-            onChange={(v) => {
-              setInbox(v);
-              setSelectedId(null);
-            }}
-            options={[
-              { value: 'p', label: `Pendientes · ${count('p')}` },
-              { value: 'a', label: `Aprobadas · ${count('a')}` },
-              { value: 'r', label: `Rechazadas · ${count('r')}` },
-            ]}
-          />
-        }
-      />
+      <PageHeader kicker="Cada docente decide las ausencias de sus lecciones; dirección supervisa" title="Justificaciones" />
 
-      {status ? (
-        <p className="text-sm muted">{status}</p>
+      {error ? (
+        <p className="text-sm ink-orange" role="alert">
+          No se pudieron cargar: {error}
+        </p>
+      ) : items === null ? (
+        <p className="text-sm muted">Cargando…</p>
       ) : (
-        <div className="split">
-          <section aria-label="Solicitudes" className="stack gap-8" style={{ flex: '1 1 340px', minWidth: 0 }}>
-            {list.map((j) => {
-              const on = j.id === d.id;
-              return (
-                <button
-                  key={j.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setSelectedId(j.id)}
-                  className="stack gap-6"
-                  style={{
-                    borderRadius: 'var(--radius-lg)',
-                    border: `1.5px solid ${on ? 'var(--blue)' : 'var(--border)'}`,
-                    background: on ? 'var(--blue-bg)' : 'var(--surface)',
-                    padding: 14,
-                    textAlign: 'left',
-                    color: 'var(--ink)',
-                  }}
-                >
-                  <span className="row between gap-8" style={{ width: '100%' }}>
-                    <span style={{ fontSize: 15, fontWeight: 700 }}>
-                      {j.name} · {j.section}
-                    </span>
-                    <span className="text-xs muted">{j.sent}</span>
-                  </span>
-                  <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>
-                    {j.kind} del {j.date} · {j.reason}
-                  </span>
-                  <span className="row wrap gap-6">
-                    <StatusBadge status={JUST_STATUS[stateOf(j)]} />
-                    <Badge tone="soft">{j.doc ? 'Con comprobante' : 'Sin comprobante'}</Badge>
-                  </span>
-                </button>
-              );
-            })}
-            {list.length === 0 && (
-              <div
-                className="card"
-                style={{
-                  borderStyle: 'dashed',
-                  borderColor: 'var(--border-input)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 24,
-                  textAlign: 'center',
-                  fontSize: 15,
-                  color: 'var(--muted)',
-                }}
-              >
-                No hay solicitudes en esta bandeja.
+        <div className="stack gap-18">
+          <section aria-label="Resumen" className="grid-tiles">
+            <Stat label="Sin justificar" value={open.length} note="Últimos 40 días" />
+            <Stat label="Justificadas" value={justified} ink="green" />
+            <Stat label="Vencen en 3 días" value={soon.length} ink={soon.length ? 'amber' : undefined} />
+            <Stat label="Vencidas" value={expired.length} ink={expired.length ? 'orange' : undefined} />
+          </section>
+
+          <section aria-labelledby="j-doc" className="card stack gap-10" style={{ padding: 20 }}>
+            <h2 id="j-doc" className="eyebrow" style={{ fontSize: 14 }}>
+              Por docente
+            </h2>
+            {byTeacher.length === 0 ? (
+              <EmptyState title="Todo al día">Ningún docente tiene ausencias sin decidir.</EmptyState>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Docente</th>
+                      <th className="num">Por decidir</th>
+                      <th className="num">Vencen pronto</th>
+                      <th className="num">Vencidas</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {byTeacher.map((t) => (
+                      <tr key={t.id || t.name}>
+                        <td className="strong">{t.name}</td>
+                        <td className="num">{t.pending}</td>
+                        <td className="num">{t.soon}</td>
+                        <td className="num">{t.expired > 0 ? <span className="ink-orange strong">{t.expired}</span> : 0}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          {t.pending > 0 && t.id && (
+                            <Button size="md" onClick={() => remind(t.id, t.name)}>
+                              Recordar
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>
 
-          {d && (
-            <section aria-labelledby="det-j" className="card split__main gap-18" style={{ padding: 22, flexBasis: 480 }}>
-              <div className="row wrap between gap-12" style={{ alignItems: 'flex-start' }}>
-                <div className="stack gap-4">
-                  <span className="eyebrow">{typeof d.id === 'number' ? `Solicitud J-2026-${400 + d.id}` : `Enviada ${d.sent}`}</span>
-                  <h2 id="det-j" className="display" style={{ fontSize: 26 }}>
-                    {d.name}
-                  </h2>
-                  <span className="muted" style={{ fontSize: 14 }}>
-                    Sección {d.section} · {d.minor ? 'menor de edad' : 'mayor de edad'}
-                  </span>
-                </div>
-                <StatusBadge status={JUST_STATUS[dState]} size="lg" />
+          {expired.length > 0 && (
+            <section aria-labelledby="j-venc" className="card stack gap-12" style={{ padding: 20 }}>
+              <div className="stack gap-4">
+                <h2 id="j-venc" className="eyebrow" style={{ fontSize: 14 }}>
+                  Vencidas: pueden reabrirse
+                </h2>
+                <span className="text-sm muted">Nadie las decidió a tiempo. Justificar una por excepción exige un motivo y queda en la bitácora.</span>
               </div>
-
-              <div className="grid-tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-                {[
-                  [d.kind, d.date],
-                  ['Lecciones afectadas', d.lessons],
-                  ['Motivo', d.reason],
-                  ['Enviada por', d.by],
-                ].map(([k, v]) => (
-                  <div key={k} className="card card--inset">
-                    <span className="text-xs muted" style={{ fontWeight: 600 }}>
-                      {k}
+              {expired.map((a) => (
+                <div key={a.id} className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 12 }}>
+                  <div className="stack gap-2">
+                    <strong style={{ fontSize: 15 }}>
+                      {a.nombre} · {a.seccion}
+                    </strong>
+                    <span className="text-sm muted">
+                      {a.materia || 'Lección'} · {lessonName(a.leccion)} · {fechaCorta(a.fecha)} · {a.docente} · venció el {fechaCorta(a.vence)}
+                      {a.aviso && ` · la familia avisó: ${a.aviso}`}
                     </span>
-                    <span style={{ fontSize: 15, fontWeight: 700 }}>{v}</span>
                   </div>
-                ))}
-              </div>
-
-              <div className="stack gap-6">
-                <h3 className="eyebrow" style={{ fontSize: 14 }}>
-                  Comentario
-                </h3>
-                <p style={{ fontSize: 16, lineHeight: 1.5, color: 'var(--ink-2)' }}>{d.comment}</p>
-              </div>
-
-              <div className="stack gap-6">
-                <h3 className="eyebrow" style={{ fontSize: 14 }}>
-                  Comprobante
-                </h3>
-                {d.doc ? (
-                  <div className="row gap-12" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
-                    <span
-                      style={{
-                        width: 44,
-                        height: 54,
-                        borderRadius: 6,
-                        background: 'var(--blue-bg)',
-                        color: 'var(--blue)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon name="file" size={22} />
-                    </span>
-                    <span className="stack grow">
-                      <span style={{ fontSize: 15, fontWeight: 700 }}>{d.doc}</span>
-                      <span className="text-sm muted">Adjuntado desde la app</span>
-                    </span>
-                    {!onDecide && (
-                      <a href={`#comprobante-${d.id}`} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                        Abrir
-                      </a>
-                    )}
-                  </div>
-                ) : (
-                  <span className="muted" style={{ fontSize: 15 }}>
-                    No adjuntó comprobante.
-                  </span>
-                )}
-              </div>
-
-              {resolved ? (
-                <div className="row wrap between gap-10" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 16 }}>
-                  <span style={{ fontSize: 15, color: 'var(--ink-2)' }}>
-                    {dState === 'a'
-                      ? `Aprobada. La ausencia quedó como justificada y se avisó a ${d.minor ? 'la familia.' : 'el estudiante.'}`
-                      : 'Rechazada. Se notificó el motivo y la ausencia sigue injustificada.'}
-                  </span>
-                  <Button size="md" onClick={() => setState('p')}>
-                    Volver a pendiente
-                  </Button>
-                </div>
-              ) : (
-                <div className="stack gap-10" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 16 }}>
-                  {!onDecide && (
-                    <TextareaField
-                      id="j-nota"
-                      rows={2}
-                      label={<span style={{ fontSize: 14 }}>Nota para la familia</span>}
-                      hint="opcional"
-                      placeholder="Ej.: Aprobada. Recuerde coordinar con la docente la prueba pendiente."
-                      style={{ borderRadius: 'var(--radius-md)', resize: 'none' }}
-                    />
-                  )}
-                  <div className="row wrap gap-8" style={{ justifyContent: 'flex-end' }}>
-                    <Button size="lg" onClick={() => setState('i')}>
-                      Pedir más información
-                    </Button>
-                    <Button variant="danger-outline" size="lg" onClick={() => setState('r')}>
-                      Rechazar
-                    </Button>
-                    <Button variant="primary" size="lg" style={{ padding: '0 20px' }} onClick={() => setState('a')}>
-                      Aprobar justificación
+                  <div className="row wrap gap-8" style={{ alignItems: 'flex-end' }}>
+                    <div style={{ flex: '1 1 260px' }}>
+                      <InputField
+                        id={`mot-${a.id}`}
+                        label={<span style={{ fontSize: 14 }}>Motivo de la excepción</span>}
+                        value={reasons[a.id] ?? ''}
+                        onChange={(e) => setReasons({ ...reasons, [a.id]: e.target.value })}
+                        error={problem[a.id]}
+                      />
+                    </div>
+                    <Button variant="primary" size="lg" disabled={busy === a.id} onClick={() => reopen(a)}>
+                      Justificar por excepción
                     </Button>
                   </div>
-                  <span className="text-sm muted">
-                    {onDecide
-                      ? 'La decisión queda guardada. El aviso a la familia se enviará cuando se activen las notificaciones.'
-                      : 'Al resolver, la familia recibe un aviso y la ausencia se actualiza en el registro del docente.'}
-                  </span>
                 </div>
-              )}
-              {error && (
-                <span role="alert" className="text-sm ink-orange">
-                  No se guardó: {error}
-                </span>
-              )}
+              ))}
             </section>
           )}
+
+          <section className="card row wrap between gap-10" style={{ padding: '12px 20px' }}>
+            <span className="text-sm">
+              Plazos vigentes: la familia tiene <strong>{rules.diasFamilia} días hábiles</strong> para presentar el comprobante en papel; el docente,{' '}
+              <strong>{rules.diasDocente} días hábiles</strong> para decidir.
+            </span>
+            <Link to={routes.admin.settings} className="link-button text-sm strong">
+              Cambiar en Configuración ›
+            </Link>
+          </section>
         </div>
       )}
     </AdminLayout>
   );
 }
+
+const mk = (id: string, nombre: string, seccion: string, docente: string, restan: number, extra: Partial<Ausencia> = {}): Ausencia => ({
+  id, estudiante: id, nombre, seccion, fecha: '2026-10-07', leccion: 3, marca: 'A', materia: 'Inglés', docenteId: docente, docente, aviso: '', nota: '', vence: '2026-10-21', restan, ...extra,
+});
+const SAMPLE: Ausencia[] = [
+  mk('1', 'Daniel Gamboa Solano', '10-2', 'Karla Montero', -1, { aviso: 'Cita médica' }),
+  mk('2', 'Sofía Brenes Quesada', '8-1', 'Karla Montero', -1),
+  mk('3', 'Gabriel Núñez Porras', '10-2', 'Andrea Solís', 1, { materia: 'Matemática' }),
+  mk('4', 'Mateo Brenes Quesada', '10-2', 'Andrea Solís', 8, { materia: 'Matemática' }),
+  mk('5', 'Carlos Rojas Mena', '9-1', 'Ricardo Mora', 2, { materia: 'Biología' }),
+  mk('6', 'Valeria Araya Mora', '10-2', 'Andrea Solís', 7, { materia: 'Matemática', marca: 'J' }),
+];

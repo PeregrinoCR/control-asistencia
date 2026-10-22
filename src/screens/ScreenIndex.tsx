@@ -6,6 +6,7 @@ const GROUPS = [
     title: 'App móvil: docentes y familias',
     links: [
       { to: routes.teacher.rollCall, role: 'Docente', label: 'Pase de lista' },
+      { to: routes.teacher.toJustify, role: 'Docente', label: 'Por justificar' },
       { to: routes.family.push, role: 'Padre', label: 'Notificación instantánea' },
       { to: routes.family.home, role: 'Padre', label: 'Inicio' },
       { to: routes.family.justify, role: 'Padre', label: 'Justificar ausencia' },
