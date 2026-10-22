@@ -56,11 +56,14 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
       .then(({ data }) => setSaved(data as Saved | null));
   }, [kid, date]);
 
+  // Field errors only appear after the first try to send.
+  const [tried, setTried] = useState(false);
   const ready = accepted && signed && (way === 'alone' || (pickupName.trim() && pickupId.trim()));
   const hourLabel = `${EXIT_HOURS[hour]} p. m.`;
   const signedAt = new Date().toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' });
 
   const submit = async () => {
+    if (!ready) setTried(true);
     if (!ready) return setError('Complete quién lo retira, acepte el descargo y firme para enviar la autorización.');
     setBusy(true);
     const { data, error } = await supabase!
@@ -203,37 +206,38 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
               ))}
               {way === 'pickup' && (
                 <div className="grid-2" style={{ paddingTop: 4 }}>
-                  <InputField id="s-quien" touch label={smallLabel('Nombre de quien retira')} style={inputStyle} value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
-                  <InputField id="s-qced" touch label={smallLabel('Cédula')} style={inputStyle} value={pickupId} onChange={(e) => setPickupId(e.target.value)} />
+                  <InputField id="s-quien" touch label={smallLabel('Nombre de quien retira')} error={tried && !pickupName.trim() ? 'Escriba el nombre' : undefined} style={inputStyle} value={pickupName} onChange={(e) => setPickupName(e.target.value)} />
+                  <InputField id="s-qced" touch label={smallLabel('Cédula')} error={tried && !pickupId.trim() ? 'Escriba la cédula' : undefined} style={inputStyle} value={pickupId} onChange={(e) => setPickupId(e.target.value)} />
                 </div>
               )}
             </fieldset>
 
             <div className="stack gap-8">
               <h2 style={{ fontSize: 16, fontWeight: 700 }}>Descargo de responsabilidad</h2>
-              <div
-                className="stack gap-8"
-                tabIndex={0}
-                aria-label="Texto del descargo"
-                style={{ maxHeight: 170, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 14px', fontSize: 14, lineHeight: 1.55, color: 'var(--ink-2)' }}
-              >
+              <div className="stack gap-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 14px', fontSize: 15, lineHeight: 1.5, color: 'var(--ink-2)' }}>
                 <p>
-                  Yo, <strong>{me.name}</strong>
-                  {me.idNumber && `, cédula ${me.idNumber}`}, encargado(a) legal de <strong>{kid.name}</strong>, estudiante de la
-                  sección {kid.section}, solicito y autorizo su salida del {school?.nombre} el {longDay(date)} a las{' '}
-                  <strong>{hourLabel}</strong>, antes de que finalice la jornada.
+                  Yo, <strong>{me.name}</strong>, encargado(a) legal de <strong>{kid.name}</strong>, autorizo su salida del{' '}
+                  {school?.nombre} el {longDay(date)} a las <strong>{hourLabel}</strong> y asumo la responsabilidad por su seguridad desde que salga.
                 </p>
-                <p>
-                  {way === 'pickup'
-                    ? 'El estudiante será retirado en el portón por la persona adulta indicada en este formulario, quien deberá identificarse con su cédula.'
-                    : 'Autorizo expresamente que el estudiante se retire solo, por sus propios medios, sin acompañamiento de una persona adulta.'}
-                </p>
-                <p>
-                  Desde el momento en que el estudiante salga de la institución, asumo la responsabilidad por su seguridad y
-                  traslado, y libero al colegio, a su personal docente, administrativo y de seguridad de toda
-                  responsabilidad por lo que ocurra fuera de sus instalaciones.
-                </p>
-                <p>Declaro que la información de este formulario es verdadera.</p>
+                <details className="full-text">
+                  <summary>Ver el texto completo</summary>
+                  <div className="stack gap-8" style={{ paddingTop: 8 }}>
+                    <p>
+                      {me.idNumber && `Cédula ${me.idNumber}. `}Solicito su salida antes de que finalice la jornada.
+                    </p>
+                    <p>
+                      {way === 'pickup'
+                        ? 'El estudiante será retirado en el portón por la persona adulta indicada en este formulario, quien deberá identificarse con su cédula.'
+                        : 'Autorizo expresamente que el estudiante se retire solo, por sus propios medios, sin acompañamiento de una persona adulta.'}
+                    </p>
+                    <p>
+                      Desde el momento en que el estudiante salga de la institución, asumo la responsabilidad por su seguridad y
+                      traslado, y libero al colegio, a su personal docente, administrativo y de seguridad de toda
+                      responsabilidad por lo que ocurra fuera de sus instalaciones.
+                    </p>
+                    <p>Declaro que la información de este formulario es verdadera.</p>
+                  </div>
+                </details>
               </div>
               <CheckCard
                 strong
@@ -265,6 +269,11 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
             {error && (
               <span className="form-error" role="alert">
                 {error}
+              </span>
+            )}
+            {!ready && (
+              <span className="text-sm muted" style={{ textAlign: 'center' }}>
+                Falta: {[way === 'pickup' && !(pickupName.trim() && pickupId.trim()) && 'quién retira', !accepted && 'aceptar el descargo', !signed && 'firmar'].filter(Boolean).join(' · ')}
               </span>
             )}
             <Button variant="primary" size="xl" ready={!!ready} disabled={busy} onClick={submit}>

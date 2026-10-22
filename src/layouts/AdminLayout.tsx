@@ -7,7 +7,7 @@ import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
-type MenuLink = { to: string; label: string; perm: PermissionId; count?: { n: number; tone: 'blue' | 'orange' } };
+type MenuLink = { to: string; label: string; perm: PermissionId | PermissionId[]; count?: { n: number; tone: 'blue' | 'orange' } };
 
 /** The menu, by what the staff does with each page: day to day, the school year, families, administration. */
 const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
@@ -17,7 +17,6 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
       { to: routes.admin.today, label: 'Hoy', perm: 'viewAttendance' },
       { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', perm: 'teacherAbs', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
       { to: routes.admin.justifications, label: 'Justificaciones', perm: 'approveJust', count: { n: navCounts.justifications, tone: 'orange' } },
-      { to: routes.admin.trips, label: 'Giras y salidas', perm: 'trips', count: { n: navCounts.trips, tone: 'blue' } },
     ],
   },
   {
@@ -32,7 +31,7 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
   {
     title: 'Familias',
     links: [
-      { to: routes.admin.exits, label: 'Salidas tempranas', perm: 'approveExit' },
+      { to: routes.admin.trips, label: 'Giras y salidas', perm: ['trips', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
       { to: routes.admin.notices, label: 'Avisos a familias', perm: 'notices' },
       { to: routes.admin.earlyWarning, label: 'Alerta temprana', perm: 'earlyWarning', count: { n: navCounts.earlyWarning, tone: 'orange' } },
     ],
@@ -47,14 +46,13 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
 ];
 
 /** The permission each page needs. Pages not in the menu (Configuración) are included too. */
-const PAGE_PERMS: Array<[string, PermissionId]> = [
+const PAGE_PERMS: Array<[string, PermissionId | PermissionId[]]> = [
   [routes.admin.today, 'viewAttendance'],
   [routes.admin.schedules, 'assign'],
   [routes.admin.rooms, 'assign'],
-  [routes.admin.exits, 'approveExit'],
   [routes.admin.teacherAbsences, 'teacherAbs'],
   [routes.admin.examCare, 'assign'],
-  [routes.admin.trips, 'trips'],
+  [routes.admin.trips, ['trips', 'approveExit']],
   [routes.admin.students, 'viewAttendance'],
   [routes.admin.justifications, 'approveJust'],
   [routes.admin.notices, 'notices'],
@@ -95,13 +93,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   if (supabase && school && !hasPanel(roles)) return <Navigate to={homeFor(roles, family)} replace />;
 
   // The menu shows only the pages this person can use (the preview without a server shows them all).
-  const allowed = (perm: PermissionId) => !supabase || perms.includes(perm);
+  const allowed = (perm: PermissionId | PermissionId[]) => !supabase || [perm].flat().some((p) => perms.includes(p));
   const visibleGroups = GROUPS.map((g) => ({ ...g, links: g.links.filter((l) => allowed(l.perm)) })).filter((g) => g.links.length > 0);
   const visibleQuick = QUICK.filter((q) => allowed(q.perm));
 
   // Each page needs its permission, so a typed address can't open a module that wasn't assigned.
   const page = PAGE_PERMS.find(([to]) => (to === routes.admin.today ? pathname === to : pathname === to || pathname.startsWith(to + '/')));
-  if (supabase && page && !perms.includes(page[1])) {
+  if (supabase && page && !allowed(page[1])) {
     const first = visibleGroups[0]?.links[0]?.to;
     if (first) return <Navigate to={first} replace />;
     return (

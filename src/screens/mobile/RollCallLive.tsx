@@ -303,7 +303,7 @@ export function RollCallLive() {
               </div>
             ) : (
               <p className="text-sm muted" style={{ textAlign: 'center' }}>
-                {unmarked > 0 ? `Faltan ${unmarked} por marcar. ` : ''}Los avisos a las familias se activarán más adelante.
+                {unmarked > 0 ? `Faltan ${unmarked} por marcar. ` : ''}Al guardar se avisa al encargado de cada menor ausente o tarde.
               </p>
             )}
             <Button variant="primary" size="xl" onClick={save} disabled={state === 'saving' || list.length === 0}>

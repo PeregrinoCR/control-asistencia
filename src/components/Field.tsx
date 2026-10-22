@@ -7,15 +7,29 @@ interface FieldProps {
   hint?: string;
   /** Mobile forms use larger labels and touch-sized inputs. */
   touch?: boolean;
+  /** Message shown right under the field; also marks it invalid for screen readers. */
+  error?: string;
 }
 
 type InputFieldProps = FieldProps & InputHTMLAttributes<HTMLInputElement>;
 
-export function InputField({ id, label, hint, touch, className, type = 'text', ...rest }: InputFieldProps) {
+export function InputField({ id, label, hint, touch, error, className, type = 'text', ...rest }: InputFieldProps) {
   return (
     <div className="field">
       <FieldLabel id={id} label={label} hint={hint} />
-      <input id={id} type={type} className={cx('input', touch && 'input--touch', className)} {...rest} />
+      <input
+        id={id}
+        type={type}
+        className={cx('input', touch && 'input--touch', error && 'input--invalid', className)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-err` : undefined}
+        {...rest}
+      />
+      {error && (
+        <span id={`${id}-err`} className="field__error" role="alert">
+          {error}
+        </span>
+      )}
     </div>
   );
 }

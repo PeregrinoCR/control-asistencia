@@ -55,7 +55,7 @@ function AssignmentsSample() {
       </section>
 
       <div className="split">
-        <section aria-labelledby="sec-t" className="card gap-8" style={{ flex: '1 1 280px', minWidth: 0 }}>
+        <section aria-labelledby="sec-t" className="card gap-8" style={{ flex: '1 1 380px', minWidth: 0 }}>
           <div className="row between" style={{ alignItems: 'baseline' }}>
             <h2 id="sec-t" className="title-section">
               Secciones
@@ -88,7 +88,7 @@ function AssignmentsSample() {
                 <span className="stack grow">
                   <span style={{ fontSize: 14, fontWeight: 600 }}>Guía: {s.guide}</span>
                   <span className="text-xs muted">
-                    {s.students} estudiantes · {s.minors} menores de edad
+                    {s.students} estudiantes · {s.minors} menores
                   </span>
                 </span>
                 <Badge tone={missing ? 'orange' : 'green'}>{missing ? `${missing} sin profesor` : 'Completa'}</Badge>

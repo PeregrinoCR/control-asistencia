@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, InputField, StatusBadge, Switch } from '../../components';
+import { Badge, Button, InputField, StatusBadge, Switch, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { ABSENCE_REASONS, COVERAGE, type Coverage } from '../../data/teacherAbsences';
 import { SCHOOL_DAYS } from '../../data/schedule';
@@ -40,7 +40,7 @@ export function TeacherAbsencesLive() {
   const [reason, setReason] = useState(ABSENCE_REASONS[0]);
   const [plan, setPlan] = useState<Plan>({});
   const [earlyExit, setEarlyExit] = useState(true);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
   const day = dayOf(date);
 

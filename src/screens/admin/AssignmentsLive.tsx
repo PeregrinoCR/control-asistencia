@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties, type DragEvent, type FormEvent } from 'react';
-import { Button, InputField, Meter } from '../../components';
+import { Button, InputField, Meter, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { useAuth } from '../../lib/auth';
@@ -50,7 +50,7 @@ export function AssignmentsLive() {
   const [picked, setPicked] = useState<string | null>(null);
   const [focusTeacher, setFocusTeacher] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {

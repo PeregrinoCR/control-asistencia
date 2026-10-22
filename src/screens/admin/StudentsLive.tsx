@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Avatar, Button, CheckCard, Icon, InputField, MiniStat, Segmented } from '../../components';
+import { Avatar, Button, CheckCard, Icon, InputField, MiniStat, Segmented, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import QRCode from 'qrcode';
 import { CARD_PREFIX } from '../../data/gate';
@@ -222,7 +222,7 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
   const adult = isAdult(s);
   const { school } = useAuth();
   const [editing, setEditing] = useState<Editing>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [sinCarne, setSinCarne] = useState(false);
   const [linking, setLinking] = useState(false);
   const [pickId, setPickId] = useState('');
@@ -260,7 +260,7 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
   const guardian = s.guardians.find((g) => g.id === guardianId);
 
   return (
-    <aside aria-labelledby="ficha-t" className="card split__side gap-16" style={{ padding: 20 }}>
+    <aside aria-labelledby="ficha-t" className="card split__side split__side--sticky gap-16" style={{ padding: 20 }}>
       <div className="row gap-14">
         <Avatar name={s.name} size="lg" tone="blue" />
         <div className="stack grow">
@@ -503,7 +503,7 @@ function GuardianForm({ g, onSave, onCancel }: { g?: LiveStudent['guardians'][nu
     >
       <h3 className="title-section">{g ? 'Editar encargado' : 'Agregar encargado'}</h3>
       {!g && <span className="text-xs muted">Si ya está registrado (por ejemplo, por un hermano), se reutiliza por su cédula o teléfono.</span>}
-      <InputField id="g-nombre" label="Nombre completo" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+      <InputField id="g-nombre" label="Nombre completo" error={error === 'Escriba el nombre.' ? error : undefined} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
       <div className="grid-2">
         <InputField id="g-cedula" label="Cédula" value={f.idNumber} onChange={(e) => setF({ ...f, idNumber: e.target.value })} />
         <InputField id="g-par" label="Parentesco" placeholder="madre, padre…" value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })} />
@@ -513,7 +513,7 @@ function GuardianForm({ g, onSave, onCancel }: { g?: LiveStudent['guardians'][nu
         <InputField id="g-correo" label="Correo" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
       </div>
       {g?.hasAccount && <span className="text-xs muted">Ya usa la app: si cambia el correo aquí, sigue entrando con el correo de su cuenta.</span>}
-      {error && (
+      {error && error !== 'Escriba el nombre.' && (
         <span className="text-sm ink-orange" role="alert">
           {error}
         </span>
@@ -540,7 +540,7 @@ const EMPTY: NewStudent = {
 function AddPanel({ data, onClose }: { data: Students; onClose: () => void }) {
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const g = form.guardian!;
   const set = (patch: Partial<NewStudent>) => setForm({ ...form, ...patch });
   const setG = (patch: Partial<typeof g>) => setForm({ ...form, guardian: { ...g, ...patch } });

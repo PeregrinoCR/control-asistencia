@@ -81,10 +81,10 @@ p {
   color: var(--muted);
 }
 .text-sm {
-  font-size: 13px;
+  font-size: 14px;
 }
 .text-xs {
-  font-size: 12px;
+  font-size: 13px;
 }
 .tabular {
   font-variant-numeric: tabular-nums;
@@ -151,7 +151,7 @@ p {
 
 .grid-tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
 }
 .grid-2 {
@@ -601,7 +601,8 @@ p {
 }
 .stat__value {
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: clamp(26px, 7vw, 34px);
+  line-height: 1.1;
   font-weight: 700;
 }
 .stat__note {
@@ -690,6 +691,7 @@ p {
 }
 .table tr[aria-selected='true'] {
   background: var(--blue-bg);
+  box-shadow: inset 4px 0 0 var(--blue);
 }
 .table tr[data-tone='rest'] {
   background: var(--bg);
@@ -946,4 +948,165 @@ p {
 /* A card laid out horizontally */
 .card.row {
   flex-direction: row;
+}
+
+/* ---------- Accessibility ---------- */
+
+/* Visible keyboard focus everywhere (the browser default is removed by resets on some controls). */
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+.btn--primary:focus-visible,
+.mark-btn[aria-pressed='true']:focus-visible {
+  outline-color: var(--ink);
+}
+
+/* On touch screens every control is at least 44px tall. */
+@media (pointer: coarse) {
+  .btn--sm,
+  .btn--md,
+  .chip,
+  .chip--sm,
+  .segmented__item {
+    min-height: 44px;
+  }
+  .link-button {
+    min-height: 44px;
+    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Tables as cards on phones ---------- */
+
+@media (max-width: 640px) {
+  .table--cards {
+    min-width: 0 !important;
+  }
+  .table--cards thead {
+    display: none;
+  }
+  .table--cards,
+  .table--cards tbody {
+    display: block;
+  }
+  .table--cards tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px 8px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .table--cards td {
+    padding: 0;
+    border: 0;
+    text-align: left !important;
+  }
+  /* First cell is the title of the card; the last cells are labelled numbers. */
+  .table--cards td:first-child {
+    grid-column: 1 / -1;
+    font-size: 16px;
+  }
+  .table--cards td[data-wide] {
+    grid-column: 1 / -1;
+  }
+  .table--cards td[data-label]:not(:first-child):not([data-wide])::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+}
+
+.notice--pending {
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+}
+
+/* Detail panels beside a long list stay in view while the list scrolls (wide screens only). */
+@media (min-width: 1024px) {
+  .split__side--sticky {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+/* ---------- Toast, empty state, field error ---------- */
+
+.toast-region {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 96px;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 16px;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--ink);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: rgba(23, 34, 46, 0.25) 0 8px 24px;
+  animation: toast-in 0.2s ease-out;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 0;
+}
+.empty-state__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--neutral-bg);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-state__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+.empty-state .btn {
+  margin-top: 6px;
+}
+
+.field__error {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange-ink);
+}
+.input--invalid {
+  border-color: var(--orange);
 }

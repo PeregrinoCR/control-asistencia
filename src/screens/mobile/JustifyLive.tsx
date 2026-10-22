@@ -146,6 +146,11 @@ function Justify({ f }: { f: FamilyCtx }) {
                 {error}
               </span>
             )}
+            {!marks && (
+              <span className="text-sm muted" style={{ textAlign: 'center' }}>
+                Cargando el registro de ese día…
+              </span>
+            )}
             <Button variant="primary" size="xl" block disabled={busy || !marks} onClick={send}>
               {busy ? 'Enviando…' : 'Enviar justificación'}
             </Button>

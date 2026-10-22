@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch } from '../../components';
+import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch, useToast } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { LESSONS } from '../../lib/schedule';
 import { useAuth } from '../../lib/auth';
@@ -77,6 +77,7 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | RoleId>('all');
   const [selectedId, setSelectedId] = useState<User['id'] | 'new'>(staff.live ? (users[0]?.id ?? 'new') : 2);
+  const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const sections = staff.live ? staff.sections : SECTION_IDS;
@@ -93,10 +94,10 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
   };
 
   const save = async () => {
-    if (!staff.live || !selected) return setSaved(true);
+    if (!staff.live || !selected) return toast('Cambios guardados');
     const error = await staff.save(selected);
     setSaveError(error);
-    setSaved(!error);
+    if (!error) toast('Cambios guardados');
   };
 
   // Removes the selected person from the staff; the list falls back to the first remaining one.
@@ -365,11 +366,16 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
             Sin roles, esta persona solo tendrá los permisos extra.
           </span>
         )}
-        {PERMISSION_GROUPS.map((g) => (
-          <div key={g.id} className="stack">
-            <span className="text-xs strong muted" style={{ padding: '8px 0 2px', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-              {g.label}
-            </span>
+        {PERMISSION_GROUPS.map((g) => {
+          const active = g.permissions.filter((p) => all.has(p.id)).length;
+          return (
+          <details key={g.id} className="perm-group" open={active > 0}>
+            <summary className="perm-group__head">
+              <span>{g.label}</span>
+              <span className="perm-group__count" data-on={active > 0}>
+                {active} de {g.permissions.length}
+              </span>
+            </summary>
             {g.permissions.map((p) => {
               const byRole = fromRoles.has(p.id);
               const has = all.has(p.id);
@@ -395,8 +401,9 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
                 </label>
               );
             })}
-          </div>
-        ))}
+          </details>
+          );
+        })}
       </div>
 
       <div className="row wrap between gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>

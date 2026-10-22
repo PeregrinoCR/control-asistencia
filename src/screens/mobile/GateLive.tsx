@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Avatar, Badge, Button, Icon, QrScanner, Segmented, type IconName } from '../../components';
+import { Avatar, Badge, Button, EmptyState, Icon, QrScanner, Segmented, type IconName } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
 import { cardCode, checkCard, type GateMode, type GateResult, type StudentCard } from '../../data/gate';
 import { homeFor, signOut, useAuth } from '../../lib/auth';
@@ -53,6 +53,8 @@ export function GateLive() {
       db.from('porton').select('tipo, cuando, estudiantes(nombre, secciones(nombre))').gte('cuando', start).order('cuando', { ascending: false }).limit(20),
       db.from('salidas').select('id, estudiante_id, hora, modo, retira_nombre, salio, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
     ]);
+    // A failed refresh (no signal) keeps the lists the guard already sees instead of emptying them.
+    if (p.error || s.error) return;
     setLog(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ((p.data ?? []) as any[]).map((r) => ({ name: r.estudiantes?.nombre ?? '', section: r.estudiantes?.secciones?.nombre ?? '', mode: r.tipo, time: clock(new Date(r.cuando)) })),
@@ -80,6 +82,18 @@ export function GateLive() {
       .maybeSingle()
       .then(({ data }) => setMe(data?.id ?? null));
     loadLists();
+    // Direction can authorize an exit while this screen is open: refresh every minute, and at once when the phone wakes up.
+    const timer = setInterval(() => {
+      if (!document.hidden) loadLists();
+    }, 60_000);
+    const onVisible = () => {
+      if (!document.hidden) loadLists();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [session, loadLists]);
 
   /** Saves the entry or exit, and marks an authorized early exit as used. */
@@ -128,6 +142,8 @@ export function GateLive() {
     }
     const r = checkCard(code, mode, shiftMinutes(), card ? [card] : []);
     setResult({ ...r, studentId: st?.id, exitId });
+    // Short buzz on a phone: one pulse is fine, two mean stop.
+    navigator.vibrate?.(r.kind === 'ok' ? 80 : [200, 100, 200]);
     // A pickup by an adult waits for the guard to check the ID; everything else is saved at once.
     if (r.kind === 'ok' && st) record(st.id, exitId);
   };
@@ -208,9 +224,9 @@ export function GateLive() {
 
         {result && (
           <section className="gate-result" data-kind={result.kind} role="status" aria-live="assertive">
-            <div className="row gap-12">
+            <div className="stack gap-12">
               <span className="gate-result__icon">
-                <Icon name={RESULT_ICON[result.kind]} size={24} strokeWidth={2.4} />
+                <Icon name={RESULT_ICON[result.kind]} size={40} strokeWidth={2.6} />
               </span>
               <span className="gate-result__title">{result.title}</span>
             </div>
@@ -218,14 +234,14 @@ export function GateLive() {
               <div className="row gap-10">
                 <Avatar name={result.card.name} />
                 <span className="stack">
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>{result.card.name}</span>
-                  <span className="text-sm" style={{ color: 'var(--ink-2)' }}>
+                  <span className="gate-result__name">{result.card.name}</span>
+                  <span style={{ fontSize: 16, color: 'var(--ink-2)' }}>
                     Sección {result.card.section} · {result.card.age} años
                   </span>
                 </span>
               </div>
             )}
-            <p style={{ fontSize: 15, lineHeight: 1.45, color: 'var(--ink-2)' }}>{result.detail}</p>
+            <p className="gate-result__detail">{result.detail}</p>
             {result.kind === 'warn' && (
               <Button
                 variant="dark"
@@ -238,6 +254,9 @@ export function GateLive() {
                 {result.confirm}
               </Button>
             )}
+          <Button variant="secondary" size="xl" onClick={() => setResult(null)}>
+              {result.kind === 'warn' ? 'Cancelar' : 'Listo · siguiente carné'}
+            </Button>
           </section>
         )}
 
@@ -245,7 +264,7 @@ export function GateLive() {
           <h2 id="sal-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Salidas autorizadas hoy
           </h2>
-          {exits.length === 0 && <span className="text-sm muted">Ninguna por ahora.</span>}
+          {exits.length === 0 && <EmptyState title="Ninguna salida autorizada">Las familias la piden desde su app; aparecerá aquí.</EmptyState>}
           {exits.map((x) => (
             <div key={x.id} className="list-row" style={{ padding: '8px 0' }}>
               <span className="stack grow">
@@ -263,7 +282,7 @@ export function GateLive() {
           <h2 id="log-t" style={{ fontSize: 16, fontWeight: 700 }}>
             Últimos registros
           </h2>
-          {log.length === 0 && <span className="text-sm muted">Sin registros hoy.</span>}
+          {log.length === 0 && <EmptyState title="Aún no hay registros hoy">Escanee un carné para empezar.</EmptyState>}
           {log.map((l, i) => (
             <div key={i} className="list-row" style={{ padding: '8px 0' }}>
               <span className="stack grow">
@@ -279,7 +298,7 @@ export function GateLive() {
           ))}
         </section>
         <span className="text-xs muted" style={{ textAlign: 'center' }}>
-          Hora actual {clock()}
+          Hora actual {clock()} · las listas se actualizan solas cada minuto
         </span>
       </div>
     </MobileScreen>

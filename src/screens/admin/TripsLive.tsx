@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Badge, Button, InputField, Segmented, StatusBadge } from '../../components';
+import { Button, InputField, Segmented, StatusBadge } from '../../components';
+import { useLocation } from 'react-router-dom';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
+import { ExitRequests } from './ExitRequests';
 import { CONSENT_STATUS, PAYMENT_STATUS, type ConsentState, type PaymentState } from '../../data/admin';
 import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
@@ -59,7 +61,6 @@ interface ExitRow {
 }
 
 const longDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long' });
-const time = (t: string) => new Date(t).toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit' });
 
 /** Opens an uploaded receipt through a short-lived private link. */
 async function openFile(path: string) {
@@ -69,7 +70,11 @@ async function openFile(path: string) {
 
 /** Dirección · Giras y salidas tempranas, with the school's real trips and exits. */
 export function TripsLive() {
-  const [tab, setTab] = useState<Tab>('trip');
+  const { perms } = useAuth();
+  const canTrips = perms.includes('trips');
+  const fromLink = new URLSearchParams(useLocation().search).get('ver') === 'salidas';
+  const [tab, setTab] = useState<Tab>(fromLink || !canTrips ? 'exits' : 'trip');
+  const [pending, setPending] = useState(0);
   const [sections, setSections] = useState<Array<{ id: string; nombre: string }>>([]);
   const [trips, setTrips] = useState<Trip[] | null>(null);
   const [tripId, setTripId] = useState<string | 'new' | null>(null);
@@ -80,13 +85,15 @@ export function TripsLive() {
 
   const load = useCallback(async () => {
     const db = supabase!;
-    const [s, t, g, x, p] = await Promise.all([
+    const [s, t, g, x, p, q] = await Promise.all([
       db.from('secciones').select('id, nombre').order('nombre'),
       db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, secciones, telefono_pago, organizador_id').gte('fecha', today).order('fecha'),
       db.from('encargados').select('usuario_id, nombre').not('usuario_id', 'is', null),
       db.from('salidas').select('id, hora, modo, motivo, retira_nombre, comprobante, salio, autorizado_por, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
       db.from('personal').select('id, nombre').eq('activo', true).order('nombre'),
+      db.from('salidas').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
     ]);
+    setPending(q.count ?? 0);
     setStaff(p.data ?? []);
     const gmap = new Map((g.data ?? []).map((r) => [r.usuario_id as string, r.nombre as string]));
     setGuardians(gmap);
@@ -121,6 +128,7 @@ export function TripsLive() {
         kicker="Autorizaciones firmadas por encargados legales de menores de edad"
         title="Giras y salidas tempranas"
         actions={
+          canTrips && (
           <Button
             variant="primary"
             onClick={() => {
@@ -130,6 +138,7 @@ export function TripsLive() {
           >
             Nueva gira
           </Button>
+          )
         }
       />
 
@@ -140,8 +149,8 @@ export function TripsLive() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'trip', label: `Giras · ${trips?.length ?? 0} próximas` },
-          { value: 'exits', label: `Salidas tempranas · hoy ${exits?.length ?? 0}` },
+          ...(canTrips ? [{ value: 'trip' as const, label: `Giras · ${trips?.length ?? 0} próximas` }] : []),
+          { value: 'exits' as const, label: `Salidas tempranas · hoy ${exits?.length ?? 0}${pending ? ` · ${pending} por decidir` : ''}` },
         ]}
       />
 
@@ -183,51 +192,9 @@ export function TripsLive() {
           )}
         </div>
       ) : (
-        <section aria-labelledby="lista-sal" className="card gap-10" role="tabpanel">
-          <div className="row wrap between gap-8" style={{ alignItems: 'baseline' }}>
-            <h2 id="lista-sal" className="title-section">
-              Salidas tempranas · {longDate(today)}
-            </h2>
-            <span className="text-sm muted">El guarda del portón ve esta misma lista en su teléfono.</span>
-          </div>
-          {exits.length === 0 ? (
-            <p className="text-sm muted">No hay salidas tempranas autorizadas hoy.</p>
-          ) : (
-            <div className="table-wrap">
-              <table className="table" style={{ minWidth: 760 }}>
-                <thead>
-                  <tr>
-                    <th>Hora</th>
-                    <th>Estudiante</th>
-                    <th>Autorizó</th>
-                    <th>Cómo se retira</th>
-                    <th>Estado</th>
-                    <th>Comprobante</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {exits.map((e) => (
-                    <tr key={e.id}>
-                      <td className="strong tabular">{e.hour}</td>
-                      <td>
-                        <span className="strong">{e.name}</span> <span className="muted">· {e.section}</span>
-                        {e.reason && <span className="text-xs muted" style={{ display: 'block' }}>{e.reason}</span>}
-                      </td>
-                      <td>{e.by}</td>
-                      <td style={{ color: 'var(--ink-2)' }}>{e.how}</td>
-                      <td>
-                        <Badge tone={e.left ? 'green' : 'amber'} size="md">
-                          {e.left ? `Salió ${time(e.left)}` : 'Por salir'}
-                        </Badge>
-                      </td>
-                      <td className="tabular">{e.receipt}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+        <div role="tabpanel">
+          <ExitRequests onDecided={load} />
+        </div>
       )}
     </AdminLayout>
   );

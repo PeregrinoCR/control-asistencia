@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, InputField, Segmented, SettingRow } from '../../components';
+import { Badge, Button, InputField, Segmented, SettingRow, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos, CLAVE_DEMO, CUENTAS_DEMO } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
@@ -91,7 +91,7 @@ export function SettingsLive() {
   const [tab, setTab] = useState<Tab>('inst');
   const [form, setForm] = useState<Form | null>(null);
   const [sections, setSections] = useState<string[]>([]);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -210,15 +210,24 @@ function InstitutionTab({ f, update }: TabProps) {
   const set = (id: string, v: string) =>
     id === 'c-nombre' ? update({ nombre: v }) : id === 'c-tel' ? update({ telefono: v }) : update({ institucion: { ...f.institucion, [id]: v } });
 
+  // A field with nothing typed (or still the sample text) is pending.
+  const empty = (id: string) => !value(id).trim() || value(id).startsWith('[');
+  const missing = INSTITUTION_FIELDS.filter((x) => empty(x.id)).length;
+
   return (
     <div className="split">
       <section aria-labelledby="inst-t" className="card card--roomy split__main">
         <h2 id="inst-t" className="title-section">
           Datos de la institución
         </h2>
+        {missing > 0 && (
+          <p className="notice notice--pending" role="status">
+            Falta completar {missing} de {INSTITUTION_FIELDS.length} datos. Las familias y los reportes los usan.
+          </p>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
           {INSTITUTION_FIELDS.map((x) => (
-            <InputField key={x.id} id={x.id} type={x.type} label={x.label} placeholder={x.placeholder} value={value(x.id)} onChange={(e) => set(x.id, e.target.value)} />
+            <InputField key={x.id} id={x.id} type={x.type} label={x.label} hint={empty(x.id) ? 'pendiente' : undefined} placeholder={x.placeholder} value={value(x.id)} onChange={(e) => set(x.id, e.target.value)} />
           ))}
         </div>
         <fieldset className="fieldset">
@@ -363,7 +372,7 @@ function SmsLine() {
   const [limit, setLimit] = useState('100');
   const [phone, setPhone] = useState('');
   const [stats, setStats] = useState({ hour: 0, waiting: 0, failed: 0 });
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
 
   const load = async () => {
     const db = supabase!;

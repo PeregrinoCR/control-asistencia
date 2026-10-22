@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button } from '../../components';
+import { Badge, Button, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { useAuth } from '../../lib/auth';
@@ -52,7 +52,7 @@ export function ExamCareLive() {
   const [rows, setRows] = useState<Row[]>([]);
   const [tally, setTally] = useState<Map<string, { cares: number; lessons: number }>>(new Map());
   const [dirty, setDirty] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 

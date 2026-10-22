@@ -62,3 +62,9 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 - Datos del entorno: app en https://control-asistencia-12b.pages.dev (Cloudflare Pages publica `main`; 500
   publicaciones/mes). Netlify (elcole.netlify.app) quedó en desuso por límite de créditos: publicar en lote, una vez por sesión; Supabase proyecto
   `cvfmprnelubknjaguyua`; migraciones 0001–0004 instaladas (0005 pendiente); Edge Function `enviar-avisos` publicada.
+
+## UI/UX
+
+- Skill `ui-ux-pro-max` en `.claude/skills/ui-ux-pro-max/`. Buscar con
+  `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<términos en inglés>" --domain ux|style|color|typography`.
+  Son recomendaciones: respetar los tokens de `src/styles/tokens.css` y los componentes de `src/components/`.

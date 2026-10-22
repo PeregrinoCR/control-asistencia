@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, InputField, SettingRow, StatusBadge, TextareaField } from '../../components';
+import { Button, InputField, SettingRow, StatusBadge, TextareaField, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { AUTO_RULES, NOTICE_TONE, NOTICE_TYPES, type NoticeType } from '../../data/notices';
 import { ruleState } from '../../data/school';
@@ -44,7 +44,7 @@ export function NoticesLive() {
   const [body, setBody] = useState('');
   const [rules, setRules] = useState(ruleState(AUTO_RULES));
   const [sent, setSent] = useState<Sent[] | null>(null);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
