@@ -65,7 +65,7 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
 - Pase de lista compacto (`RollCallLive.tsx`: lección en lista desplegable, `.lesson-pick` y `.tally-row` en `screens.css`).
   Horarios y cargas (`AssignmentsLive.tsx`): fichas de sección con avance, materias en fila, semana a todo el ancho;
   máximo de lecciones por docente en Configuración (`colegios.config.institucion['c-carga-max']`, por defecto 30).
-  Rediseño de pantallas "en orden" del menú: hechas Hoy, Docentes ausentes, Justificaciones, Horarios y cargas; sigue **Aulas y grupos**
+  Rediseño de pantallas "en orden" del menú: hechas Hoy, Docentes ausentes, Justificaciones, Horarios y cargas, Aulas y grupos (tabla con pestañas Grupos/Aulas/Traslados, choques y cupos avisan sin bloquear; puestos por aula en `colegios.config.capacidades`, sin migración); sigue **Estudiantes**
   (lógica primero, luego 3 opciones en canvas, implementar, un push a `main`).
 - Formato oficial de exportación SABER (validar columnas con el MEP).
 - Probar notificaciones en teléfonos reales (Android y iPhone instalada) y la línea SMS.

@@ -756,7 +756,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
   const [aulaAdec, setAulaAdec] = useState('');
   const [error, setError] = useState('');
   const chosen = picked ?? sections;
-  const cfgAulas: AulasConfig = { aulas: f.aulas, aulasGrupo: f.aulasGrupo, eventosAula: f.eventosAula };
+  const cfgAulas: AulasConfig = { aulas: f.aulas, aulasGrupo: f.aulasGrupo, eventosAula: f.eventosAula, capacidades: {} };
   const sugerida = (s: string) => (draft.fecha ? aulaDe(cfgAulas, s, draft.fecha) : (f.aulasGrupo[s] ?? ''));
   // The same room used as a normal room by another exam at the same lessons on this day.
   const choqueAdec = aulaAdec && draft.fecha
