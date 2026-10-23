@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Button, InputField, Segmented, StatusBadge } from '../../components';
+import { Badge, Button, InputField, Segmented, StatusBadge } from '../../components';
 import { useLocation } from 'react-router-dom';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { ExitRequests } from './ExitRequests';
@@ -25,6 +25,9 @@ interface Trip {
   secciones: string[];
   telefono_pago: string | null;
   organizador_id: string | null;
+  cancelada: boolean;
+  motivo_cancelacion: string | null;
+  recordatorio_en: string | null;
 }
 
 interface RosterRow {
@@ -87,7 +90,11 @@ export function TripsLive() {
     const db = supabase!;
     const [s, t, g, x, p, q] = await Promise.all([
       db.from('secciones').select('id, nombre').order('nombre'),
-      db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, secciones, telefono_pago, organizador_id').gte('fecha', today).order('fecha'),
+      db
+        .from('giras')
+        .select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, secciones, telefono_pago, organizador_id, cancelada, motivo_cancelacion, recordatorio_en')
+        .order('fecha', { ascending: false })
+        .limit(80),
       db.from('encargados').select('usuario_id, nombre').not('usuario_id', 'is', null),
       db.from('salidas').select('id, hora, modo, motivo, retira_nombre, comprobante, salio, autorizado_por, estudiantes(nombre, secciones(nombre))').eq('fecha', today).eq('estado', 'aprobada').order('hora'),
       db.from('personal').select('id, nombre').eq('activo', true).order('nombre'),
@@ -119,7 +126,15 @@ export function TripsLive() {
     load();
   }, [load]);
 
-  const trip = tripId === 'new' ? null : (trips?.find((t) => t.id === tripId) ?? trips?.[0] ?? null);
+  // Upcoming trips first (soonest on top), then past or cancelled ones (latest on top).
+  const upcoming = (trips ?? []).filter((t) => !t.cancelada && t.fecha >= today).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const past = (trips ?? []).filter((t) => t.cancelada || t.fecha < today);
+  const trip = tripId === 'new' ? null : (trips?.find((t) => t.id === tripId) ?? upcoming[0] ?? past[0] ?? null);
+  // Keep the open trip selected when the lists reload (a cancelled trip moves to another group but stays open).
+  const openId = trip?.id;
+  useEffect(() => {
+    if (tripId === null && openId) setTripId(openId);
+  }, [tripId, openId]);
   const sectionNames = (ids: string[]) => ids.map((id) => sections.find((s) => s.id === id)?.nombre).filter(Boolean).join(', ');
 
   return (
@@ -149,7 +164,7 @@ export function TripsLive() {
         value={tab}
         onChange={setTab}
         options={[
-          ...(canTrips ? [{ value: 'trip' as const, label: `Giras · ${trips?.length ?? 0} próximas` }] : []),
+          ...(canTrips ? [{ value: 'trip' as const, label: `Giras · ${upcoming.length} próximas` }] : []),
           { value: 'exits' as const, label: `Salidas tempranas · hoy ${exits?.length ?? 0}${pending ? ` · ${pending} por decidir` : ''}` },
         ]}
       />
@@ -157,39 +172,82 @@ export function TripsLive() {
       {!trips || !exits ? (
         <p className="text-sm muted">Cargando…</p>
       ) : tab === 'trip' ? (
-        <div className="stack gap-16" role="tabpanel">
-          {trips.length > 0 && tripId !== 'new' && (
-            <div className="row wrap gap-8">
-              {trips.map((t) => (
-                <button key={t.id} type="button" className="chip" aria-pressed={t.id === trip?.id} onClick={() => setTripId(t.id)}>
-                  {t.titulo}
-                </button>
+        <div className="row gap-16" role="tabpanel" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          {trips.length > 0 && (
+            <nav aria-label="Giras" className="card stack gap-4" style={{ flex: '1 1 240px', maxWidth: 300, padding: 10 }}>
+              {[
+                { label: 'Próximas', list: upcoming },
+                { label: 'Pasadas y canceladas', list: past },
+              ].map((g) => (
+                <div key={g.label} className="stack gap-4">
+                  <span className="eyebrow" style={{ fontSize: 12, padding: '6px 6px 0' }}>
+                    {g.label}
+                  </span>
+                  {g.list.length === 0 && <span className="text-sm muted" style={{ padding: '4px 8px' }}>Ninguna.</span>}
+                  {g.list.map((t) => {
+                    const on = tripId !== 'new' && t.id === trip?.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setTripId(t.id)}
+                        className="stack gap-4"
+                        style={{
+                          textAlign: 'left',
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: 0,
+                          cursor: 'pointer',
+                          background: on ? 'var(--blue-bg)' : 'transparent',
+                          font: 'inherit',
+                          color: 'inherit',
+                        }}
+                      >
+                        <strong style={{ fontSize: 14 }}>{t.titulo}</strong>
+                        <span className="text-xs muted">
+                          {new Date(t.fecha + 'T00:00:00').toLocaleDateString('es-CR', { day: 'numeric', month: 'short' })} · {sectionNames(t.secciones) || '—'}
+                        </span>
+                        <span>
+                          {t.cancelada ? (
+                            <Badge tone="orange">Cancelada</Badge>
+                          ) : t.fecha < today ? (
+                            <Badge tone="neutral">Realizada</Badge>
+                          ) : null}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               ))}
-            </div>
+            </nav>
           )}
-          {tripId === 'new' || trips.length === 0 ? (
-            <NewTrip
-              sections={sections}
-              staff={staff}
-              onCancel={trips.length ? () => setTripId(null) : undefined}
-              onCreated={async (id) => {
-                await load();
-                setTripId(id);
-              }}
-            />
-          ) : (
-            trip && (
-              <TripDetail
-                key={trip.id}
-                trip={trip}
-                sectionNames={sectionNames(trip.secciones)}
+          <div className="stack gap-16" style={{ flex: '999 1 560px', minWidth: 0 }}>
+            {tripId === 'new' || trips.length === 0 ? (
+              <NewTrip
                 sections={sections}
                 staff={staff}
-                guardians={guardians}
-                onChanged={load}
+                onCancel={trips.length ? () => setTripId(null) : undefined}
+                onCreated={async (id) => {
+                  await load();
+                  setTripId(id);
+                }}
               />
-            )
-          )}
+            ) : (
+              trip && (
+                <TripDetail
+                  key={trip.id}
+                  trip={trip}
+                  sectionNames={sectionNames(trip.secciones)}
+                  sections={sections}
+                  staff={staff}
+                  guardians={guardians}
+                  today={today}
+                  onChanged={load}
+                />
+              )
+            )}
+          </div>
         </div>
       ) : (
         <div role="tabpanel">
@@ -206,6 +264,7 @@ function TripDetail({
   sections,
   staff,
   guardians,
+  today,
   onChanged,
 }: {
   trip: Trip;
@@ -213,15 +272,23 @@ function TripDetail({
   sections: Array<{ id: string; nombre: string }>;
   staff: Array<{ id: string; nombre: string }>;
   guardians: Map<string, string>;
+  today: string;
   onChanged: () => void;
 }) {
   const [roster, setRoster] = useState<RosterRow[] | null>(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
+  const [confirm, setConfirm] = useState<null | 'remind' | 'cancel'>(null);
+  const [why, setWhy] = useState('');
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [filter, setFilter] = useState<'all' | ConsentState>('all');
   const [query, setQuery] = useState('');
   const [found, setFound] = useState<Array<{ id: string; nombre: string; cedula: string | null; secciones: { nombre: string } | null }> | null>(null);
-  const { school } = useAuth();
+  const { school, perms } = useAuth();
+  /** Past and cancelled trips are only for consulting and printing. */
+  const readOnly = trip.cancelada || trip.fecha < today;
+  const canManage = !readOnly && perms.includes('trips');
 
   const load = useCallback(async () => {
     const db = supabase!;
@@ -304,6 +371,25 @@ function TripDetail({
     printDocument(`Autorizados: ${trip.titulo}`, body, { school: school?.nombre });
   };
 
+  const send = async (fn: 'recordar_gira' | 'cancelar_gira') => {
+    setSending(true);
+    setNotice(null);
+    const { data, error } = await supabase!.rpc(fn, fn === 'cancelar_gira' ? { gira: trip.id, motivo_: why } : { gira: trip.id });
+    setSending(false);
+    if (error) return setNotice({ ok: false, text: error.message });
+    setConfirm(null);
+    setWhy('');
+    const n = Number(data ?? 0);
+    setNotice({
+      ok: true,
+      text:
+        fn === 'recordar_gira'
+          ? `Recordatorio enviado a ${n} ${n === 1 ? 'familia' : 'familias'}.`
+          : `Gira cancelada. Se avisó a ${n} ${n === 1 ? 'familia que ya había autorizado' : 'familias que ya habían autorizado'}.`,
+    });
+    onChanged();
+  };
+
   const markPaid = async (id: string) => {
     const { error } = await supabase!.from('gira_autorizaciones').update({ pago: 'paid' }).eq('gira_id', trip.id).eq('estudiante_id', id);
     if (error) return setError(error.message);
@@ -332,6 +418,8 @@ function TripDetail({
   const paid = rows.filter((r) => r.payment === 'paid').length;
   const inReview = rows.filter((r) => r.payment === 'review').length;
   const missingReceipt = rows.filter((r) => r.method === 'sinpe' && r.state === 'ok' && !r.receipt).length;
+  const pendingCount = rows.filter((r) => r.state === 'wait').length;
+  const signedOk = rows.filter((r) => r.state === 'ok').length;
 
   return (
     <>
@@ -349,17 +437,35 @@ function TripDetail({
             {trip.regreso && ` – ${trip.regreso}`} · Secciones {sectionNames || '—'}
             {trip.costo && ` · ${trip.costo}`}
           </span>
-          {trip.fecha_limite && <span className="text-sm strong ink-orange">Fecha límite para firmar: {longDate(trip.fecha_limite)}</span>}
+          {trip.fecha_limite && !readOnly && <span className="text-sm strong ink-orange">Fecha límite para firmar: {longDate(trip.fecha_limite)}</span>}
           {trip.costo && trip.telefono_pago && (
             <span className="text-sm" style={{ color: 'var(--ink-2)' }}>
               Teléfono para pagos: <strong>{trip.telefono_pago}</strong>
             </span>
           )}
-          <span>
-            <Button size="sm" onClick={() => setEditing(true)}>
-              Editar gira
-            </Button>
-          </span>
+          {trip.cancelada && (
+            <span className="text-sm strong ink-orange">
+              Cancelada{trip.motivo_cancelacion ? `: ${trip.motivo_cancelacion}` : ''}
+            </span>
+          )}
+          {canManage && (
+            <span className="row wrap gap-8">
+              <Button size="sm" onClick={() => setEditing(true)}>
+                Editar gira
+              </Button>
+              <Button size="sm" disabled={pendingCount === 0} onClick={() => (setNotice(null), setConfirm('remind'))}>
+                Recordar a los pendientes · {pendingCount}
+              </Button>
+              <Button size="sm" variant="danger-outline" onClick={() => (setNotice(null), setConfirm('cancel'))}>
+                Cancelar gira
+              </Button>
+            </span>
+          )}
+          {canManage && trip.recordatorio_en && (
+            <span className="text-xs muted">
+              Último recordatorio: {new Date(trip.recordatorio_en).toLocaleString('es-CR', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+            </span>
+          )}
         </div>
         <div className="stack gap-8" style={{ flex: '1 1 320px', maxWidth: 460 }}>
           <div
@@ -399,6 +505,41 @@ function TripDetail({
         </div>
       </div>
 
+      {notice && (
+        <p className="notice" role={notice.ok ? 'status' : 'alert'}>
+          {notice.text}
+        </p>
+      )}
+      {confirm === 'remind' && (
+        <div className="notice stack gap-8" role="alertdialog" aria-label="Confirmar recordatorio">
+          <span>
+            <strong>¿Recordar a {pendingCount} {pendingCount === 1 ? 'familia' : 'familias'}?</strong> Reciben un aviso en la app y, si el colegio activó los SMS, también un mensaje:
+            «Falta su autorización para la gira {trip.titulo}».
+          </span>
+          <span className="row gap-8">
+            <Button variant="primary" disabled={sending} onClick={() => send('recordar_gira')}>
+              {sending ? 'Enviando…' : 'Sí, enviar'}
+            </Button>
+            <Button onClick={() => setConfirm(null)}>Ahora no</Button>
+          </span>
+        </div>
+      )}
+      {confirm === 'cancel' && (
+        <div className="notice stack gap-8" role="alertdialog" aria-label="Confirmar cancelación">
+          <span>
+            <strong>¿Cancelar la gira {trip.titulo}?</strong> Se avisa a las {signedOk} {signedOk === 1 ? 'familia' : 'familias'} que ya autorizaron. La gira pasa a «Pasadas y canceladas» y ya no se puede
+            reabrir.
+          </span>
+          <InputField id="cancel-motivo" label="Motivo (lo verán las familias)" value={why} onChange={(e) => setWhy(e.target.value)} />
+          <span className="row gap-8">
+            <Button variant="danger-outline" disabled={sending || !why.trim()} onClick={() => send('cancelar_gira')}>
+              {sending ? 'Cancelando…' : 'Sí, cancelar gira'}
+            </Button>
+            <Button onClick={() => setConfirm(null)}>No cancelar</Button>
+          </span>
+        </div>
+      )}
+
       <section aria-labelledby="lista-gira" className="card gap-10">
         <div className="row wrap between gap-8">
           <h2 id="lista-gira" className="title-section">
@@ -408,6 +549,7 @@ function TripDetail({
             Imprimir lista de autorizados
           </Button>
         </div>
+        {canManage && (
         <section aria-label="Agregar estudiante" className="stack gap-8">
           <div className="row wrap gap-8" style={{ alignItems: 'flex-end' }}>
             <InputField id="g-buscar" label="Agregar estudiante por cédula o nombre" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -436,6 +578,7 @@ function TripDetail({
             </div>
           )}
         </section>
+        )}
         {error && (
           <p className="text-sm ink-orange" role="alert">
             {error}
@@ -480,9 +623,11 @@ function TripDetail({
                       {r.extra && (
                         <>
                           <span className="text-xs muted"> · agregado</span>{' '}
-                          <button type="button" className="link-button text-xs" onClick={() => removeExtra(r.id)}>
-                            Quitar
-                          </button>
+                          {canManage && (
+                            <button type="button" className="link-button text-xs" onClick={() => removeExtra(r.id)}>
+                              Quitar
+                            </button>
+                          )}
                         </>
                       )}
                     </td>
@@ -509,7 +654,7 @@ function TripDetail({
                               Ver comprobante
                             </button>
                           )}
-                          {r.payment === 'review' && (
+                          {r.payment === 'review' && !trip.cancelada && (
                             <Button size="sm" onClick={() => markPaid(r.id)}>
                               Marcar pagado
                             </Button>

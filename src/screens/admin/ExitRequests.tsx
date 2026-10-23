@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, EmptyState, InputField, useFlash } from '../../components';
+import { Badge, Button, EmptyState, InputField, Segmented, useFlash } from '../../components';
 import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
 
 type Estado = 'pendiente' | 'aprobada' | 'rechazada';
 type Filter = 'all' | 'pendiente' | 'aprobada';
+type Range = 'hoy' | 'dia' | 'periodo';
 
 interface Exit {
   id: string;
@@ -40,25 +41,31 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
   const canDecide = perms.includes('approveExit');
   const [rows, setRows] = useState<Exit[] | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [range, setRange] = useState<Range>('hoy');
+  const [from, setFrom] = useState(localDate());
+  const [to, setTo] = useState(localDate());
   const [reason, setReason] = useState<Record<string, string>>({});
   const [msg, setMsg] = useFlash();
   const today = localDate();
 
   const load = async () => {
-    const { data, error } = await supabase!
+    let query = supabase!
       .from('salidas')
-      .select('id, fecha, hora, modo, motivo, retira_nombre, estado, motivo_rechazo, firma, comprobante, salio, estudiantes(nombre, secciones(nombre))')
-      .or(`fecha.eq.${today},estado.eq.pendiente`)
-      .order('fecha')
-      .order('hora');
+      .select('id, fecha, hora, modo, motivo, retira_nombre, estado, motivo_rechazo, firma, comprobante, salio, estudiantes(nombre, secciones(nombre))');
+    // Today: today's requests plus older ones still waiting. A day or a period: whatever happened then.
+    if (range === 'hoy') query = query.or(`fecha.eq.${today},estado.eq.pendiente`);
+    else if (range === 'dia') query = query.eq('fecha', from);
+    else query = query.gte('fecha', from).lte('fecha', to);
+    const { data, error } = await query.order('fecha').order('hora').limit(1000);
     if (error) return setMsg({ ok: false, text: error.message });
     setRows((data ?? []) as unknown as Exit[]);
   };
 
   useEffect(() => {
+    if (range === 'periodo' && from > to) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [range, from, to]);
 
   const decide = async (r: Exit, estado: 'aprobada' | 'rechazada') => {
     const motivo = (reason[r.id] ?? '').trim();
@@ -89,6 +96,25 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
         </h2>
         <span className="text-sm muted">Las familias piden la salida desde su app. El guarda del portón ve solo las autorizadas.</span>
       </div>
+      <div className="row wrap gap-10" style={{ alignItems: 'flex-end' }}>
+        <Segmented
+          label="Qué días ver"
+          value={range}
+          onChange={setRange}
+          options={[
+            { value: 'hoy', label: 'Hoy' },
+            { value: 'dia', label: 'Un día' },
+            { value: 'periodo', label: 'Periodo' },
+          ]}
+        />
+        {range !== 'hoy' && <InputField id="sal-desde" type="date" label={range === 'dia' ? 'Día' : 'Desde'} value={from} onChange={(e) => setFrom(e.target.value)} />}
+        {range === 'periodo' && <InputField id="sal-hasta" type="date" label="Hasta" value={to} onChange={(e) => setTo(e.target.value)} />}
+      </div>
+      {range === 'periodo' && from > to && (
+        <p className="text-sm ink-orange" role="alert">
+          «Desde» no puede ser después de «Hasta».
+        </p>
+      )}
       <div className="row wrap gap-8" role="group" aria-label="Filtrar salidas">
         <button type="button" className="chip" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>
           Todas · {rows?.length ?? 0}
@@ -107,7 +133,7 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
       )}
       {rows === null && <p className="text-sm muted">Cargando…</p>}
       {rows && shown.length === 0 && (
-        <EmptyState title={filter === 'pendiente' ? 'No hay solicitudes por decidir' : 'No hay salidas tempranas hoy'}>
+        <EmptyState title={filter === 'pendiente' ? 'No hay solicitudes por decidir' : range === 'hoy' ? 'No hay salidas tempranas hoy' : 'No hay salidas tempranas en esas fechas'}>
           Cuando una familia pida una salida, aparecerá aquí para que la autorice.
         </EmptyState>
       )}
@@ -122,7 +148,7 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
                   <Badge tone={st.tone}>{st.label}</Badge>
                 </span>
                 <span className="text-sm muted">
-                  {r.estudiantes?.secciones?.nombre ?? '—'} · {r.fecha === today ? 'hoy' : r.fecha} · sale a las {r.hora}
+                  {r.estudiantes?.secciones?.nombre ?? '—'} · {r.fecha === today ? 'hoy' : new Date(r.fecha + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'short', day: 'numeric', month: 'short' })} · sale a las {r.hora}
                 </span>
                 <span className="text-sm">{r.modo === 'alone' ? 'Sale solo' : `Lo retira: ${r.retira_nombre ?? '—'}`}</span>
                 {r.motivo && <span className="text-sm muted">Motivo: {r.motivo}</span>}

@@ -58,7 +58,7 @@ function Trips({ f }: { f: FamilyCtx }) {
     (async () => {
       const [g, a, c, x] = await Promise.all([
         kid.sectionId
-          ? db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').contains('secciones', [kid.sectionId]).gte('fecha', localDate()).order('fecha')
+          ? db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').contains('secciones', [kid.sectionId]).eq('cancelada', false).gte('fecha', localDate()).order('fecha')
           : Promise.resolve({ data: [] as Trip[] }),
         db.from('gira_autorizaciones').select('gira_id, estado, pago, metodo').eq('estudiante_id', kid.id),
         db.from('colegios').select('modulos, config').maybeSingle(),
@@ -67,7 +67,7 @@ function Trips({ f }: { f: FamilyCtx }) {
       // Trips the school added this student to by hand, besides the ones for their section.
       const extraIds = (x.data ?? []).map((r) => r.gira_id as string);
       const extra = extraIds.length
-        ? await db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').in('id', extraIds).gte('fecha', localDate()).order('fecha')
+        ? await db.from('giras').select('id, titulo, destino, fecha, salida, regreso, costo, fecha_limite, telefono_pago').in('id', extraIds).eq('cancelada', false).gte('fecha', localDate()).order('fecha')
         : { data: [] as Trip[] };
       const all = [...((g.data ?? []) as Trip[]), ...((extra.data ?? []) as Trip[])];
       setTrips(all.filter((t, i) => all.findIndex((o) => o.id === t.id) === i).sort((u, v) => u.fecha.localeCompare(v.fecha)));

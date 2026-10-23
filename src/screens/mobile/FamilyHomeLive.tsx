@@ -51,7 +51,7 @@ function Home({ f }: { f: FamilyCtx }) {
       setExit(rec.exits.find((e) => e.date === today) ?? null);
       const [g, a, n] = await Promise.all([
         kid.sectionId
-          ? db.from('giras').select('id, titulo, fecha, fecha_limite').contains('secciones', [kid.sectionId]).gte('fecha', today).order('fecha')
+          ? db.from('giras').select('id, titulo, fecha, fecha_limite').contains('secciones', [kid.sectionId]).eq('cancelada', false).gte('fecha', today).order('fecha')
           : Promise.resolve({ data: [] }),
         db.from('gira_autorizaciones').select('gira_id, estado').eq('estudiante_id', kid.id),
         db.from('avisos').select('id, tipo, titulo, cuerpo, destino, secciones, enviado').order('enviado', { ascending: false }).limit(20),
