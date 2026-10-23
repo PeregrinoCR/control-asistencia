@@ -24,6 +24,8 @@ export interface LiveStudent {
   /** Sits exams apart with other accommodated students of the same level. */
   accommodation: boolean;
   hasAccount: boolean;
+  /** False once the student was withdrawn: they leave the lists but their history stays. */
+  active: boolean;
   guardians: Guardian[];
   /** Lessons absent and late this month. */
   absences: number;
@@ -64,8 +66,7 @@ export function useStudents() {
     const [st, secs, att] = await Promise.all([
       supabase
         .from('estudiantes')
-        .select('id, nombre, cedula, nacimiento, telefono, adecuacion, usuario_id, secciones(nombre), estudiante_encargado(parentesco, encargados(*))')
-        .eq('activo', true)
+        .select('id, nombre, cedula, nacimiento, telefono, adecuacion, activo, usuario_id, secciones(nombre), estudiante_encargado(parentesco, encargados(*))')
         .order('nombre'),
       supabase.from('secciones').select('id, nombre').order('nombre'),
       supabase.from('asistencia_mes').select('estudiante_id, ausencias, tardias'),
@@ -87,6 +88,7 @@ export function useStudents() {
         phone: r.telefono ?? '',
         accommodation: !!r.adecuacion,
         hasAccount: !!r.usuario_id,
+        active: !!r.activo,
         absences: totals.get(r.id)?.ausencias ?? 0,
         lates: totals.get(r.id)?.tardias ?? 0,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -206,6 +208,22 @@ export function useStudents() {
     return error?.message ?? '';
   };
 
+  /** Brings a withdrawn student back to their section. */
+  const reactivate = async (id: string) => {
+    const { error } = await supabase!.from('estudiantes').update({ activo: true }).eq('id', id);
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
+  /** Moves several students to another section at once. */
+  const moveMany = async (ids: string[], sectionName: string) => {
+    const section = sections.find((x) => x.nombre === sectionName);
+    if (!section) return 'Elija la sección.';
+    const { error } = await supabase!.from('estudiantes').update({ seccion_id: section.id }).in('id', ids);
+    if (!error) await reload();
+    return error?.message ?? '';
+  };
+
   /**
    * Saves a guardian of a student. With `guardianId` it edits that guardian; without it, it adds one,
    * reusing a guardian already registered with the same cédula or phone (a sibling's, for example).
@@ -250,7 +268,21 @@ export function useStudents() {
     return error?.message ?? '';
   };
 
-  return { live: !!supabase, students, sections: sections.map((s) => s.nombre), error, add, updateStudent, deactivate, saveGuardian, linkGuardian, unlinkGuardian };
+  return {
+    live: !!supabase,
+    students: students?.filter((s) => s.active) ?? null,
+    retired: students?.filter((s) => !s.active) ?? [],
+    sections: sections.map((s) => s.nombre),
+    error,
+    add,
+    updateStudent,
+    deactivate,
+    reactivate,
+    moveMany,
+    saveGuardian,
+    linkGuardian,
+    unlinkGuardian,
+  };
 }
 
 /** Columns of the enrollment file, in order. */

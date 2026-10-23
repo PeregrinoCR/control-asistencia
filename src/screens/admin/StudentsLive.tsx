@@ -6,6 +6,7 @@ import { CARD_PREFIX } from '../../data/gate';
 import { useAuth } from '../../lib/auth';
 import { esc, printDocument } from '../../lib/print';
 import { IMPORT_COLUMNS, parseEnrollment, useStudents, type LiveStudent, type NewStudent } from '../../lib/students';
+import { ordenSecciones } from '../../lib/secciones';
 import { supabase } from '../../lib/supabase';
 
 type AgeFilter = 'all' | 'min' | 'adu';
@@ -58,38 +59,113 @@ const CARD_CSS = `.grid { display: grid; grid-template-columns: repeat(2, 85mm);
 .qr svg { width: 32mm; height: 32mm; }
 @media print { header { display: none; } body { margin: 0; } }`;
 
+type Tab = 'activos' | 'retirados';
+type Pending = 'sinEncargado' | 'sinCuenta' | null;
+type SortKey = 'name' | 'section' | 'age' | 'absences' | 'lates';
+
 export function StudentsLive() {
   const data = useStudents();
   const { school } = useAuth();
+  const [tab, setTab] = useState<Tab>('activos');
   const [filter, setFilter] = useState<AgeFilter>('all');
   const [section, setSection] = useState('');
   const [query, setQuery] = useState('');
   const [soloAdec, setSoloAdec] = useState(false);
+  const [pending, setPending] = useState<Pending>(null);
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'name', dir: 1 });
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [target, setTarget] = useState('');
+  const [busy, setBusy] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
+  const [msg, setMsg] = useFlash();
 
-  const all = data.students ?? [];
+  const active = data.students ?? [];
+  const retired = data.retired;
+  const all = tab === 'activos' ? active : retired;
   const q = query.toLowerCase();
-  const list = all.filter(
-    (s) =>
-      (filter === 'all' || (filter === 'min' ? !isAdult(s) : isAdult(s))) &&
-      (!section || s.section === section) &&
-      (!soloAdec || s.accommodation) &&
-      [s.name, s.idNumber, ...s.guardians.map((g) => g.name)].join(' ').toLowerCase().includes(q),
+  // Pending enrollment tasks, counted over every active student whatever the other filters say.
+  const noGuardian = active.filter((s) => contactOf(s) === null).length;
+  const noAccount = active.filter((s) => {
+    const c = contactOf(s);
+    return c !== null && !c.account;
+  }).length;
+  const withAccommodation = active.filter((s) => s.accommodation).length;
+
+  const compare = (a: LiveStudent, b: LiveStudent) => {
+    const { key, dir } = sort;
+    if (key === 'section') return dir * ordenSecciones(a.section, b.section);
+    if (key === 'name') return dir * a.name.localeCompare(b.name, 'es');
+    // Missing ages go last whichever way it is sorted.
+    if (key === 'age' && (a.age === null || b.age === null)) return a.age === b.age ? 0 : a.age === null ? 1 : -1;
+    return dir * ((a[key] ?? 0) - (b[key] ?? 0));
+  };
+  const list = all
+    .filter(
+      (s) =>
+        (filter === 'all' || (filter === 'min' ? !isAdult(s) : isAdult(s))) &&
+        (!section || s.section === section) &&
+        (!soloAdec || s.accommodation) &&
+        (tab === 'retirados' || pending === null || (pending === 'sinEncargado' ? contactOf(s) === null : contactOf(s) !== null && !contactOf(s)!.account)) &&
+        [s.name, s.idNumber, ...s.guardians.map((g) => g.name)].join(' ').toLowerCase().includes(q),
+    )
+    .sort(compare);
+  const minors = active.filter((s) => !isAdult(s)).length;
+  const selected = panel?.kind === 'student' ? active.find((s) => s.id === panel.id) : undefined;
+  // Bulk actions only touch what is shown: a selected student hidden by a filter is left alone.
+  const chosen = list.filter((s) => picked.has(s.id));
+  const allChosen = list.length > 0 && chosen.length === list.length;
+
+  const toggle = (id: string) =>
+    setPicked((p) => {
+      const n = new Set(p);
+      if (!n.delete(id)) n.add(id);
+      return n;
+    });
+  const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: 1 }));
+  const header = (key: SortKey, label: string, className?: string) => (
+    <th className={className} aria-sort={sort.key === key ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined}>
+      <button type="button" className="link-button" style={{ font: 'inherit', fontWeight: 600, color: 'inherit', textDecoration: 'none' }} onClick={() => sortBy(key)}>
+        {label}
+        {sort.key === key ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}
+      </button>
+    </th>
   );
-  const minors = all.filter((s) => !isAdult(s)).length;
-  const selected = panel?.kind === 'student' ? all.find((s) => s.id === panel.id) : undefined;
+  const changeTab = (t: Tab) => {
+    setTab(t);
+    setPicked(new Set());
+    setPanel(null);
+  };
+  const moveChosen = async () => {
+    if (!target || chosen.length === 0) return;
+    setBusy(true);
+    const error = await data.moveMany(
+      chosen.map((s) => s.id),
+      target,
+    );
+    setBusy(false);
+    if (error) return setMsg({ ok: false, text: 'No se pasaron: ' + error });
+    setMsg({ ok: true, text: `${chosen.length} estudiante${chosen.length === 1 ? '' : 's'} pasaron a ${target}` });
+    setPicked(new Set());
+    setTarget('');
+  };
+  const reactivate = async (s: LiveStudent) => {
+    setBusy(true);
+    const error = await data.reactivate(s.id);
+    setBusy(false);
+    setMsg(error ? { ok: false, text: 'No se reactivó: ' + error } : { ok: true, text: `${s.name} volvió a ${s.section === '—' ? 'la lista de activos' : s.section}` });
+  };
 
   return (
     <AdminLayout>
       <PageHeader
-        kicker={`${all.length} matriculados · ${minors} menores de edad`}
+        kicker={`${active.length} matriculados · ${minors} menores de edad`}
         title="Estudiantes"
         actions={
           <>
             <Button regular onClick={() => setPanel({ kind: 'import' })}>
               Importar matrícula
             </Button>
-            <Button regular disabled={!list.length} onClick={() => printCards(list, { nombre: school?.nombre ?? '', logo: school?.logo ?? null })}>
+            <Button regular disabled={!list.length || tab === 'retirados'} onClick={() => printCards(list, { nombre: school?.nombre ?? '', logo: school?.logo ?? null })}>
               Imprimir carnés{section ? ` de ${section}` : ''}
             </Button>
             <Button variant="primary" onClick={() => setPanel({ kind: 'add' })}>
@@ -99,6 +175,12 @@ export function StudentsLive() {
         }
       />
 
+      {msg && (
+        <p className="notice" role={msg.ok ? 'status' : 'alert'}>
+          {msg.text}
+        </p>
+      )}
+
       {data.error ? (
         <p className="notice" role="alert">
           No se pudieron cargar los estudiantes: {data.error}
@@ -107,6 +189,17 @@ export function StudentsLive() {
         <p className="text-sm muted">Cargando…</p>
       ) : (
         <>
+          <Segmented
+            mode="tabs"
+            label="Estudiantes activos o retirados"
+            value={tab}
+            onChange={changeTab}
+            options={[
+              { value: 'activos', label: `Activos · ${active.length}` },
+              { value: 'retirados', label: `Retirados · ${retired.length}` },
+            ]}
+          />
+
           <div className="row wrap gap-10">
             <div className="search">
               <Icon name="search" size={18} />
@@ -132,8 +225,18 @@ export function StudentsLive() {
                 { value: 'adu', label: 'Mayores de edad' },
               ]}
             />
+            {tab === 'activos' && (
+              <>
+                <button type="button" className="chip chip--sm" aria-pressed={pending === 'sinEncargado'} onClick={() => setPending(pending === 'sinEncargado' ? null : 'sinEncargado')}>
+                  Falta encargado · {noGuardian}
+                </button>
+                <button type="button" className="chip chip--sm" aria-pressed={pending === 'sinCuenta'} onClick={() => setPending(pending === 'sinCuenta' ? null : 'sinCuenta')}>
+                  Encargado sin cuenta · {noAccount}
+                </button>
+              </>
+            )}
             <button type="button" className="chip chip--sm" aria-pressed={soloAdec} onClick={() => setSoloAdec(!soloAdec)}>
-              Con adecuación
+              Con adecuación · {withAccommodation}
             </button>
             <label htmlFor="e-seccion" className="sr-only">
               Sección
@@ -146,23 +249,68 @@ export function StudentsLive() {
             </select>
           </div>
 
+          {chosen.length > 0 && (
+            <div className="row wrap gap-10 notice" role="region" aria-label="Acciones para los estudiantes marcados" style={{ alignItems: 'center' }}>
+              <strong>
+                {chosen.length} seleccionado{chosen.length === 1 ? '' : 's'}
+              </strong>
+              <label htmlFor="e-pasar" className="sr-only">
+                Pasar a sección
+              </label>
+              <select id="e-pasar" className="input" style={{ width: 'auto' }} value={target} onChange={(e) => setTarget(e.target.value)}>
+                <option value="">Pasar a sección…</option>
+                {data.sections.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+              <Button regular disabled={!target || busy} onClick={moveChosen}>
+                Pasar
+              </Button>
+              <Button regular onClick={() => printCards(chosen, { nombre: school?.nombre ?? '', logo: school?.logo ?? null })}>
+                Imprimir carnés
+              </Button>
+              <button type="button" className="link-button text-sm" style={{ marginLeft: 'auto' }} onClick={() => setPicked(new Set())}>
+                Quitar selección
+              </button>
+            </div>
+          )}
+
           <div className="split">
             <section aria-label="Lista de estudiantes" className="card split__main" style={{ padding: '8px 18px 18px', gap: 0, flexBasis: 560 }}>
               {all.length === 0 ? (
                 <p className="text-sm muted" style={{ paddingTop: 12 }}>
-                  Todavía no hay estudiantes. Agréguelos uno por uno o importe la matrícula desde Excel.
+                  {tab === 'retirados'
+                    ? 'No hay estudiantes retirados.'
+                    : 'Todavía no hay estudiantes. Agréguelos uno por uno o importe la matrícula desde Excel.'}
                 </p>
               ) : (
                 <div className="table-wrap">
                   <table className="table table--compact" style={{ minWidth: 700 }}>
                     <thead>
                       <tr>
-                        <th>Estudiante</th>
-                        <th>Sección</th>
-                        <th>Edad</th>
-                        <th>Recibe los avisos</th>
-                        <th className="num">Ausencias</th>
-                        <th className="num">Tardías</th>
+                        {tab === 'activos' && (
+                          <th style={{ width: 34 }}>
+                            <input
+                              type="checkbox"
+                              className="checkbox"
+                              aria-label="Marcar todos los que se ven"
+                              checked={allChosen}
+                              onChange={() => setPicked(allChosen ? new Set() : new Set(list.map((s) => s.id)))}
+                            />
+                          </th>
+                        )}
+                        {header('name', 'Estudiante')}
+                        {header('section', 'Sección')}
+                        {header('age', 'Edad')}
+                        <th>{tab === 'activos' ? 'Recibe los avisos' : 'Estado'}</th>
+                        {tab === 'activos' ? (
+                          <>
+                            {header('absences', 'Ausencias', 'num')}
+                            {header('lates', 'Tardías', 'num')}
+                          </>
+                        ) : (
+                          <th />
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -170,28 +318,55 @@ export function StudentsLive() {
                         const c = contactOf(r);
                         return (
                           <tr key={r.id} aria-selected={r.id === selected?.id}>
+                            {tab === 'activos' && (
+                              <td>
+                                <input type="checkbox" className="checkbox" aria-label={`Marcar a ${r.name}`} checked={picked.has(r.id)} onChange={() => toggle(r.id)} />
+                              </td>
+                            )}
                             <td>
-                              <button type="button" className="row-button" onClick={() => setPanel({ kind: 'student', id: r.id })}>
-                                <Avatar name={r.name} size="sm" />
-                                {r.name}
-                              </button>
+                              {tab === 'activos' ? (
+                                <button type="button" className="row-button" onClick={() => setPanel({ kind: 'student', id: r.id })}>
+                                  <Avatar name={r.name} size="sm" />
+                                  {r.name}
+                                </button>
+                              ) : (
+                                <span className="row gap-8">
+                                  <Avatar name={r.name} size="sm" />
+                                  {r.name}
+                                </span>
+                              )}
                             </td>
                             <td>{r.section}</td>
                             <td>{r.age === null ? '—' : `${r.age} años`}</td>
-                            <td>
-                              {c ? (
-                                <span className="stack">
-                                  <span>{c.name}</span>
-                                  <span className={c.account ? 'text-xs strong ink-green' : 'text-xs strong ink-orange'}>
-                                    {c.account ? 'Usa la app' : 'Sin cuenta'}
-                                  </span>
-                                </span>
-                              ) : (
-                                <span className="text-sm ink-orange">Falta el encargado</span>
-                              )}
-                            </td>
-                            <td className={r.absences >= 3 ? 'num strong ink-orange' : 'num strong'}>{r.absences}</td>
-                            <td className="num strong">{r.lates}</td>
+                            {tab === 'activos' ? (
+                              <>
+                                <td>
+                                  {c ? (
+                                    <span className="stack">
+                                      <span>{c.name}</span>
+                                      <span className={c.account ? 'text-xs strong ink-green' : 'text-xs strong ink-orange'}>
+                                        {c.account ? 'Usa la app' : 'Sin cuenta'}
+                                      </span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm ink-orange">Falta el encargado</span>
+                                  )}
+                                </td>
+                                <td className={r.absences >= 3 ? 'num strong ink-orange' : 'num strong'}>{r.absences}</td>
+                                <td className="num strong">{r.lates}</td>
+                              </>
+                            ) : (
+                              <>
+                                <td>
+                                  <span className="text-sm muted">Retirado</span>
+                                </td>
+                                <td className="num">
+                                  <Button regular disabled={busy} onClick={() => reactivate(r)}>
+                                    Reactivar
+                                  </Button>
+                                </td>
+                              </>
+                            )}
                           </tr>
                         );
                       })}
@@ -202,6 +377,7 @@ export function StudentsLive() {
               {all.length > 0 && (
                 <span className="text-sm muted" style={{ display: 'block', paddingTop: 12 }}>
                   Mostrando {list.length} de {all.length}
+                  {tab === 'activos' ? ' · el título de cada columna ordena la lista' : ''}
                 </span>
               )}
             </section>
