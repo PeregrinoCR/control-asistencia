@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge, Button, useFlash } from '../../components';
+import { Badge, Button, InputField, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { useAuth } from '../../lib/auth';
-import { propose, type ExamIn, type SlotIn, type StaffIn } from '../../lib/cuidos';
+import { isWorking, propose, type ExamIn, type SlotIn, type StaffIn } from '../../lib/cuidos';
 import { printDocument, tableHtml } from '../../lib/print';
 import { LESSONS, localDate, type Loads } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
@@ -33,6 +33,7 @@ interface Data {
 }
 
 const longDate = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long' });
+const cuidosText = (n: number) => `${n} ${n === 1 ? 'cuido' : 'cuidos'}`;
 const hours = (from: number, to: number) => `${LESSONS[from - 1]?.start} – ${LESSONS[to - 1]?.end}`;
 const dayOf = (date: string) => SCHOOL_DAYS[new Date(date + 'T00:00:00').getDay() - 1]?.id ?? '';
 
@@ -55,6 +56,14 @@ export function ExamCareLive() {
   const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  /** People marked as unavailable per night (`colegios.config.cuidosNoDisponibles`), and teachers absent on the open night. */
+  const [unavail, setUnavail] = useState<Record<string, Array<{ id: string; motivo: string }>>>({});
+  const [absent, setAbsent] = useState<Set<string>>(new Set());
+  const [summary, setSummary] = useState<Map<string, { total: number; missing: number; published: boolean }>>(new Map());
+  const [addId, setAddId] = useState('');
+  const [addWhy, setAddWhy] = useState('');
+  const [from, setFrom] = useState(`${localDate().slice(0, 4)}-01-01`);
+  const [to, setTo] = useState(`${localDate().slice(0, 4)}-12-31`);
 
   useEffect(() => {
     const db = supabase!;
@@ -89,16 +98,19 @@ export function ExamCareLive() {
         loads: cfg.cargas ?? {},
         accommodations,
       });
+      setUnavail(cfg.cuidosNoDisponibles ?? {});
       if (exams[0]) setDate(exams[0].fecha);
     })();
   }, []);
 
   const loadNight = useCallback(async (d: string) => {
     const db = supabase!;
-    const [night, all] = await Promise.all([
+    const [night, all, abs] = await Promise.all([
       db.from('cuidos').select('*').eq('fecha', d).order('aula').order('desde'),
       db.from('cuidos').select('persona_id, desde, hasta').gte('fecha', `${d.slice(0, 4)}-01-01`).limit(5000),
+      db.from('ausencias_docentes').select('docente_id').eq('fecha', d),
     ]);
+    setAbsent(new Set((abs.data ?? []).map((a) => a.docente_id)));
     setRows(
       (night.data ?? []).map((r) => ({
         id: r.id,
@@ -129,6 +141,23 @@ export function ExamCareLive() {
   }, [date, loadNight]);
 
   const nights = [...new Set((data?.exams ?? []).map((x) => x.fecha))];
+
+  /** What is saved for every exam night, to show each night's state at the top. */
+  const loadSummary = useCallback(async () => {
+    if (!data) return;
+    const dates = [...new Set(data.exams.map((x) => x.fecha))];
+    const { data: saved } = await supabase!.from('cuidos').select('fecha, persona_id, estado').in('fecha', dates).limit(5000);
+    const m = new Map<string, { total: number; missing: number; published: boolean }>();
+    (saved ?? []).forEach((r) => {
+      const x = m.get(r.fecha) ?? { total: 0, missing: 0, published: true };
+      m.set(r.fecha, { total: x.total + 1, missing: x.missing + (r.persona_id ? 0 : 1), published: x.published && r.estado === 'publicado' });
+    });
+    setSummary(m);
+  }, [data]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
   const name = (id: string | null) => data?.staff.find((p) => p.id === id)?.name ?? 'Sin cuidador';
 
   const suggest = async () => {
@@ -137,6 +166,7 @@ export function ExamCareLive() {
     const db = supabase!;
     const { data: abs } = await db.from('ausencias_docentes').select('docente_id').eq('fecha', date);
     const day = dayOf(date);
+    const notAvailable = [...(abs ?? []).map((a) => a.docente_id), ...(unavail[date] ?? []).map((u) => u.id)];
     const exams: ExamIn[] = data.exams
       .filter((x) => x.fecha === date)
       .map((x) => ({
@@ -165,7 +195,7 @@ export function ExamCareLive() {
       staff: data.staff,
       slots,
       subjectTeacher,
-      absent: new Set((abs ?? []).map((a) => a.docente_id)),
+      absent: new Set(notAvailable),
       counts,
       accommodations: data.accommodations,
     });
@@ -212,6 +242,7 @@ export function ExamCareLive() {
     }
     setBusy(false);
     await loadNight(date);
+    await loadSummary();
     setMsg({ ok: true, text: publish ? 'Publicado: cada persona recibe el aviso en su teléfono.' : 'Borrador guardado.' });
   };
 
@@ -230,17 +261,28 @@ export function ExamCareLive() {
       .map((p) => ({ name: p.name, ...(tally.get(p.id) ?? { cares: 0, lessons: 0 }) }))
       .sort((a, b) => b.lessons - a.lessons || a.name.localeCompare(b.name));
 
-  const report = (pdf: boolean) => {
-    const header = ['Persona', 'Cuidos', 'Lecciones de cuido'];
-    const body = reportRows().map((r) => [r.name, r.cares, r.lessons]);
-    if (pdf) printDocument(`Informe de cuidos ${date.slice(0, 4)}`, tableHtml(header, body), { school: school?.nombre, logo: school?.logo ?? undefined });
-    else downloadCsv(`cuidos-${date.slice(0, 4)}.csv`, header, body);
-  };
+  const shortDate = (d: string) => d.split('-').reverse().join('/');
 
-  // A person caring in two rooms at the same lesson.
-  const clash = (i: number) => {
-    const r = rows[i];
-    return !!r.personId && rows.some((o, j) => j !== i && o.personId === r.personId && o.from <= r.to && r.from <= o.to);
+  /** Cares and care lessons per person between two dates. */
+  const report = async (pdf: boolean) => {
+    if (!from || !to || from > to) return setMsg({ ok: false, text: 'Elija un periodo válido: «Desde» no puede ser después de «Hasta».' });
+    setBusy(true);
+    const { data: saved, error: e } = await supabase!.from('cuidos').select('persona_id, desde, hasta').gte('fecha', from).lte('fecha', to).limit(5000);
+    setBusy(false);
+    if (e) return setMsg({ ok: false, text: 'No se pudo armar el informe: ' + e.message });
+    const t = new Map<string, { cares: number; lessons: number }>();
+    (saved ?? []).forEach((r) => {
+      if (!r.persona_id) return;
+      const x = t.get(r.persona_id) ?? { cares: 0, lessons: 0 };
+      t.set(r.persona_id, { cares: x.cares + 1, lessons: x.lessons + r.hasta - r.desde + 1 });
+    });
+    const header = ['Persona', 'Cuidos', 'Lecciones de cuido'];
+    const body = (data?.staff ?? [])
+      .map((p) => ({ name: p.name, ...(t.get(p.id) ?? { cares: 0, lessons: 0 }) }))
+      .sort((a, b) => b.lessons - a.lessons || a.name.localeCompare(b.name))
+      .map((r) => [r.name, r.cares, r.lessons]);
+    if (pdf) printDocument(`Informe de cuidos · ${shortDate(from)} a ${shortDate(to)}`, tableHtml(header, body), { school: school?.nombre, logo: school?.logo ?? undefined });
+    else downloadCsv(`cuidos-${from}-a-${to}.csv`, header, body);
   };
 
   // One card per room and exam; a change of person during the exam appears as a relevo inside the same card.
@@ -252,22 +294,59 @@ export function ExamCareLive() {
 
   const published = rows.length > 0 && rows.every((r) => r.published) && !dirty;
 
+  /** State of each night for the strip at the top: the open night comes from the screen, the others from what is saved. */
+  const nightInfo = (n: string) => {
+    const aulas = new Set((data?.exams ?? []).filter((x) => x.fecha === n).map((x) => x.aula || x.seccion)).size;
+    const mine = n === date && rows.length > 0 ? { total: rows.length, missing: rows.filter((r) => !r.personId).length, published } : n === date ? undefined : summary.get(n);
+    if (!mine || mine.total === 0) return { tone: 'neutral' as const, label: 'Sin proponer', note: `${aulas} aula${aulas === 1 ? '' : 's'}` };
+    const note = mine.missing ? `${mine.missing} sin cuidador` : 'Completo';
+    return mine.published ? { tone: 'green' as const, label: 'Publicado', note } : { tone: 'amber' as const, label: 'Borrador', note };
+  };
+  const pickNight = (n: string) => {
+    if (n === date) return;
+    if (dirty && !confirm('Hay cambios sin guardar. ¿Cambiar de noche?')) return;
+    setDate(n);
+  };
+
+  // People the committee marked as unavailable tonight; teachers absent today count too.
+  const unavailable = unavail[date] ?? [];
+  const unavailableIds = new Set(unavailable.map((u) => u.id));
+  const addable = (data?.staff ?? []).filter((p) => !unavailableIds.has(p.id));
+  const saveUnavailable = async (next: Record<string, Array<{ id: string; motivo: string }>>) => {
+    const db = supabase!;
+    const { data: cur } = await db.from('colegios').select('config').maybeSingle();
+    const clean = Object.fromEntries(Object.entries(next).filter(([, v]) => v.length > 0));
+    const { error: e } = await db.from('colegios').update({ config: { ...(cur?.config ?? {}), cuidosNoDisponibles: clean } }).eq('id', school!.id);
+    if (e) return setMsg({ ok: false, text: 'No se guardó: ' + e.message });
+    setUnavail(clean);
+  };
+  const markUnavailable = async () => {
+    if (!addId) return;
+    await saveUnavailable({ ...unavail, [date]: [...unavailable, { id: addId, motivo: addWhy.trim() }] });
+    setAddId('');
+    setAddWhy('');
+  };
+
+  // What each person is doing at the lessons of a row, to choose a carer with the facts in view.
+  const day = dayOf(date);
+  const examSections = new Set((data?.exams ?? []).filter((x) => x.fecha === date).map((x) => data!.sections.get(x.seccion) ?? x.seccion));
+  const slotsToday = (data?.timetable ?? []).filter((t) => t.day === day);
+  const stateOf = (p: StaffIn, i: number): { rank: number; tone: 'green' | 'neutral' | 'amber' | 'orange'; text: string } => {
+    const r = rows[i];
+    if (unavailableIds.has(p.id)) return { rank: 4, tone: 'orange', text: 'No disponible' };
+    if (absent.has(p.id)) return { rank: 4, tone: 'orange', text: 'Ausente hoy' };
+    const other = rows.find((o, j) => j !== i && o.personId === p.id && o.from <= r.to && r.from <= o.to);
+    if (other) return { rank: 3, tone: 'amber', text: `Ya cuida ${other.room}` };
+    const teaching = slotsToday.find((t) => t.teacherId === p.id && t.lesson >= r.from && t.lesson <= r.to && !examSections.has(t.sectionId));
+    if (teaching) return { rank: 2, tone: 'neutral', text: `Da lección ${teaching.lesson}.ª` };
+    const lessons = Array.from({ length: r.to - r.from + 1 }, (_, k) => r.from + k);
+    if (!lessons.every((l) => isWorking(p, day, slotsToday, l))) return { rank: 2, tone: 'neutral', text: 'Fuera de su horario' };
+    return { rank: 0, tone: 'green', text: p.roles.includes('doc') ? 'Libre' : 'Libre · apoyo' };
+  };
+
   return (
     <AdminLayout>
-      <PageHeader
-        kicker="Comité de evaluación · la app propone, ustedes ajustan y publican"
-        title="Cuido de exámenes"
-        actions={
-          <>
-            <Button regular onClick={() => report(false)} disabled={!data}>
-              Informe Excel
-            </Button>
-            <Button regular onClick={() => report(true)} disabled={!data}>
-              Informe PDF
-            </Button>
-          </>
-        }
-      />
+      <PageHeader kicker="Comité de evaluación · la app propone, ustedes ajustan y publican" title="Cuido de exámenes" />
 
       {error ? (
         <p className="notice" role="alert">
@@ -281,27 +360,29 @@ export function ExamCareLive() {
         </p>
       ) : (
         <>
-          <div className="row wrap gap-8" style={{ alignItems: 'flex-end' }}>
-            <div className="field">
-              <label htmlFor="c-noche" className="field__label">
-                Noche de exámenes
-              </label>
-              <select
-                id="c-noche"
-                className="input"
-                value={date}
-                onChange={(e) => {
-                  if (dirty && !confirm('Hay cambios sin guardar. ¿Cambiar de noche?')) return;
-                  setDate(e.target.value);
-                }}
-              >
-                {nights.map((n) => (
-                  <option key={n} value={n}>
-                    {longDate(n)}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="row wrap gap-10" role="group" aria-label="Noches de exámenes">
+            {nights.map((n) => {
+              const info = nightInfo(n);
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  className="card stack gap-4"
+                  aria-pressed={n === date}
+                  onClick={() => pickNight(n)}
+                  style={{ textAlign: 'left', minWidth: 160, padding: '10px 14px', cursor: 'pointer', ...(n === date ? { outline: '2px solid var(--blue)' } : {}) }}
+                >
+                  <strong>{longDate(n).replace(/^./, (c) => c.toUpperCase())}</strong>
+                  <span className="row gap-6">
+                    <Badge tone={info.tone}>{info.label}</Badge>
+                  </span>
+                  <span className="text-xs muted">{info.note}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="row wrap gap-8">
             <Button onClick={suggest}>{rows.length ? 'Volver a proponer' : 'Proponer cuidadores'}</Button>
             <Button onClick={() => save(false)} disabled={busy || !rows.length}>
               Guardar borrador
@@ -318,6 +399,45 @@ export function ExamCareLive() {
               {msg.text}
             </p>
           )}
+
+          <section aria-label="No disponibles esta noche" className="card stack gap-8" style={{ padding: '12px 16px' }}>
+            <div className="row wrap gap-8" style={{ alignItems: 'center' }}>
+              <strong style={{ fontSize: 14 }}>No disponibles esta noche</strong>
+              {unavailable.length === 0 && <span className="text-sm muted">Nadie marcado.</span>}
+              {unavailable.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  className="chip chip--sm"
+                  title="Quitar"
+                  onClick={() => saveUnavailable({ ...unavail, [date]: unavailable.filter((x) => x.id !== u.id) })}
+                >
+                  {name(u.id)}
+                  {u.motivo ? ` · ${u.motivo}` : ''} ×
+                </button>
+              ))}
+            </div>
+            <div className="row wrap gap-8" style={{ alignItems: 'flex-end' }}>
+              <div className="field">
+                <label htmlFor="nd-persona" className="field__label">
+                  Agregar persona
+                </label>
+                <select id="nd-persona" className="input" value={addId} onChange={(e) => setAddId(e.target.value)}>
+                  <option value="">Elegir…</option>
+                  {addable.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <InputField id="nd-motivo" label="Motivo (opcional)" placeholder="Cita médica, permiso…" value={addWhy} onChange={(e) => setAddWhy(e.target.value)} />
+              <Button regular disabled={!addId} onClick={markUnavailable}>
+                Marcar
+              </Button>
+            </div>
+            <span className="text-xs muted">La propuesta no los asigna. Los docentes ausentes de «Docentes ausentes» ya se saltan solos.</span>
+          </section>
 
           <div className="row gap-16" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <section aria-label="Aulas de la noche" className="stack gap-10" style={{ flex: '999 1 560px', minWidth: 0 }}>
@@ -349,6 +469,10 @@ export function ExamCareLive() {
                     {choque && <span className="text-xs strong ink-orange">Choque: esta aula también aparece como aula normal a esa hora.</span>}
                     {idx.map((i, k) => {
                       const r = rows[i];
+                      const options = [...data.staff]
+                        .map((p) => ({ p, s: stateOf(p, i) }))
+                        .sort((a, b) => a.s.rank - b.s.rank || (tally.get(a.p.id)?.cares ?? 0) - (tally.get(b.p.id)?.cares ?? 0) || a.p.name.localeCompare(b.p.name, 'es'));
+                      const mine = r.personId ? options.find((o) => o.p.id === r.personId)?.s : undefined;
                       return (
                         <div
                           key={i}
@@ -362,20 +486,20 @@ export function ExamCareLive() {
                               {r.from}.ª a {r.to}.ª · {hours(r.from, r.to)}
                             </span>
                           </span>
-                          <span className="stack gap-4" style={{ minWidth: 220 }}>
+                          <span className="stack gap-4" style={{ minWidth: 260 }}>
                             <label htmlFor={`p-${i}`} className="sr-only">
                               Cuidador de {r.room}, {r.from}.ª a {r.to}.ª
                             </label>
                             <select id={`p-${i}`} className="input" value={r.personId ?? ''} onChange={(e) => setPerson(i, e.target.value || null)}>
                               <option value="">Sin cuidador</option>
-                              {data.staff.map((p) => (
+                              {options.map(({ p, s }) => (
                                 <option key={p.id} value={p.id}>
-                                  {p.name} · {tally.get(p.id)?.cares ?? 0} cuidos
+                                  {p.name} · {cuidosText(tally.get(p.id)?.cares ?? 0)} · {s.text}
                                 </option>
                               ))}
                             </select>
                             {!r.personId && <span className="text-xs strong ink-orange">Falta asignar</span>}
-                            {clash(i) && <span className="text-xs strong ink-orange">Esta persona ya cuida otra aula a esa hora</span>}
+                            {mine && mine.rank > 0 && <Badge tone={mine.tone}>{mine.text}</Badge>}
                           </span>
                         </div>
                       );
@@ -396,6 +520,21 @@ export function ExamCareLive() {
                   </span>
                 </div>
               ))}
+              <div className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 12 }}>
+                <strong style={{ fontSize: 14 }}>Informe de cuidos</strong>
+                <div className="stack gap-8">
+                  <InputField id="inf-desde" type="date" label="Desde" value={from} onChange={(e) => setFrom(e.target.value)} />
+                  <InputField id="inf-hasta" type="date" label="Hasta" value={to} onChange={(e) => setTo(e.target.value)} />
+                </div>
+                <div className="row gap-8">
+                  <Button regular disabled={busy} onClick={() => report(false)}>
+                    Excel
+                  </Button>
+                  <Button regular disabled={busy} onClick={() => report(true)}>
+                    PDF
+                  </Button>
+                </div>
+              </div>
             </aside>
           </div>
         </>

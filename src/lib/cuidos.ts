@@ -76,6 +76,13 @@ export const levelOf = (section: string) => section.split('-')[0];
 
 const SUPPORT = ['ori', 'adm', 'dir', 'aux'];
 
+/** Whether a person works at a lesson: explicit working hours, else a teacher's first to last lesson that day. */
+export function isWorking(p: StaffIn, day: string, slots: SlotIn[], lesson: number) {
+  if (p.work) return p.work.dias.includes(day) && lesson >= p.work.desde && lesson <= p.work.hasta;
+  const mine = slots.filter((s) => s.teacherId === p.id).map((s) => s.lesson);
+  return mine.length > 0 && lesson >= Math.min(...mine) && lesson <= Math.max(...mine);
+}
+
 export function propose(input: ProposeInput): CareOut[] {
   const { day, exams, staff, slots, subjectTeacher, absent, accommodations } = input;
   const counts = new Map(input.counts);
@@ -83,12 +90,7 @@ export function propose(input: ProposeInput): CareOut[] {
   const taken = new Set<string>(); // `${personId}|${lesson}` already caring somewhere
   const out: CareOut[] = [];
 
-  // Working hours: explicit, else a teacher's first to last lesson that day.
-  const works = (p: StaffIn, lesson: number) => {
-    if (p.work) return p.work.dias.includes(day) && lesson >= p.work.desde && lesson <= p.work.hasta;
-    const mine = slots.filter((s) => s.teacherId === p.id).map((s) => s.lesson);
-    return mine.length > 0 && lesson >= Math.min(...mine) && lesson <= Math.max(...mine);
-  };
+  const works = (p: StaffIn, lesson: number) => isWorking(p, day, slots, lesson);
   // Rule B: teaching a group that is not sitting an exam.
   const teachingElsewhere = (id: string, lesson: number) => slots.some((s) => s.teacherId === id && s.lesson === lesson && !examining.has(s.sectionId));
   const rangeOf = (es: ExamIn[]) => {
