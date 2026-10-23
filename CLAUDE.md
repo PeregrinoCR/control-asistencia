@@ -60,7 +60,7 @@ Fuente única: `SHIFT_BLOCKS.noc` en `src/data/settings.ts`. Horas de salida tem
   (cada minuto por pg_cron) envía push (claves VAPID en `ajustes_privados`) y SMS por "SMS Gateway for Android".
   App instalable (PWA: `public/manifest.webmanifest`, `public/sw.js`, `src/lib/push.ts`). Docentes ausentes con
   sustitutos (`coberturas`); logo en bucket `publico`; impresión/PDF con `src/lib/print.ts`. Piloto: un colegio.
-- Migración 0017 (cancelar y recordar giras, `src/screens/admin/TripsLive.tsx`): falta que el usuario la corra en Supabase ANTES de subir a `main` (la app de familias ya filtra `cancelada`).
+- Migración 0017 (cancelar y recordar giras, `src/screens/admin/TripsLive.tsx`): corrida en Supabase (la app de familias filtra `cancelada`).
 - Migración 0016 (alcance de permisos extra y lista del personal solo para Dirección/Administrativos): corrida en Supabase.
 - Justificaciones (migración 0015, `src/lib/justificaciones.ts`): el docente decide cada ausencia de su lección (`ToJustify.tsx`, `/docente/por-justificar`); dirección supervisa y reabre vencidas con motivo (`Justifications.tsx`). Falta: que el usuario corra 0015 en Supabase antes de subir a `main`.
 - Pase de lista compacto (`RollCallLive.tsx`: lección en lista desplegable, `.lesson-pick` y `.tally-row` en `screens.css`).
