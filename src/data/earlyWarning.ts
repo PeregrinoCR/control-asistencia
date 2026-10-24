@@ -121,5 +121,51 @@ export const CRITERIA = [
   { id: 'b', label: '2 o más ausencias consecutivas', help: 'Sube a riesgo alto si llegan a 3', on: true },
   { id: 'c', label: '5 llegadas tardías en el mes', help: 'Abre caso de riesgo bajo', on: true },
   { id: 'd', label: 'Caída de 10 puntos en asistencia', help: 'Comparado con el mes anterior', on: true },
-  { id: 'e', label: 'Encargado sin leer 3 avisos seguidos', help: 'Suma al nivel de riesgo', on: false },
+  { id: 'e', label: 'Encargado sin leer 3 avisos seguidos', help: 'Suma al nivel de riesgo', on: true },
 ];
+
+/** Limits that open a case; the school changes them in Configuración (`colegios.config.institucion`). */
+export interface AlertThresholds {
+  /** Unexcused absences in the period. */
+  aus: number;
+  /** Consecutive unexcused absences. */
+  seg: number;
+  /** Late arrivals in the period. */
+  tar: number;
+  /** Weeks of roll call that are looked at. */
+  sem: number;
+}
+
+export const DEFAULT_THRESHOLDS: AlertThresholds = { aus: 3, seg: 2, tar: 5, sem: 4 };
+
+/** Fields of Configuración that hold each limit, in `institucion`. */
+export const THRESHOLD_FIELDS: Array<{ id: string; key: keyof AlertThresholds; label: string; hint: string }> = [
+  { id: 'c-alerta-aus', key: 'aus', label: 'Ausencias sin justificar que abren un caso', hint: 'En el periodo revisado' },
+  { id: 'c-alerta-seg', key: 'seg', label: 'Ausencias seguidas que abren un caso', hint: 'Sube a riesgo alto con una más' },
+  { id: 'c-alerta-tar', key: 'tar', label: 'Llegadas tardías que abren un caso', hint: 'En el periodo revisado' },
+  { id: 'c-alerta-sem', key: 'sem', label: 'Semanas de pase de lista que se revisan', hint: 'De 2 a 8' },
+];
+
+/** The limits saved in `institucion`, with the defaults where a field is empty or invalid. */
+export function thresholdsOf(inst: Record<string, string> | undefined): AlertThresholds {
+  const out = { ...DEFAULT_THRESHOLDS };
+  for (const f of THRESHOLD_FIELDS) {
+    const n = Math.round(Number(inst?.[f.id]));
+    if (Number.isFinite(n) && n >= 1) out[f.key] = f.key === 'sem' ? Math.min(8, Math.max(2, n)) : n;
+  }
+  return out;
+}
+
+/** Criteria shown on the screen, with the school's own numbers. */
+export function criteriaFor(t: AlertThresholds) {
+  return [
+    { id: 'a', label: `${t.aus} ausencias sin justificar en ${t.sem} semanas`, help: 'Abre caso de riesgo medio' },
+    { id: 'b', label: `${t.seg} o más ausencias seguidas`, help: 'Sube a riesgo alto con una más' },
+    { id: 'c', label: `${t.tar} llegadas tardías en ${t.sem} semanas`, help: 'Abre caso de riesgo bajo' },
+    { id: 'd', label: 'Caída de 10 puntos en asistencia', help: `Frente a las ${t.sem} semanas anteriores; abre caso de riesgo bajo` },
+    { id: 'e', label: 'Encargado sin abrir 3 avisos seguidos', help: 'Sube un nivel a quien ya está en alerta' },
+  ];
+}
+
+/** Steps every case starts with; each one is ticked off by the person in charge. */
+export const DEFAULT_STEPS = ['Llamada al encargado', 'Entrevista con el estudiante', 'Reunión con la familia', 'Acuerdo de asistencia firmado'];

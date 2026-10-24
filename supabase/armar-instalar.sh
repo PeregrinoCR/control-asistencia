@@ -10,7 +10,7 @@ cd "$(dirname "$0")"
 
 drop trigger if exists vincular_cuenta on auth.users;
 drop view if exists asistencia_mes, asistencia_dia, docentes;
-drop table if exists cuidos, coberturas, ausencias_docentes, incapacidades, ausencia_avisos, notificaciones, suscripciones, ajustes_privados,
+drop table if exists casos_alerta, cuidos, coberturas, ausencias_docentes, incapacidades, ausencia_avisos, notificaciones, suscripciones, ajustes_privados,
   seguimientos, aviso_lecturas, avisos, gira_autorizaciones, giras, porton, salidas,
   bitacora, justificaciones, asistencia, horario, materias, carnes,
   estudiante_encargado, encargados, estudiantes, personal, roles, secciones, colegios cascade;
@@ -22,7 +22,8 @@ drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estud
   plazo_familia, plazo_docente, dias_habiles, proteger_justificacion, doy_esa_leccion, justificar_ausencia,
   quitar_justificacion, excepcion_justificacion, recordatorios_justificacion,
   estudiantes_de_gira, cancelar_gira, recordar_gira,
-  fijar_aviso, destinatarios_aviso, retirar_cola_aviso, publicar_avisos_programados, lectura_avisos, pendientes_aviso, reenviar_aviso cascade;
+  fijar_aviso, destinatarios_aviso, retirar_cola_aviso, publicar_avisos_programados, lectura_avisos, pendientes_aviso, reenviar_aviso,
+  tocar_caso_alerta, alerta_extra, avisar_familia cascade;
 
 HDR
   for f in migrations/*.sql; do cat "$f"; echo; done

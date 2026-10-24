@@ -1,3 +1,4 @@
+import { DEFAULT_THRESHOLDS, THRESHOLD_FIELDS } from '../../data/earlyWarning';
 import { useEffect, useState } from 'react';
 import { Badge, Button, InputField, Segmented, SettingRow, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
@@ -260,6 +261,25 @@ function InstitutionTab({ f, update }: TabProps) {
         <span className="text-xs muted" style={{ marginTop: -8 }}>
           En Horarios y cargas, un docente que pase de este número aparece en naranja y se le avisa al colocar sus lecciones. Si lo deja vacío se usan 30.
         </span>
+        <fieldset className="fieldset">
+          <legend>Alerta temprana</legend>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            {THRESHOLD_FIELDS.map((t) => (
+              <InputField
+                key={t.id}
+                id={t.id}
+                label={t.label}
+                hint={t.hint}
+                type="number"
+                min={1}
+                placeholder={`Ej.: ${DEFAULT_THRESHOLDS[t.key]}`}
+                value={value(t.id)}
+                onChange={(e) => set(t.id, e.target.value)}
+              />
+            ))}
+          </div>
+          <span className="text-xs muted">Si deja un campo vacío se usa el número de ejemplo. Los cambios se aplican la próxima vez que se abra Alerta temprana.</span>
+        </fieldset>
         <fieldset className="fieldset">
           <legend>Tipo de institución</legend>
           <div className="row wrap gap-8">
