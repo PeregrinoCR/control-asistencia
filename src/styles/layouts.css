@@ -506,3 +506,55 @@ button.admin__link {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+
+/* ---------- Modern polish: phone screens ---------- */
+
+.tab-bar {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+.tab-bar__item {
+  position: relative;
+  transition: color var(--dur-fast) var(--ease);
+}
+.tab-bar__item svg {
+  transition: transform var(--dur) var(--ease);
+}
+.tab-bar__item:active svg {
+  transform: scale(0.9);
+}
+.tab-bar__item[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 28px;
+  height: 3px;
+  margin-left: -14px;
+  border-radius: 0 0 4px 4px;
+  background: var(--blue);
+}
+.tab-bar__item[aria-current='page'] svg {
+  transform: translateY(-1px);
+}
+.screen-footer {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+.card--mobile {
+  box-shadow: var(--shadow-sm);
+}
+.done-state__icon {
+  animation: pop-in 320ms var(--ease) both;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+.phone-stage {
+  background:
+    radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--blue) 8%, transparent), transparent 60%),
+    var(--sunken);
+}

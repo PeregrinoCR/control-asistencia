@@ -256,7 +256,7 @@
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--blue);
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
   box-sizing: content-box;
 }
 .chart__dot[data-active='true'] {
@@ -713,4 +713,35 @@
 .absence-lessons > * {
   white-space: normal;
   max-width: 100%;
+}
+
+
+/* ---------- Modern polish: mobile app ---------- */
+
+.mark-btn,
+.lesson-pick,
+.day-tabs__item,
+.cal__day,
+.alert-card,
+.trip-card {
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.mark-btn:active,
+.day-tabs__item:active {
+  transform: scale(0.94);
+}
+.mark-btn[aria-pressed='true'] {
+  box-shadow: var(--shadow-sm);
+}
+.alert-card,
+.trip-card {
+  box-shadow: var(--shadow-sm);
+}
+.chart__dot {
+  transition: width var(--dur-fast) var(--ease), height var(--dur-fast) var(--ease);
 }

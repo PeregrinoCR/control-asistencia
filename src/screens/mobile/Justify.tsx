@@ -75,7 +75,7 @@ function JustifySample() {
             />
 
             <div className="stack gap-8">
-              <span style={{ fontSize: 15, fontWeight: 700 }}>Comprobante</span>
+              <span className="title-item">Comprobante</span>
               <button type="button" className="dropzone" style={{ minHeight: 64, justifyContent: 'flex-start', gap: 12, padding: '0 16px', color: 'var(--ink)', textAlign: 'left' }}>
                 <Icon name="paperclip" size={22} style={{ color: 'var(--blue)' }} />
                 <span className="stack">

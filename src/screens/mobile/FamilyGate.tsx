@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Segmented } from '../../components';
+import { Segmented, Skeleton } from '../../components';
 import { FamilyTabBar, MobileScreen } from '../../layouts/MobileScreen';
 import { homeFor, signOut, useAuth } from '../../lib/auth';
 import { useFamily, type Kid, type Me } from '../../lib/family';
@@ -38,7 +38,11 @@ export function FamilyGate({ children }: { children: (f: FamilyCtx) => ReactNode
   // Staff who open a family page by mistake go to their own screen, not to the family message.
   if (ready && roles.length > 0 && !family) return <Navigate to={homeFor(roles)} replace />;
   if (error) return <Message>{<p className="text-sm ink-orange">No se pudo cargar: {error}</p>}</Message>;
-  if (!ready || !kids) return <Message>{<p className="text-sm muted">Cargando…</p>}</Message>;
+  if (!ready || !kids) return (
+      <Message>
+        <Skeleton count={5} label="Cargando" />
+      </Message>
+    );
   if (!me || !kid || !school)
     return (
       <Message>

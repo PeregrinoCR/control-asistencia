@@ -70,6 +70,18 @@ p {
   font-size: 18px;
   font-weight: 700;
 }
+.title-block {
+  font-size: 17px;
+  font-weight: 700;
+}
+.title-card {
+  font-size: 16px;
+  font-weight: 700;
+}
+.title-item {
+  font-size: 15px;
+  font-weight: 700;
+}
 .eyebrow {
   font-size: 13px;
   font-weight: 700;

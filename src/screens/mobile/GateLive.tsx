@@ -264,7 +264,7 @@ export function GateLive() {
         )}
 
         <section className="card card--mobile gap-8" aria-labelledby="sal-t">
-          <h2 id="sal-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="sal-t" className="title-card">
             Salidas autorizadas hoy
           </h2>
           {exits.length === 0 && <EmptyState title="Ninguna salida autorizada">Las familias la piden desde su app; aparecerá aquí.</EmptyState>}
@@ -282,7 +282,7 @@ export function GateLive() {
         </section>
 
         <section className="card card--mobile gap-8" aria-labelledby="log-t">
-          <h2 id="log-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="log-t" className="title-card">
             Últimos registros
           </h2>
           {log.length === 0 && <EmptyState title="Aún no hay registros hoy">Escanee un carné para empezar.</EmptyState>}

@@ -21,7 +21,7 @@ function FamilySettingsSample() {
             <Icon name="qr" />
           </span>
           <span className="stack grow">
-            <span style={{ fontSize: 15, fontWeight: 700 }}>Carné estudiantil</span>
+            <span className="title-item">Carné estudiantil</span>
             <span className="text-sm muted">Código QR para el portón · reportar pérdida</span>
           </span>
           <Icon name="chevronLeft" size={18} style={{ transform: 'rotate(180deg)', color: 'var(--muted)' }} />

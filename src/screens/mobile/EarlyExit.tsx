@@ -83,7 +83,7 @@ export function EarlyExitSample() {
               <legend>¿Cómo se retira?</legend>
               {EXIT_WAYS.map((w) => (
                 <button key={w.id} type="button" className="choice choice--detail" aria-pressed={w.id === way} onClick={() => setWay(w.id)}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>{w.label}</span>
+                  <span className="title-item">{w.label}</span>
                   <span className="text-sm muted" style={{ fontWeight: 400 }}>
                     {w.help}
                   </span>
@@ -98,7 +98,7 @@ export function EarlyExitSample() {
             </fieldset>
 
             <div className="stack gap-8">
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Descargo de responsabilidad</h2>
+              <h2 className="title-card">Descargo de responsabilidad</h2>
               <div
                 className="stack gap-8"
                 tabIndex={0}
@@ -136,7 +136,7 @@ export function EarlyExitSample() {
             </div>
 
             <div className="stack gap-8">
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>
+              <span className="title-card">Firma del encargado</span>
               <SignaturePad
                 height={100}
                 value={firma}

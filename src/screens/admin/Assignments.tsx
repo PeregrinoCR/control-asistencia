@@ -156,7 +156,7 @@ function AssignmentsSample() {
             <div key={t.name} className="row gap-12" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
               <Avatar name={t.name} />
               <div className="stack grow">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{t.name}</span>
+                <span className="title-item">{t.name}</span>
                 <span className="text-sm muted">
                   {t.subject} · {t.sections}
                 </span>

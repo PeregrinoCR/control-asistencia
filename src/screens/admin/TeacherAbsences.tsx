@@ -220,7 +220,7 @@ function TeacherAbsencesSample() {
                 <div key={l.section + l.time} className="stack gap-10" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 14 }}>
                   <div className="row wrap between gap-8">
                     <span className="stack">
-                      <span style={{ fontSize: 15, fontWeight: 700 }}>
+                      <span className="title-item">
                         {l.subject} · {l.section}
                       </span>
                       <span className="text-sm muted">

@@ -80,7 +80,7 @@ function Card({ f }: { f: FamilyCtx }) {
         )}
 
         <div className="card card--mobile gap-10">
-          <h2 style={{ fontSize: 16, fontWeight: 700 }}>¿Se perdió el carné impreso?</h2>
+          <h2 className="title-card">¿Se perdió el carné impreso?</h2>
           <p style={{ fontSize: 14, lineHeight: 1.45, color: 'var(--ink-2)' }}>
             Al reportarlo, el código actual deja de funcionar en el portón para que nadie más lo use, y se crea uno nuevo al
             instante.

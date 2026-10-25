@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, ButtonLink, Icon, MiniStat, StatusBadge } from '../../components';
+import { Badge, ButtonLink, Icon, MiniStat, Skeleton, StatusBadge } from '../../components';
 import { FamilyTabBar, MobileScreen } from '../../layouts/MobileScreen';
 import { MARK_STATUS } from '../../data/school';
 import { kidRecords, monthTotals, useKidToday, type Exit } from '../../lib/family';
@@ -129,20 +129,20 @@ function Home({ f }: { f: FamilyCtx }) {
           </section>
         ) : (
           <section className="card card--mobile gap-4">
-            <span style={{ fontSize: 17, fontWeight: 700 }}>Sin novedades hoy</span>
+            <span className="title-block">Sin novedades hoy</span>
             <span className="text-sm muted">Le avisaremos aquí si {kid.short} falta o llega tarde.</span>
           </section>
         )}
 
         <section className="card card--mobile gap-10" style={{ order: pendingTrips ? 0 : 2 }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700 }}>Permisos y autorizaciones</h2>
+          <h2 className="title-block">Permisos y autorizaciones</h2>
           {trips.map((t) => (
             <Link key={t.id} to={routes.family.trip} state={{ id: t.id }} className="perm-link">
               <span className="perm-link__icon">
                 <Icon name="bus" />
               </span>
               <span className="stack grow">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{t.title}</span>
+                <span className="title-item">{t.title}</span>
                 <span className="text-sm muted">
                   {shortDate(t.date)}
                   {t.deadline && !t.answer && ` · firme antes del ${shortDate(t.deadline)}`}
@@ -157,7 +157,7 @@ function Home({ f }: { f: FamilyCtx }) {
                 <Icon name="logout" />
               </span>
               <span className="stack grow">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>Salida autorizada a las {exit.hour} p. m.</span>
+                <span className="title-item">Salida autorizada a las {exit.hour} p. m.</span>
                 <span className="text-sm muted">{exit.left ? 'Ya salió del colegio.' : `Comprobante ${exit.receipt}`}</span>
               </span>
             </div>
@@ -167,7 +167,7 @@ function Home({ f }: { f: FamilyCtx }) {
                 <Icon name="logout" />
               </span>
               <span className="stack grow">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>Solicitud enviada</span>
+                <span className="title-item">Solicitud enviada</span>
                 <span className="text-sm muted">Dirección revisará la solicitud de salida a las {exit.hour} p. m.</span>
               </span>
             </div>
@@ -178,7 +178,7 @@ function Home({ f }: { f: FamilyCtx }) {
                   <Icon name="logout" />
                 </span>
                 <span className="stack grow">
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>Salida no autorizada</span>
+                  <span className="title-item">Salida no autorizada</span>
                   <span className="text-sm muted">Motivo: {exit.motivo_rechazo ?? 'sin detalle'}.</span>
                 </span>
               </div>
@@ -199,13 +199,13 @@ function Home({ f }: { f: FamilyCtx }) {
 
         <section className="card card--mobile" style={{ order: 1 }}>
           <div className="row between" style={{ alignItems: 'baseline' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700 }}>Hoy, lección por lección</h2>
+            <h2 className="title-block">Hoy, lección por lección</h2>
             <Link to={routes.family.schedule} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Ver horario
             </Link>
           </div>
           {!lessons ? (
-            <span className="text-sm muted">Cargando…</span>
+            <Skeleton count={3} label="Cargando las lecciones de hoy" />
           ) : lessons.length === 0 ? (
             <span className="text-sm muted">Hoy no hay lecciones para la sección {kid.section}.</span>
           ) : (
@@ -238,7 +238,7 @@ function Home({ f }: { f: FamilyCtx }) {
 
         <section className="card card--mobile" style={{ order: 3 }}>
           <div className="row between" style={{ alignItems: 'baseline' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700 }}>Este mes</h2>
+            <h2 className="title-block">Este mes</h2>
             <Link to={routes.family.history} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Ver historial
             </Link>
@@ -252,13 +252,13 @@ function Home({ f }: { f: FamilyCtx }) {
 
         {notices.length > 0 && (
           <section className="card card--mobile gap-10" aria-labelledby="avisos-t" style={{ order: 4 }}>
-            <h2 id="avisos-t" style={{ fontSize: 17, fontWeight: 700 }}>
+            <h2 id="avisos-t" className="title-block">
               Avisos del colegio
             </h2>
             {notices.map((n) => (
               <div key={n.id} className="stack gap-2" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
                 <span className="row between gap-8">
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>{n.title}</span>
+                  <span className="title-item">{n.title}</span>
                   {(n.type === 'urg' || n.type === 'sus') && <Badge tone={n.type === 'urg' ? 'orange' : 'amber'}>{n.type === 'urg' ? 'Urgente' : 'Suspensión'}</Badge>}
                 </span>
                 <span className="text-sm" style={{ color: 'var(--ink-2)', lineHeight: 1.45 }}>

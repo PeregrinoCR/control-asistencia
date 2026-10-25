@@ -85,7 +85,7 @@ function TripConsentSample() {
             </div>
 
             <div className="stack gap-10">
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Datos para el día de la gira</h2>
+              <h2 className="title-card">Datos para el día de la gira</h2>
               <InputField
                 id="g-salud"
                 touch
@@ -129,7 +129,7 @@ function TripConsentSample() {
             )}
 
             <div className="stack gap-8">
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>
+              <span className="title-card">Firma del encargado</span>
               <SignaturePad
                 value={firma}
                 signer={GUARDIAN.full}

@@ -204,7 +204,7 @@ export function RoomsLive() {
       {tab === 'grupos' && (
         <section aria-labelledby="grupos-t" className="card gap-10">
           <div className="row wrap between gap-8">
-            <h2 id="grupos-t" style={{ fontSize: 16, fontWeight: 700 }}>
+            <h2 id="grupos-t" className="title-card">
               Grupos
             </h2>
             <form
@@ -332,7 +332,7 @@ export function RoomsLive() {
 
       {tab === 'aulas' && (
         <section aria-labelledby="aulas-t" className="card gap-10">
-          <h2 id="aulas-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="aulas-t" className="title-card">
             Aulas del centro
           </h2>
           <span className="text-xs muted">Los puestos sirven para avisar cuando un grupo tiene más estudiantes de los que caben. Sin número, el aula no tiene límite.</span>
@@ -419,7 +419,7 @@ export function RoomsLive() {
       {tab === 'traslados' && (
         <section aria-labelledby="eventos-t" className="card gap-12">
           <div className="row wrap between gap-8">
-            <h2 id="eventos-t" style={{ fontSize: 16, fontWeight: 700 }}>
+            <h2 id="eventos-t" className="title-card">
               Eventos con traslado
             </h2>
             <Button

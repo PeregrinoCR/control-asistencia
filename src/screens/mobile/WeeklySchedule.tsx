@@ -61,7 +61,7 @@ function WeeklyScheduleSample() {
                   <span className="text-xs muted">{r.end}</span>
                 </span>
                 <span className="stack grow">
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>{r.subject}</span>
+                  <span className="title-item">{r.subject}</span>
                   <span className="text-xs muted">
                     {change?.kind === 'sub' ? `Sustituye: ${change.substitute}` : change?.kind === 'free' ? `${r.teacher} no viene hoy` : r.teacher}
                   </span>
@@ -75,7 +75,7 @@ function WeeklyScheduleSample() {
         </section>
 
         <section className="card card--mobile gap-8" aria-labelledby="pruebas-t">
-          <h2 id="pruebas-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="pruebas-t" className="title-card">
             Próximas pruebas
           </h2>
           {exams.length === 0 ? (

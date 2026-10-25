@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, EmptyState, StatusBadge, useToast } from '../../components';
+import { Button, EmptyState, Skeleton, StatusBadge, useToast } from '../../components';
 import { MobileScreen, TeacherTabBar } from '../../layouts/MobileScreen';
 import { CONSENT_STATUS, PAYMENT_STATUS, type ConsentState, type PaymentState } from '../../data/admin';
 import { useAuth } from '../../lib/auth';
@@ -137,7 +137,7 @@ function MyTripsLive() {
             No se pudo cargar: {error}
           </p>
         ) : !trips ? (
-          <p className="text-sm muted">Cargando…</p>
+          <Skeleton count={5} label="Cargando sus giras" />
         ) : trips.length === 0 ? (
           <EmptyState title="Sin giras a su cargo">Cuando Dirección lo nombre organizador de una gira, la verá aquí.</EmptyState>
         ) : (
@@ -167,7 +167,7 @@ function MyTripsLive() {
               </p>
             )}
             {!rows ? (
-              <p className="text-sm muted">Cargando estudiantes…</p>
+              <Skeleton count={4} label="Cargando estudiantes" />
             ) : rows.length === 0 ? (
               <p className="text-sm muted">Esta gira no tiene estudiantes todavía.</p>
             ) : (

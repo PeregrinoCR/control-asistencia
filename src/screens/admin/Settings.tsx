@@ -111,7 +111,7 @@ function InstitutionTab() {
 
       <aside className="split__side stack gap-16">
         <section aria-labelledby="logo-t" className="card gap-10">
-          <h2 id="logo-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="logo-t" className="title-card">
             Escudo o logo
           </h2>
           <button type="button" className="dropzone stack" style={{ height: 120, background: 'var(--bg)', fontSize: 14 }}>
@@ -192,7 +192,7 @@ function ModulesTab() {
 
       {modules.pay && (
         <aside aria-labelledby="sinpe-t" className="card split__side gap-14">
-          <h2 id="sinpe-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="sinpe-t" className="title-card">
             Cuenta para recibir pagos
           </h2>
           <InputField id="m-sinpe" type="tel" label="Número SINPE Móvil" placeholder="[NÚMERO SINPE]" />
@@ -276,7 +276,7 @@ function ShiftsTab() {
       </section>
 
       <aside className="card split__side gap-14">
-        <h2 style={{ fontSize: 16, fontWeight: 700 }}>Reglas de la jornada {SHIFT_BLOCKS[shift].label.toLowerCase()}</h2>
+        <h2 className="title-card">Reglas de la jornada {SHIFT_BLOCKS[shift].label.toLowerCase()}</h2>
         <fieldset className="fieldset">
           <legend>Días con lecciones</legend>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 6 }}>
@@ -339,7 +339,7 @@ function SpecialTab() {
             </div>
             <div className="stack gap-4 grow">
               <span className="row between gap-8">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{e.name}</span>
+                <span className="title-item">{e.name}</span>
                 <Badge tone={e.scheduled ? 'green' : 'neutral'}>{e.scheduled ? 'Programado' : 'Borrador'}</Badge>
               </span>
               <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>{e.change}</span>

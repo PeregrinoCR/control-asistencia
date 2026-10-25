@@ -81,7 +81,7 @@ function FamilyHomeSample() {
                 <span className="alert-card__when" style={{ color: 'var(--amber-ink)' }}>
                   Hoy · {child.freeLesson.time}
                 </span>
-                <h2 id="libre-t" style={{ fontSize: 17, fontWeight: 700 }}>
+                <h2 id="libre-t" className="title-block">
                   {child.freeLesson.subject} no tendrá lección
                 </h2>
               </span>
@@ -103,13 +103,13 @@ function FamilyHomeSample() {
         )}
 
         <section className="card card--mobile gap-10">
-          <h2 style={{ fontSize: 17, fontWeight: 700 }}>Permisos y autorizaciones</h2>
+          <h2 className="title-block">Permisos y autorizaciones</h2>
           <Link to={routes.family.trip} className="perm-link">
             <span className="perm-link__icon">
               <Icon name="bus" />
             </span>
             <span className="stack grow">
-              <span style={{ fontSize: 15, fontWeight: 700 }}>Gira a [DESTINO]</span>
+              <span className="title-item">Gira a [DESTINO]</span>
               <span className="text-sm muted">Vie 30 oct · firme antes del 26 oct</span>
             </span>
             <Badge tone="orange">Falta firma</Badge>
@@ -122,7 +122,7 @@ function FamilyHomeSample() {
 
         <section className="card card--mobile">
           <div className="row between" style={{ alignItems: 'baseline' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700 }}>Hoy, lección por lección</h2>
+            <h2 className="title-block">Hoy, lección por lección</h2>
             <Link to={routes.family.schedule} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Ver horario
             </Link>
@@ -149,7 +149,7 @@ function FamilyHomeSample() {
 
         <section className="card card--mobile">
           <div className="row between" style={{ alignItems: 'baseline' }}>
-            <h2 style={{ fontSize: 17, fontWeight: 700 }}>Este mes</h2>
+            <h2 className="title-block">Este mes</h2>
             <Link to={routes.family.history} style={{ fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Ver historial
             </Link>

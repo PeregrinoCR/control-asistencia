@@ -54,7 +54,7 @@ export function ScreenIndex() {
             {g.links.map((l) => (
               <Link key={l.to} to={l.to} className="index__link">
                 <span className="text-sm muted strong">{l.role}</span>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{l.label}</span>
+                <span className="title-item">{l.label}</span>
               </Link>
             ))}
           </div>

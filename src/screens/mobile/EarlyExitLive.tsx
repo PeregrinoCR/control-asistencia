@@ -198,7 +198,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
               <legend>¿Cómo se retira?</legend>
               {EXIT_WAYS.map((w) => (
                 <button key={w.id} type="button" className="choice choice--detail" aria-pressed={w.id === way} onClick={() => setWay(w.id)}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>{w.label}</span>
+                  <span className="title-item">{w.label}</span>
                   <span className="text-sm muted" style={{ fontWeight: 400 }}>
                     {w.help}
                   </span>
@@ -213,7 +213,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
             </fieldset>
 
             <div className="stack gap-8">
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Descargo de responsabilidad</h2>
+              <h2 className="title-card">Descargo de responsabilidad</h2>
               <div className="stack gap-8" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 14px', fontSize: 15, lineHeight: 1.5, color: 'var(--ink-2)' }}>
                 <p>
                   Yo, <strong>{me.name}</strong>, encargado(a) legal de <strong>{kid.name}</strong>, autorizo su salida del{' '}
@@ -252,7 +252,7 @@ function EarlyExit({ f }: { f: FamilyCtx }) {
             </div>
 
             <div className="stack gap-8">
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Firma del encargado</span>
+              <span className="title-card">Firma del encargado</span>
               <SignaturePad
                 height={100}
                 value={firma}

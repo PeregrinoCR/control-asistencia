@@ -147,7 +147,7 @@ function GateSample() {
         )}
 
         <section className="card card--mobile gap-8" aria-labelledby="sal-t">
-          <h2 id="sal-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="sal-t" className="title-card">
             Salidas autorizadas hoy
           </h2>
           {exitsToday.map((c) => (
@@ -164,7 +164,7 @@ function GateSample() {
         </section>
 
         <section className="card card--mobile gap-8" aria-labelledby="log-t">
-          <h2 id="log-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="log-t" className="title-card">
             Últimos registros
           </h2>
           {log.map((l, i) => (

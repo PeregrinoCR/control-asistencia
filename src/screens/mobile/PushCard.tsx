@@ -21,7 +21,7 @@ export function PushCard({ compact }: { compact?: boolean }) {
       <div className="row gap-10">
         <Icon name="bell" size={22} style={{ color: 'var(--blue)', flexShrink: 0 }} />
         <span className="stack grow">
-          <span style={{ fontSize: 16, fontWeight: 700 }}>Notificaciones</span>
+          <span className="title-card">Notificaciones</span>
           <span className="text-sm muted">
             {state === 'on' ? 'Activadas en este teléfono.' : 'Reciba al instante ausencias, tardías, salidas y avisos.'}
           </span>

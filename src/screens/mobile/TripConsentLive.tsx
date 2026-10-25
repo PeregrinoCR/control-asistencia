@@ -96,7 +96,7 @@ function Trips({ f }: { f: FamilyCtx }) {
         <div className="screen-body gap-14">
           <KidPicker f={f} />
           <section className="card card--mobile gap-6">
-            <span style={{ fontSize: 17, fontWeight: 700 }}>No hay giras pendientes</span>
+            <span className="title-block">No hay giras pendientes</span>
             <span className="text-sm muted">Cuando el colegio organice una gira para la sección {kid.section}, aparecerá aquí para autorizarla.</span>
           </section>
           {!kid.adult && (
@@ -271,7 +271,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
             </div>
 
             <div className="stack gap-10">
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Datos para el día de la gira</h2>
+              <h2 className="title-card">Datos para el día de la gira</h2>
               <InputField id="g-salud" touch label={label('Alergias, condiciones médicas o medicamentos')} placeholder="Ej.: asma, usa inhalador" value={health} onChange={(e) => setHealth(e.target.value)} />
               <InputField id="g-contacto" touch type="tel" label={label('Teléfono de contacto ese día')} value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
@@ -330,7 +330,7 @@ function TripForm({ f, trip, trips, onPick, answer, payments, onAnswered }: Form
             )}
 
             <div className="stack gap-8">
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Firma</span>
+              <span className="title-card">Firma</span>
               <SignaturePad
                 value={firma}
                 signer={me.name}

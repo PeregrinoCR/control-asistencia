@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { Avatar, Button, Icon, ThemeButton } from '../../components';
+import { Avatar, Button, Icon, Skeleton, ThemeButton } from '../../components';
 import { MobileScreen, TeacherTabBar } from '../../layouts/MobileScreen';
 import type { Mark } from '../../data/school';
 import { SCHOOL_DAYS } from '../../data/schedule';
@@ -129,7 +129,13 @@ export function RollCallLive() {
   }, [lesson, date]);
 
   if (ready && !session) return <Navigate to={routes.login} replace state={{ from: location.pathname }} />;
-  if (!ready || me === undefined || (me && !lessons)) return <MobileScreen>{centered('Cargando…')}</MobileScreen>;
+  if (!ready || me === undefined || (me && !lessons)) return (
+      <MobileScreen>
+        <div className="screen-body" style={{ paddingTop: 20 }}>
+          <Skeleton count={6} label="Cargando el pase de lista" />
+        </div>
+      </MobileScreen>
+    );
   if (!me)
     return (
       <MobileScreen>
@@ -235,7 +241,9 @@ export function RollCallLive() {
       {!lesson ? (
         centered(day ? 'No tiene lecciones asignadas para hoy. Si es un error, pida a dirección que revise su horario.' : 'Hoy no hay lecciones.')
       ) : !pupils ? (
-        centered('Cargando estudiantes…')
+        <div style={{ padding: 16 }}>
+          <Skeleton count={7} label="Cargando estudiantes" />
+        </div>
       ) : (
         <>
           <div className="row between" style={{ padding: '8px 16px' }}>

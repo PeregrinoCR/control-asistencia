@@ -46,6 +46,13 @@ export function LineChart({ data, min, max, ticks, format, pointLabel = (p) => p
             aria-hidden="true"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}
           >
+            <defs>
+              <linearGradient id="chart-area" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" style={{ stopColor: 'var(--blue)', stopOpacity: 0.22 }} />
+                <stop offset="1" style={{ stopColor: 'var(--blue)', stopOpacity: 0 }} />
+              </linearGradient>
+            </defs>
+            <polygon points={`${x(0)},100 ${data.map((d, i) => `${x(i)},${y(d.value)}`).join(' ')} ${x(n - 1)},100`} fill="url(#chart-area)" stroke="none" />
             <polyline
               points={data.map((d, i) => `${x(i)},${y(d.value)}`).join(' ')}
               fill="none"

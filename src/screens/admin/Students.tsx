@@ -127,7 +127,7 @@ function StudentsSample() {
               {adult ? 'Contacto (el propio estudiante)' : 'Encargado legal'}
             </h3>
             <div className="stack gap-4" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
-              <span style={{ fontSize: 15, fontWeight: 700 }}>{s.contact}</span>
+              <span className="title-item">{s.contact}</span>
               <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>
                 {s.phone} · {s.app === 'Solo SMS' ? 'SMS' : 'App y SMS'}
               </span>

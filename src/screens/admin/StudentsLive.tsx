@@ -528,7 +528,7 @@ function StudentPanel({ s, data, onClose }: { s: LiveStudent; data: Students; on
             {s.guardians.length === 0 && <span className="text-sm ink-orange">Sin encargado registrado.</span>}
             {s.guardians.map((g) => (
               <div key={g.id} className="stack gap-4" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 12 }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>
+                <span className="title-item">
                   {g.name}
                   {g.relation && <span className="muted" style={{ fontWeight: 400 }}> · {g.relation}</span>}
                 </span>

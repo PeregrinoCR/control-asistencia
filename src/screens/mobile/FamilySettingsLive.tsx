@@ -20,7 +20,7 @@ export function FamilySettingsLive() {
                 <Icon name="qr" />
               </span>
               <span className="stack grow">
-                <span style={{ fontSize: 15, fontWeight: 700 }}>Carné estudiantil</span>
+                <span className="title-item">Carné estudiantil</span>
                 <span className="text-sm muted">Código QR para el portón · reportar pérdida</span>
               </span>
               <Icon name="chevronLeft" size={18} style={{ transform: 'rotate(180deg)', color: 'var(--muted)' }} />
@@ -29,7 +29,7 @@ export function FamilySettingsLive() {
             <PushCard />
 
             <section className="card card--mobile gap-8">
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Mi cuenta</h2>
+              <h2 className="title-card">Mi cuenta</h2>
               <div className="stack gap-2" style={{ fontSize: 14 }}>
                 <span className="strong">{f.me.name}</span>
                 <span className="muted">{session?.user.email}</span>
@@ -40,7 +40,7 @@ export function FamilySettingsLive() {
 
             {!f.me.self && (
               <section className="card card--mobile gap-8">
-                <h2 style={{ fontSize: 16, fontWeight: 700 }}>Estudiantes a cargo</h2>
+                <h2 className="title-card">Estudiantes a cargo</h2>
                 {f.kids.map((k) => (
                   <div key={k.id} className="row between" style={{ fontSize: 14 }}>
                     <span className="strong">{k.name}</span>
@@ -51,7 +51,7 @@ export function FamilySettingsLive() {
             )}
 
             <section className="card card--mobile gap-8">
-              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Apariencia</h2>
+              <h2 className="title-card">Apariencia</h2>
               <span className="text-sm muted">Automático sigue el modo de su teléfono: claro de día y oscuro si lo tiene así.</span>
               <ThemeButton className="btn btn--secondary" />
             </section>

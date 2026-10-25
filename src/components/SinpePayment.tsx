@@ -32,7 +32,7 @@ export function SinpePayment({ amount, number, holder, reference, receipt, onRec
   return (
     <section className="card card--mobile gap-12" aria-labelledby="pago-t">
       <div className="row between gap-8">
-        <h2 id="pago-t" style={{ fontSize: 16, fontWeight: 700 }}>
+        <h2 id="pago-t" className="title-card">
           Pago por SINPE Móvil
         </h2>
         <span className={receipt ? 'badge badge--blue' : 'badge badge--amber'}>{receipt ? 'En revisión' : 'Pendiente'}</span>

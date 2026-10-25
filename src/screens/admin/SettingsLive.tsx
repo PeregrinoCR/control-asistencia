@@ -296,7 +296,7 @@ function InstitutionTab({ f, update }: TabProps) {
         <Logo />
         <JustificationRules f={f} update={update} />
         <section aria-labelledby="curso-t" className="card gap-10">
-          <h2 id="curso-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="curso-t" className="title-card">
             Curso lectivo {new Date().getFullYear()}
           </h2>
           {SCHOOL_CALENDAR.filter((c) => !c.label.startsWith('Feriados')).map((c, i) => (
@@ -339,7 +339,7 @@ function Logo() {
 
   return (
     <section aria-labelledby="logo-t" className="card gap-10">
-      <h2 id="logo-t" style={{ fontSize: 16, fontWeight: 700 }}>
+      <h2 id="logo-t" className="title-card">
         Escudo o logo
       </h2>
       <label className="dropzone stack" style={{ height: 120, background: 'var(--bg)', fontSize: 14, cursor: 'pointer' }}>
@@ -399,7 +399,7 @@ function ModulesTab({ f, update }: TabProps) {
       {f.modulos.sms && <SmsLine />}
       {f.modulos.pay && (
         <aside aria-labelledby="sinpe-t" className="card gap-14">
-          <h2 id="sinpe-t" style={{ fontSize: 16, fontWeight: 700 }}>
+          <h2 id="sinpe-t" className="title-card">
             Cuenta para recibir pagos
           </h2>
           <InputField id="m-sinpe" type="tel" label="Número SINPE Móvil" placeholder="8888-8888" value={f.sinpe.numero} onChange={(e) => update({ sinpe: { ...f.sinpe, numero: e.target.value } })} />
@@ -459,7 +459,7 @@ function SmsLine() {
 
   return (
     <aside aria-labelledby="sms-t" className="card gap-12">
-      <h2 id="sms-t" style={{ fontSize: 16, fontWeight: 700 }}>
+      <h2 id="sms-t" className="title-card">
         Línea propia para SMS
       </h2>
       <span className={ready ? 'text-sm strong ink-green' : 'text-sm strong ink-orange'}>{ready === null ? '…' : ready ? 'Conectada' : 'Sin conectar'}</span>
@@ -534,7 +534,7 @@ function ShiftsTab({ f, update }: TabProps) {
       </section>
 
       <aside className="card split__side gap-14">
-        <h2 style={{ fontSize: 16, fontWeight: 700 }}>Reglas de la jornada</h2>
+        <h2 className="title-card">Reglas de la jornada</h2>
         <fieldset className="fieldset">
           <legend>Días con lecciones</legend>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 6 }}>
@@ -653,7 +653,7 @@ function SpecialTab({ f, update, save, sections }: TabProps & { save: (next?: Fo
               </div>
               <div className="stack gap-4 grow">
                 <span className="row between gap-8">
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>{e.nombre}</span>
+                  <span className="title-item">{e.nombre}</span>
                   <Badge tone={e.programado ? 'green' : 'neutral'}>{e.programado ? 'Avisado' : 'Borrador'}</Badge>
                 </span>
                 <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>
@@ -918,7 +918,7 @@ function ExamsTab({ f, update, sections, save }: TabProps & { sections: string[]
           </div>
         )}
         <div className="stack gap-10" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700 }}>Agregar prueba</h3>
+          <h3 className="title-item">Agregar prueba</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             <InputField id="x-fecha" type="date" label="Fecha" value={draft.fecha} onChange={(e) => setDraft({ ...draft, fecha: e.target.value })} />
             <div className="field">
@@ -1158,7 +1158,7 @@ function JustificationRules({ f, update }: TabProps) {
   };
   return (
     <section aria-labelledby="just-t" className="card gap-10">
-      <h2 id="just-t" style={{ fontSize: 16, fontWeight: 700 }}>
+      <h2 id="just-t" className="title-card">
         Justificar ausencias
       </h2>
       <span className="text-sm muted">El estudiante presenta el comprobante en papel a cada profesor con quien faltó, y cada profesor decide por su lección.</span>
