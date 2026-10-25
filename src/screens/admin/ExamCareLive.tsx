@@ -342,7 +342,7 @@ export function ExamCareLive() {
     if (teaching) return { rank: 2, tone: 'neutral', text: `Da lección ${teaching.lesson}.ª` };
     const lessons = Array.from({ length: r.to - r.from + 1 }, (_, k) => r.from + k);
     if (!lessons.every((l) => isWorking(p, day, slotsToday, l))) return { rank: 2, tone: 'neutral', text: 'Fuera de su horario' };
-    return { rank: 0, tone: 'green', text: p.roles.includes('doc') ? 'Libre' : 'Libre · apoyo' };
+    return { rank: 0, tone: 'green', text: p.roles.includes('doc') ? 'Libre' : 'Libre · auxiliar' };
   };
 
   return (

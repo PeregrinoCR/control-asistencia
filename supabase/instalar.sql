@@ -2323,12 +2323,16 @@ begin
 end
 $$;
 
--- Nombres de los roles por función del colegio. Solo cambia la etiqueta: los códigos (dir, doc, gui, ori, adm, gua, aux)
--- y los permisos de cada rol quedan igual. Es seguro correrla más de una vez.
-update roles set nombre = 'Docente guía' where id = 'gui';
-update roles set nombre = 'Secretaría' where id = 'adm';
+-- Nombres de los roles por función del colegio y sus permisos:
+--  · Docente guía suma «Pasar lista».
+--  · Secretaría deja de aprobar salidas anticipadas.
+--  · Solo Dirección y Auxiliares aprueban salidas anticipadas (Orientación no).
+-- Los códigos (dir, doc, gui, ori, adm, gua, aux) no cambian. Es seguro correrla más de una vez.
+-- Si el colegio ya cambió un rol en Usuarios y permisos (tabla roles_colegio), ese cambio vale sobre lo de fábrica.
+update roles set nombre = 'Docente guía', permisos = array['rollCall','viewAttendance','approveJust','earlyWarning'] where id = 'gui';
+update roles set nombre = 'Secretaría', permisos = array['viewAttendance','approveJust','teacherAbs','trips','notices','payments','cards','students','reports'] where id = 'adm';
 update roles set nombre = 'Portón' where id = 'gua';
-update roles set nombre = 'Apoyo' where id = 'aux';
+update roles set nombre = 'Auxiliares', permisos = array['approveExit'] where id = 'aux';
 
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 
@@ -2336,11 +2340,12 @@ insert into roles (id, nombre, permisos, limitado_a_seccion) values
   ('dir', 'Dirección', array['rollCall','viewAttendance','approveJust','approveExit','teacherAbs','assign','trips','gate',
     'notices','sms','earlyWarning','saber','payments','cards','students','reports','users','settings'], false),
   ('doc', 'Docente', array['rollCall'], false),
-  ('gui', 'Docente guía', array['viewAttendance','approveJust','earlyWarning'], true),
+  ('gui', 'Docente guía', array['rollCall','viewAttendance','approveJust','earlyWarning'], true),
   ('ori', 'Orientación', array['viewAttendance','approveJust','notices','earlyWarning','saber','reports'], false),
-  ('adm', 'Secretaría', array['viewAttendance','approveJust','approveExit','teacherAbs','trips','notices',
+  ('adm', 'Secretaría', array['viewAttendance','approveJust','teacherAbs','trips','notices',
     'payments','cards','students','reports'], false),
-  ('gua', 'Portón', array['gate'], false)
+  ('gua', 'Portón', array['gate'], false),
+  ('aux', 'Auxiliares', array['approveExit'], false)
 on conflict (id) do update set nombre = excluded.nombre, permisos = excluded.permisos,
   limitado_a_seccion = excluded.limitado_a_seccion;
 

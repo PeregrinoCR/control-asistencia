@@ -39,7 +39,7 @@ export const PERMISSION_GROUPS: Array<{ id: string; label: string; permissions: 
     id: 'perm',
     label: 'Permisos y portón',
     permissions: [
-      { id: 'trips', label: 'Crear giras', help: 'Y ver las autorizaciones firmadas', scoped: true },
+      { id: 'trips', label: 'Gestionar giras y sus pagos', help: 'Crear giras, ver las autorizaciones firmadas y confirmar los pagos de sus giras', scoped: true },
       { id: 'gate', label: 'Registrar entradas y salidas', help: 'Escanear carnés en el portón' },
     ],
   },
@@ -63,7 +63,7 @@ export const PERMISSION_GROUPS: Array<{ id: string; label: string; permissions: 
     id: 'admin',
     label: 'Administración',
     permissions: [
-      { id: 'payments', label: 'Confirmar pagos', help: 'Revisar comprobantes SINPE' },
+      { id: 'payments', label: 'Confirmar comprobantes SINPE de cualquier gira', help: 'Revisar comprobantes y marcar pagos de todas las giras' },
       { id: 'students', label: 'Gestionar estudiantes', help: 'Matrícula, encargados y su importación' },
       { id: 'cards', label: 'Gestionar carnés', help: 'Imprimir, reponer y desactivar' },
       { id: 'reports', label: 'Ver reportes', help: 'Y descargarlos' },
@@ -103,7 +103,7 @@ export const ROLES: Role[] = [
     id: 'gui',
     name: 'Docente guía',
     help: 'Docente a cargo de una sección: ve la asistencia, justificaciones y alertas de su grupo',
-    grants: ['viewAttendance', 'approveJust', 'earlyWarning'],
+    grants: ['rollCall', 'viewAttendance', 'approveJust', 'earlyWarning'],
     scopedToSection: true,
   },
   {
@@ -116,10 +116,10 @@ export const ROLES: Role[] = [
     id: 'adm',
     name: 'Secretaría',
     help: 'Oficina: matrícula, carnés, pagos, giras y reportes',
-    grants: ['viewAttendance', 'approveJust', 'approveExit', 'teacherAbs', 'trips', 'notices', 'payments', 'cards', 'students', 'reports'],
+    grants: ['viewAttendance', 'approveJust', 'teacherAbs', 'trips', 'notices', 'payments', 'cards', 'students', 'reports'],
   },
   { id: 'gua', name: 'Portón', help: 'Registra las entradas y salidas con el carné', grants: ['gate'] },
-  { id: 'aux', name: 'Apoyo', help: 'Personal de apoyo: cuido de exámenes y otras tareas', grants: [] },
+  { id: 'aux', name: 'Auxiliares', help: 'Personal de apoyo: aprueban salidas anticipadas, cuidan exámenes y hacen otras tareas', grants: ['approveExit'] },
 ];
 
 /** A school's changes to what a role can do (table `roles_colegio`). */
