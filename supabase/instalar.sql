@@ -4,7 +4,7 @@
 -- ¡Ojo! Si el colegio ya tiene datos, NO use este archivo: corra solo las migraciones nuevas.
 
 drop trigger if exists vincular_cuenta on auth.users;
-drop view if exists asistencia_mes, asistencia_dia, docentes;
+drop view if exists asistencia_leccion, asistencia_mes, asistencia_dia, docentes;
 drop table if exists casos_alerta, cuidos, coberturas, ausencias_docentes, incapacidades, ausencia_avisos, notificaciones, suscripciones, ajustes_privados,
   seguimientos, aviso_lecturas, avisos, gira_autorizaciones, giras, porton, salidas,
   bitacora, justificaciones, asistencia, horario, materias, carnes,
@@ -18,7 +18,7 @@ drop function if exists vincular_cuenta, solo_digitos, doy_leccion_en, mis_estud
   quitar_justificacion, excepcion_justificacion, recordatorios_justificacion,
   estudiantes_de_gira, cancelar_gira, recordar_gira,
   fijar_aviso, destinatarios_aviso, retirar_cola_aviso, publicar_avisos_programados, lectura_avisos, pendientes_aviso, reenviar_aviso,
-  tocar_caso_alerta, alerta_extra, avisar_familia cascade;
+  tocar_caso_alerta, alerta_extra, avisar_familia, ausentismo_periodo cascade;
 
 -- Control de asistencia: estructura inicial (Fase 1).
 -- Todo cuelga de un colegio; las reglas de seguridad (RLS) hacen que cada persona
@@ -2129,6 +2129,35 @@ begin
   return n;
 end
 $$;
+
+-- Reportes: asistencia por lección (mapa de lecciones y días, materias) y ausentismo por estudiante en un periodo.
+-- Corre sobre una base con 0001–0019. Es seguro correrla dos veces.
+
+-- Totales por día, sección y lección. Con la seguridad de quien consulta (como asistencia_dia).
+create or replace view asistencia_leccion with (security_invoker = true) as
+select fecha, seccion_id, leccion,
+  count(*) filter (where marca = 'P') as presentes,
+  count(*) filter (where marca = 'T') as tardias,
+  count(*) filter (where marca = 'A') as ausencias,
+  count(*) filter (where marca = 'J') as justificadas
+from asistencia
+group by fecha, seccion_id, leccion;
+grant select on asistencia_leccion to authenticated;
+
+-- Lecciones ausentes (sin justificar), justificadas y tardías de cada estudiante entre dos fechas.
+-- Sin "security definer": cada persona ve solo lo que sus permisos le dejan ver en `asistencia`.
+create or replace function ausentismo_periodo(desde date, hasta date)
+returns table (estudiante_id uuid, ausencias int, justificadas int, tardias int)
+language sql stable as $$
+  select a.estudiante_id,
+    (count(*) filter (where a.marca = 'A'))::int,
+    (count(*) filter (where a.marca = 'J'))::int,
+    (count(*) filter (where a.marca = 'T'))::int
+  from asistencia a
+  where a.fecha between desde and hasta
+  group by a.estudiante_id
+$$;
+grant execute on function ausentismo_periodo(date, date) to authenticated;
 
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 
