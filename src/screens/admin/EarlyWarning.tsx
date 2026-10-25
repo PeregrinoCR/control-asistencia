@@ -200,7 +200,7 @@ function EarlyWarningSample() {
           <h2 id="crit-t" className="title-section">
             Criterios que activan la alerta
           </h2>
-          <span className="text-sm muted">Al activarse se abre un caso y se avisa al profesor guía y a orientación.</span>
+          <span className="text-sm muted">Al activarse se abre un caso y se avisa al docente guía y a orientación.</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 10 }}>
           {CRITERIA.map((c) => (

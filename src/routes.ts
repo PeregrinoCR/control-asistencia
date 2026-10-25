@@ -5,6 +5,7 @@ export const routes = {
   teacher: {
     rollCall: '/docente/pase-de-lista',
     toJustify: '/docente/por-justificar',
+    myTrips: '/docente/mis-giras',
   },
   guard: {
     gate: '/porton',

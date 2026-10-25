@@ -31,7 +31,7 @@ const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
   {
     title: 'Familias',
     links: [
-      { to: routes.admin.trips, label: 'Giras y salidas', perm: ['trips', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
+      { to: routes.admin.trips, label: 'Giras y salidas', perm: ['trips', 'payments', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
       { to: routes.admin.notices, label: 'Avisos a familias', perm: 'notices' },
       { to: routes.admin.earlyWarning, label: 'Alerta temprana', perm: 'earlyWarning', count: { n: navCounts.earlyWarning, tone: 'orange' } },
     ],
@@ -52,7 +52,7 @@ const PAGE_PERMS: Array<[string, PermissionId | PermissionId[]]> = [
   [routes.admin.rooms, 'assign'],
   [routes.admin.teacherAbsences, 'teacherAbs'],
   [routes.admin.examCare, 'assign'],
-  [routes.admin.trips, ['trips', 'approveExit']],
+  [routes.admin.trips, ['trips', 'payments', 'approveExit']],
   [routes.admin.students, 'viewAttendance'],
   [routes.admin.justifications, 'approveJust'],
   [routes.admin.notices, 'notices'],
@@ -90,7 +90,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   // With a server configured, the panel needs a signed-in account.
   if (supabase && ready && !session) return <Navigate to={routes.login} replace />;
   if (supabase && !ready) return null;
-  if (supabase && school && !hasPanel(roles)) return <Navigate to={homeFor(roles, family)} replace />;
+  if (supabase && school && !hasPanel(roles, perms)) return <Navigate to={homeFor(roles, family)} replace />;
 
   // The menu shows only the pages this person can use (the preview without a server shows them all).
   const allowed = (perm: PermissionId | PermissionId[]) => !supabase || [perm].flat().some((p) => perms.includes(p));
@@ -151,9 +151,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             ))}
           </div>
         ))}
-        <NavLink to={routes.admin.settings} className="admin__link admin__link--bottom">
-          Configuración
-        </NavLink>
+        {allowed('settings') && (
+          <NavLink to={routes.admin.settings} className="admin__link admin__link--bottom">
+            Configuración
+          </NavLink>
+        )}
         {session && (
           <button type="button" className="admin__link" onClick={() => signOut()} title={session.user.email}>
             Salir

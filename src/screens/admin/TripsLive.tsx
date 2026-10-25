@@ -75,8 +75,10 @@ async function openFile(path: string) {
 export function TripsLive() {
   const { perms } = useAuth();
   const canTrips = perms.includes('trips');
+  // Who confirms payments sees the trips too, even without creating them.
+  const seesTrips = canTrips || perms.includes('payments');
   const fromLink = new URLSearchParams(useLocation().search).get('ver') === 'salidas';
-  const [tab, setTab] = useState<Tab>(fromLink || !canTrips ? 'exits' : 'trip');
+  const [tab, setTab] = useState<Tab>(fromLink || !seesTrips ? 'exits' : 'trip');
   const [pending, setPending] = useState(0);
   const [sections, setSections] = useState<Array<{ id: string; nombre: string }>>([]);
   const [trips, setTrips] = useState<Trip[] | null>(null);
@@ -164,7 +166,7 @@ export function TripsLive() {
         value={tab}
         onChange={setTab}
         options={[
-          ...(canTrips ? [{ value: 'trip' as const, label: `Giras · ${upcoming.length} próximas` }] : []),
+          ...(seesTrips ? [{ value: 'trip' as const, label: `Giras · ${upcoming.length} próximas` }] : []),
           { value: 'exits' as const, label: `Salidas tempranas · hoy ${exits?.length ?? 0}${pending ? ` · ${pending} por decidir` : ''}` },
         ]}
       />

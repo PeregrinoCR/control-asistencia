@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Badge, Button, InputField, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
@@ -55,6 +55,7 @@ export function ExamCareLive() {
   const [dirty, setDirty] = useState(false);
   const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
+  const [onlyMissing, setOnlyMissing] = useState(false);
   const [error, setError] = useState('');
   /** People marked as unavailable per night (`colegios.config.cuidosNoDisponibles`), and teachers absent on the open night. */
   const [unavail, setUnavail] = useState<Record<string, Array<{ id: string; motivo: string }>>>({});
@@ -400,9 +401,12 @@ export function ExamCareLive() {
             </p>
           )}
 
-          <section aria-label="No disponibles esta noche" className="card stack gap-8" style={{ padding: '12px 16px' }}>
+          <details className="card" style={{ padding: '10px 16px' }} open={unavailable.length > 0}>
+            <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+              No disponibles esta noche · {unavailable.length === 0 ? 'nadie marcado' : unavailable.length}
+            </summary>
+            <div className="stack gap-8" style={{ marginTop: 10 }}>
             <div className="row wrap gap-8" style={{ alignItems: 'center' }}>
-              <strong style={{ fontSize: 14 }}>No disponibles esta noche</strong>
               {unavailable.length === 0 && <span className="text-sm muted">Nadie marcado.</span>}
               {unavailable.map((u) => (
                 <button
@@ -437,81 +441,124 @@ export function ExamCareLive() {
               </Button>
             </div>
             <span className="text-xs muted">La propuesta no los asigna. Los docentes ausentes de «Docentes ausentes» ya se saltan solos.</span>
-          </section>
+            </div>
+          </details>
 
-          <div className="row gap-16" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <section aria-label="Aulas de la noche" className="stack gap-10" style={{ flex: '999 1 560px', minWidth: 0 }}>
-              {rows.length === 0 && (
-                <p className="card text-sm muted">
-                  Exámenes de esta noche:{' '}
-                  {data.exams
-                    .filter((x) => x.fecha === date)
-                    .map((x) => `${x.seccion} ${x.materia}${x.aula ? ` (${x.aula})` : ''}`)
-                    .join(', ')}
-                  . Presione "Proponer cuidadores".
-                </p>
-              )}
-              {cards.map((idx) => {
-                const first = rows[idx[0]];
-                // Adecuación rooms clash when a normal room with the same name sits the same lessons.
-                const choque =
-                  first.kind === 'adecuacion' &&
-                  rows.some((o) => o.kind === 'aula' && o.room === first.room && o.from <= first.to && first.from <= o.to);
-                return (
-                  <div key={idx.join('-')} className="card stack gap-8" style={{ padding: '12px 16px' }}>
-                    <span className="row gap-8">
-                      <strong style={{ fontSize: 15 }}>{first.room}</strong>
-                      {first.kind === 'adecuacion' && <Badge tone="blue">Adecuación</Badge>}
-                      {first.published && !dirty && <Badge tone="green">Publicado</Badge>}
-                      {idx.length > 1 && <Badge tone="amber">Relevo a las {LESSONS[rows[idx[1]].from - 1]?.start}</Badge>}
-                    </span>
-                    <span className="text-sm muted">{first.detail}</span>
-                    {choque && <span className="text-xs strong ink-orange">Choque: esta aula también aparece como aula normal a esa hora.</span>}
-                    {idx.map((i, k) => {
-                      const r = rows[i];
-                      const options = [...data.staff]
-                        .map((p) => ({ p, s: stateOf(p, i) }))
-                        .sort((a, b) => a.s.rank - b.s.rank || (tally.get(a.p.id)?.cares ?? 0) - (tally.get(b.p.id)?.cares ?? 0) || a.p.name.localeCompare(b.p.name, 'es'));
-                      const mine = r.personId ? options.find((o) => o.p.id === r.personId)?.s : undefined;
-                      return (
-                        <div
-                          key={i}
-                          className="row wrap between gap-10"
-                          style={{ padding: '8px 0 8px 12px', borderLeft: `3px solid ${k ? 'var(--orange)' : 'var(--blue-ink)'}` }}
-                        >
-                          <span className="stack" style={{ minWidth: 200 }}>
-                            <span className="text-sm">
-                              <strong style={{ color: k ? 'var(--orange)' : 'var(--blue-ink)' }}>{k ? 'Relevo' : idx.length > 1 ? 'Cuidador inicial' : 'Cuidador'}</strong>
-                              {' · '}
-                              {r.from}.ª a {r.to}.ª · {hours(r.from, r.to)}
-                            </span>
-                          </span>
-                          <span className="stack gap-4" style={{ minWidth: 260 }}>
-                            <label htmlFor={`p-${i}`} className="sr-only">
-                              Cuidador de {r.room}, {r.from}.ª a {r.to}.ª
-                            </label>
-                            <select id={`p-${i}`} className="input" value={r.personId ?? ''} onChange={(e) => setPerson(i, e.target.value || null)}>
-                              <option value="">Sin cuidador</option>
-                              {options.map(({ p, s }) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name} · {cuidosText(tally.get(p.id)?.cares ?? 0)} · {s.text}
-                                </option>
-                              ))}
-                            </select>
-                            {!r.personId && <span className="text-xs strong ink-orange">Falta asignar</span>}
-                            {mine && mine.rank > 0 && <Badge tone={mine.tone}>{mine.text}</Badge>}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </section>
+          {rows.length === 0 ? (
+            <p className="card text-sm muted">
+              Exámenes de esta noche:{' '}
+              {data.exams
+                .filter((x) => x.fecha === date)
+                .map((x) => `${x.seccion} ${x.materia}${x.aula ? ` (${x.aula})` : ''}`)
+                .join(', ')}
+              . Presione "Proponer cuidadores".
+            </p>
+          ) : (
+            <>
+              <div className="row wrap between gap-10" style={{ alignItems: 'center' }}>
+                <span className="text-sm">
+                  <strong>
+                    {cards.length} {cards.length === 1 ? 'aula' : 'aulas'}
+                  </strong>{' '}
+                  ·{' '}
+                  {rows.some((r) => !r.personId) ? (
+                    <strong className="ink-orange">{rows.filter((r) => !r.personId).length} sin cuidador</strong>
+                  ) : (
+                    <strong className="ink-green">todas con cuidador</strong>
+                  )}
+                </span>
+                <label className="row gap-6 text-sm" style={{ alignItems: 'center' }}>
+                  <input type="checkbox" checked={onlyMissing} onChange={(e) => setOnlyMissing(e.target.checked)} />
+                  Solo las que faltan
+                </label>
+              </div>
+              <div className="card" style={{ padding: 0 }}>
+                <div className="table-wrap">
+                  <table className="table table--compact" style={{ minWidth: 760 }}>
+                    <thead>
+                      <tr>
+                        <th>Aula</th>
+                        <th>Grupo y materia</th>
+                        <th>Lecciones</th>
+                        <th>Cuidador</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cards
+                        .filter((idx) => !onlyMissing || idx.some((i) => !rows[i].personId))
+                        .map((idx) => {
+                          const first = rows[idx[0]];
+                          // Adecuación rooms clash when a normal room with the same name sits the same lessons.
+                          const choque =
+                            first.kind === 'adecuacion' &&
+                            rows.some((o) => o.kind === 'aula' && o.room === first.room && o.from <= first.to && first.from <= o.to);
+                          return (
+                            <Fragment key={idx.join('-')}>
+                              {idx.map((i, k) => {
+                                const r = rows[i];
+                                const options = [...data.staff]
+                                  .map((p) => ({ p, s: stateOf(p, i) }))
+                                  .sort((a, b) => a.s.rank - b.s.rank || (tally.get(a.p.id)?.cares ?? 0) - (tally.get(b.p.id)?.cares ?? 0) || a.p.name.localeCompare(b.p.name, 'es'));
+                                const mine = r.personId ? options.find((o) => o.p.id === r.personId)?.s : undefined;
+                                return (
+                                  <tr key={i} style={{ verticalAlign: 'middle', ...(!r.personId ? { background: 'var(--orange-bg)' } : {}) }}>
+                                    {k === 0 && (
+                                      <td rowSpan={idx.length} style={{ verticalAlign: 'top' }}>
+                                        <span className="stack gap-4">
+                                          <strong>{first.room}</strong>
+                                          <span className="row wrap gap-4">
+                                            {first.kind === 'adecuacion' && <Badge tone="blue">Adecuación</Badge>}
+                                            {first.published && !dirty && <Badge tone="green">Publicado</Badge>}
+                                          </span>
+                                          {choque && <span className="text-xs strong ink-orange">Choque con un aula normal a esa hora</span>}
+                                        </span>
+                                      </td>
+                                    )}
+                                    {k === 0 && (
+                                      <td rowSpan={idx.length} className="text-sm" style={{ verticalAlign: 'top' }}>
+                                        {first.detail}
+                                      </td>
+                                    )}
+                                    <td className="text-sm" style={{ whiteSpace: 'nowrap' }}>
+                                      {idx.length > 1 && <Badge tone={k ? 'amber' : 'neutral'}>{k ? 'Relevo' : 'Inicial'}</Badge>}{' '}
+                                      {r.from}.ª a {r.to}.ª
+                                      <br />
+                                      <span className="text-xs muted">{hours(r.from, r.to)}</span>
+                                    </td>
+                                    <td>
+                                      <span className="stack gap-4" style={{ minWidth: 260 }}>
+                                        <label htmlFor={`p-${i}`} className="sr-only">
+                                          Cuidador de {r.room}, {r.from}.ª a {r.to}.ª
+                                        </label>
+                                        <select id={`p-${i}`} className="input" style={{ height: 40 }} value={r.personId ?? ''} onChange={(e) => setPerson(i, e.target.value || null)}>
+                                          <option value="">Falta asignar</option>
+                                          {options.map(({ p, s }) => (
+                                            <option key={p.id} value={p.id}>
+                                              {p.name} · {cuidosText(tally.get(p.id)?.cares ?? 0)} · {s.text}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {mine && mine.rank > 0 && <Badge tone={mine.tone}>{mine.text}</Badge>}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </Fragment>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
 
-            <aside aria-label="Cuidos por persona" className="card gap-6" style={{ flex: '1 1 260px', minWidth: 240, padding: 16 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Cuidos por persona</h2>
-              <span className="text-xs muted">En el año, guardados. Para repartir parejo, la app prefiere a quien lleva menos.</span>
+          <details className="card" style={{ padding: '10px 16px' }}>
+            <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>Cuidos por persona e informe</summary>
+            <div className="stack gap-6" style={{ marginTop: 10 }}>
+
+                            <span className="text-xs muted">En el año, guardados. Para repartir parejo, la app prefiere a quien lleva menos.</span>
               {reportRows().map((p) => (
                 <div key={p.name} className="row between gap-8" style={{ fontSize: 14, padding: '6px 0', borderTop: '1px solid var(--border-soft)' }}>
                   <span>{p.name}</span>
@@ -535,8 +582,8 @@ export function ExamCareLive() {
                   </Button>
                 </div>
               </div>
-            </aside>
-          </div>
+            </div>
+          </details>
         </>
       )}
     </AdminLayout>

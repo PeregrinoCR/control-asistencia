@@ -2323,17 +2323,24 @@ begin
 end
 $$;
 
+-- Nombres de los roles por función del colegio. Solo cambia la etiqueta: los códigos (dir, doc, gui, ori, adm, gua, aux)
+-- y los permisos de cada rol quedan igual. Es seguro correrla más de una vez.
+update roles set nombre = 'Docente guía' where id = 'gui';
+update roles set nombre = 'Secretaría' where id = 'adm';
+update roles set nombre = 'Portón' where id = 'gua';
+update roles set nombre = 'Apoyo' where id = 'aux';
+
 -- Datos iniciales: roles (igual que src/data/users.ts) y el colegio piloto.
 
 insert into roles (id, nombre, permisos, limitado_a_seccion) values
   ('dir', 'Dirección', array['rollCall','viewAttendance','approveJust','approveExit','teacherAbs','assign','trips','gate',
     'notices','sms','earlyWarning','saber','payments','cards','students','reports','users','settings'], false),
   ('doc', 'Docente', array['rollCall'], false),
-  ('gui', 'Profesor guía', array['viewAttendance','approveJust','earlyWarning'], true),
+  ('gui', 'Docente guía', array['viewAttendance','approveJust','earlyWarning'], true),
   ('ori', 'Orientación', array['viewAttendance','approveJust','notices','earlyWarning','saber','reports'], false),
-  ('adm', 'Administrativo', array['viewAttendance','approveJust','approveExit','teacherAbs','trips','notices',
+  ('adm', 'Secretaría', array['viewAttendance','approveJust','approveExit','teacherAbs','trips','notices',
     'payments','cards','students','reports'], false),
-  ('gua', 'Guarda de portón', array['gate'], false)
+  ('gua', 'Portón', array['gate'], false)
 on conflict (id) do update set nombre = excluded.nombre, permisos = excluded.permisos,
   limitado_a_seccion = excluded.limitado_a_seccion;
 

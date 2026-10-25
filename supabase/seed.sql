@@ -4,11 +4,11 @@ insert into roles (id, nombre, permisos, limitado_a_seccion) values
   ('dir', 'Dirección', array['rollCall','viewAttendance','approveJust','approveExit','teacherAbs','assign','trips','gate',
     'notices','sms','earlyWarning','saber','payments','cards','students','reports','users','settings'], false),
   ('doc', 'Docente', array['rollCall'], false),
-  ('gui', 'Profesor guía', array['viewAttendance','approveJust','earlyWarning'], true),
+  ('gui', 'Docente guía', array['viewAttendance','approveJust','earlyWarning'], true),
   ('ori', 'Orientación', array['viewAttendance','approveJust','notices','earlyWarning','saber','reports'], false),
-  ('adm', 'Administrativo', array['viewAttendance','approveJust','approveExit','teacherAbs','trips','notices',
+  ('adm', 'Secretaría', array['viewAttendance','approveJust','approveExit','teacherAbs','trips','notices',
     'payments','cards','students','reports'], false),
-  ('gua', 'Guarda de portón', array['gate'], false)
+  ('gua', 'Portón', array['gate'], false)
 on conflict (id) do update set nombre = excluded.nombre, permisos = excluded.permisos,
   limitado_a_seccion = excluded.limitado_a_seccion;
 

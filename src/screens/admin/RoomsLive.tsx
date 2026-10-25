@@ -198,7 +198,7 @@ export function RoomsLive() {
         <Stat compact label="Estudiantes" value={String(totalAlumnos)} />
         <Stat compact label="Choques de aula" value={String(choquesTotal)} ink={choquesTotal ? 'orange' : undefined} />
         <Stat compact label="Grupos que no caben" value={String(noCaben)} ink={noCaben ? 'amber' : undefined} />
-        <Stat compact label="Sin profesor guía" value={sinGuia === null ? '—' : String(sinGuia)} ink={sinGuia ? 'amber' : undefined} />
+        <Stat compact label="Sin docente guía" value={sinGuia === null ? '—' : String(sinGuia)} ink={sinGuia ? 'amber' : undefined} />
       </div>
 
       {tab === 'grupos' && (
@@ -221,13 +221,13 @@ export function RoomsLive() {
               </Button>
             </form>
           </div>
-          {guias === null && <span className="text-xs muted">Con esta cuenta no se puede ver el profesor guía de cada grupo.</span>}
+          {guias === null && <span className="text-xs muted">Con esta cuenta no se puede ver el docente guía de cada grupo.</span>}
           <div className="table-wrap">
             <table className="table table--compact" style={{ minWidth: 860 }}>
               <thead>
                 <tr>
                   <th>Grupo</th>
-                  <th>Profesor guía</th>
+                  <th>Docente guía</th>
                   <th>Jornada</th>
                   <th className="num">Estudiantes</th>
                   <th>Aula fija</th>

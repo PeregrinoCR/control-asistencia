@@ -32,6 +32,7 @@ import { PushPreview } from './screens/mobile/PushPreview';
 import { RollCall } from './screens/mobile/RollCall';
 import { TripConsent } from './screens/mobile/TripConsent';
 import { ToJustify } from './screens/mobile/ToJustify';
+import { MyTrips } from './screens/mobile/MyTripsLive';
 
 // Hosted previews can't use URL paths, so they keep the route in memory.
 const inPreview = import.meta.env.VITE_ROUTER === 'memory';
@@ -70,6 +71,7 @@ export function App() {
 
         <Route path={routes.teacher.rollCall} element={<RollCall />} />
         <Route path={routes.teacher.toJustify} element={<ToJustify />} />
+        <Route path={routes.teacher.myTrips} element={<MyTrips />} />
 
         <Route path={routes.family.home} element={<FamilyHome />} />
         <Route path={routes.family.push} element={<PushPreview />} />

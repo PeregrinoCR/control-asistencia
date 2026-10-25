@@ -16,8 +16,8 @@ const LECCIONES = [1, 2, 3, 4, 5, 6];
 /** Demonstration accounts: one per role. The password is for demonstrations only. */
 export const CUENTAS_DEMO = [
   { correo: 'profe@cole.local', rol: 'Docente' },
-  { correo: 'guia@cole.local', rol: 'Profesor guía' },
-  { correo: 'guarda@cole.local', rol: 'Guarda de portón' },
+  { correo: 'guia@cole.local', rol: 'Docente guía' },
+  { correo: 'guarda@cole.local', rol: 'Portón' },
   { correo: 'padre@cole.local', rol: 'Familia (encargado)' },
 ];
 export const CLAVE_DEMO = 'Demo-2026';

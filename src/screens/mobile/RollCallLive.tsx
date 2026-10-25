@@ -45,7 +45,7 @@ const SUB: Record<Mark, { text: string; tone: string }> = {
 
 /** Docente · Pase de lista, with the teacher's real lessons for today. */
 export function RollCallLive() {
-  const { ready, session, roles } = useAuth();
+  const { ready, session, roles, perms } = useAuth();
   const location = useLocation();
   const [me, setMe] = useState<{ id: string; name: string } | null | undefined>(undefined);
   const [lessons, setLessons] = useState<Lesson[] | null>(null);
@@ -177,7 +177,7 @@ export function RollCallLive() {
         <div className="row between">
           <span className="text-sm muted strong">{me.name}</span>
           <span className="row gap-8">
-            {hasPanel(roles) && (
+            {hasPanel(roles, perms) && (
               <Link to={routes.admin.today} className="link-button text-sm">
                 Panel
               </Link>

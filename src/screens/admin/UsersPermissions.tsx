@@ -99,6 +99,11 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
   const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // What is saved for each person, to know which edits are still pending.
+  const [snapshot, setSnapshot] = useState<Map<User['id'], User>>(() => new Map(users.map((u) => [u.id, u])));
+  useEffect(() => {
+    if (staff.users) setSnapshot(new Map(staff.users.map((u) => [u.id, u])));
+  }, [staff.users]);
   const sections = staff.live ? staff.sections : SECTION_IDS;
   const noAccount = users.filter((u) => u.active && u.account === false).length;
 
@@ -124,10 +129,22 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
   };
 
   const save = async () => {
-    if (!staff.live || !selected) return toast('Cambios guardados');
+    if (!selected) return;
+    if (!staff.live) {
+      setSnapshot(new Map(snapshot).set(selected.id, selected));
+      setSaved(true);
+      return toast('Cambios guardados');
+    }
     const error = await staff.save(selected);
     setSaveError(error);
+    setSaved(!error);
     if (!error) toast('Cambios guardados');
+  };
+
+  const pending = (u: User) => {
+    const was = snapshot.get(u.id);
+    const key = (x: User) => JSON.stringify([x.name, x.roles, x.section ?? '', x.extra, x.active, x.work ?? null]);
+    return !!was && key(was) !== key(u);
   };
 
   // Removes the selected person from the staff; the list falls back to the first remaining one.
@@ -221,6 +238,11 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
           saved={saved}
           error={saveError}
           onSave={save}
+          dirty={pending(selected)}
+          onDiscard={() => {
+            const was = snapshot.get(selected.id);
+            if (was) update(was);
+          }}
           onRemove={staff.live && selected.contact.toLowerCase() !== session?.user.email?.toLowerCase() ? remove : undefined}
         />
       ) : (
@@ -274,7 +296,7 @@ function RoleChecks({ value, onChange, roles }: { value: RoleId[]; onChange: (r:
         })}
       </div>
       <span className="text-xs muted" style={{ display: 'block', marginTop: 8 }}>
-        Una persona puede tener varios roles, por ejemplo docente y profesor guía.
+        Una persona puede tener varios roles, por ejemplo docente y docente guía.
       </span>
     </fieldset>
   );
@@ -284,7 +306,7 @@ function SectionPicker({ value, onChange, sections }: { value?: string; onChange
   return (
     <div className="field" style={{ maxWidth: 220 }}>
       <label htmlFor="u-seccion" className="field__label">
-        Sección a cargo (profesor guía)
+        Sección a cargo (docente guía)
       </label>
       <select id="u-seccion" className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
         <option value="" disabled>
@@ -311,6 +333,9 @@ interface UserPanelProps {
   saved: boolean;
   error: string;
   onSave: () => void;
+  /** The person has changes that are not saved yet, and how to drop them. */
+  dirty: boolean;
+  onDiscard: () => void;
 }
 
 const WEEK = [
@@ -368,7 +393,7 @@ function inviteText(u: User, roles: Role[], schoolName: string) {
   return `Hola ${first}, ${schoolName} le invita a usar la app de asistencia.\n\n1. Entre a ${window.location.origin}${routes.login}\n2. Cree su cuenta con este mismo ${isPhone ? 'número de teléfono' : 'correo'}: ${u.contact}\n\nAl entrar verá lo que le corresponde${names ? ` como ${names}` : ''}.`;
 }
 
-function UserPanel({ user, roles, sections, schoolName, live, loadHistory, tab, setTab, onChange, saved, error, onSave, onRemove }: UserPanelProps & { onRemove?: () => void }) {
+function UserPanel({ user, roles, sections, schoolName, live, loadHistory, tab, setTab, onChange, saved, error, onSave, dirty, onDiscard, onRemove }: UserPanelProps & { onRemove?: () => void }) {
   const { fromRoles, all } = effectivePermissions(user, roles);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
@@ -450,12 +475,12 @@ function UserPanel({ user, roles, sections, schoolName, live, loadHistory, tab, 
             )}
             {dead.length > 0 && (
               <span className="text-sm ink-orange" role="alert">
-                Es profesor guía: {dead.map((p) => PERMISSION_LABEL[p]).join(', ')} no se puede dar como permiso extra. Para eso necesita el rol Administrativo.
+                Es docente guía: {dead.map((p) => PERMISSION_LABEL[p]).join(', ')} no se puede dar como permiso extra. Para eso necesita el rol Secretaría.
               </span>
             )}
             {staffBlind && (
               <span className="text-sm ink-orange" role="alert">
-                Solo Dirección y Administrativos ven la lista del personal, así que sin uno de esos roles no podrá elegir sustitutos.
+                Solo Dirección y Secretaría ven la lista del personal, así que sin uno de esos roles no podrá elegir sustitutos.
               </span>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 10 }}>
@@ -520,25 +545,6 @@ function UserPanel({ user, roles, sections, schoolName, live, loadHistory, tab, 
 
       {tab === 'historial' && <PersonHistory id={String(user.id)} live={live} load={loadHistory} />}
 
-      <div className="row wrap between gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
-        {error ? (
-          <span role="alert" className="text-sm ink-orange">
-            No se guardó: {error}
-          </span>
-        ) : saved ? (
-          <span role="status" className="text-sm strong ink-green">
-            Cambios guardados
-          </span>
-        ) : (
-          <span className="text-xs muted">
-            {all.size} de {PERMISSION_GROUPS.reduce((n, g) => n + g.permissions.length, 0)} permisos
-          </span>
-        )}
-        <Button variant="primary" onClick={onSave} disabled={isGuide && !user.section}>
-          Guardar cambios
-        </Button>
-      </div>
-
       {onRemove && (
         <div className="stack gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
           {!confirming ? (
@@ -561,6 +567,35 @@ function UserPanel({ user, roles, sections, schoolName, live, loadHistory, tab, 
           )}
         </div>
       )}
+
+      <div
+        className="row wrap between gap-8"
+        style={{ position: 'sticky', bottom: 0, margin: '0 -20px -20px', padding: '12px 20px', background: 'var(--surface)', borderTop: '1px solid var(--border)', borderRadius: '0 0 var(--radius-lg) var(--radius-lg)', zIndex: 2, alignItems: 'center' }}
+      >
+        {error ? (
+          <span role="alert" className="text-sm ink-orange">
+            No se guardó: {error}
+          </span>
+        ) : dirty ? (
+          <span role="status" className="text-sm strong" style={{ color: 'var(--amber-ink)' }}>
+            Tiene cambios sin guardar
+          </span>
+        ) : saved ? (
+          <span role="status" className="text-sm strong ink-green">
+            Cambios guardados
+          </span>
+        ) : (
+          <span className="text-xs muted">
+            Sin cambios · {all.size} de {PERMISSION_GROUPS.reduce((n, g) => n + g.permissions.length, 0)} permisos
+          </span>
+        )}
+        <span className="row gap-8">
+          {dirty && <Button onClick={onDiscard}>Descartar</Button>}
+          <Button variant="primary" onClick={onSave} disabled={!dirty || (isGuide && !user.section)}>
+            Guardar cambios
+          </Button>
+        </span>
+      </div>
     </aside>
   );
 }
@@ -616,7 +651,7 @@ function InvitePanel({ roles, sections, onInvite, onCancel }: InvitePanelProps) 
     e.preventDefault();
     if (!name.trim() || !contact.trim()) return setError('Escriba el nombre y un correo o teléfono para enviar la invitación.');
     if (userRoles.length === 0) return setError('Elija al menos un rol.');
-    if (userRoles.includes('gui') && !section) return setError('Elija la sección a cargo del profesor guía.');
+    if (userRoles.includes('gui') && !section) return setError('Elija la sección a cargo del docente guía.');
     setError(await onInvite({ name: name.trim(), contact: contact.trim(), roles: userRoles, section, extra: [], active: true, lastSeen: 'Invitación enviada' }));
   };
 
@@ -749,7 +784,7 @@ function RolesTab({ roles, users, staff, setLocalRoles }: { roles: Role[]; users
                       <span className="strong">{p.label}</span>
                       <span className="text-xs muted">
                         {p.help}
-                        {SCOPED.has(p.id) ? ' · el profesor guía solo en su sección' : ''}
+                        {SCOPED.has(p.id) ? ' · el docente guía solo en su sección' : ''}
                       </span>
                     </span>
                   </td>

@@ -86,9 +86,9 @@ function AssignmentsSample() {
             </div>
             <div className="row wrap gap-8">
               <span className="text-sm muted" style={{ fontWeight: 600 }}>
-                Profesor guía
+                Docente guía
               </span>
-              <Button size="md" aria-label="Cambiar profesor guía" style={{ fontSize: 14 }}>
+              <Button size="md" aria-label="Cambiar docente guía" style={{ fontSize: 14 }}>
                 {selected.guide}
                 <Icon name="chevronDown" size={16} style={{ color: 'var(--muted)' }} />
               </Button>

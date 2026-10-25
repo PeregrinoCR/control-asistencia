@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Icon, IconLink, cx, type IconName } from '../components';
+import { useAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
 interface MobileScreenProps {
@@ -86,9 +88,22 @@ const TEACHER_TABS: Array<{ to: string; label: string; icon: IconName }> = [
 
 /** Bottom bar of the teacher's app. */
 export function TeacherTabBar() {
+  const { session } = useAuth();
+  const [organizes, setOrganizes] = useState(false);
+  // «Mis giras» only shows for a teacher who was named the organizer of a trip.
+  useEffect(() => {
+    if (!supabase || !session) return;
+    (async () => {
+      const { data: p } = await supabase!.from('personal').select('id').eq('usuario_id', session.user.id).maybeSingle();
+      if (!p) return;
+      const { count } = await supabase!.from('giras').select('id', { count: 'exact', head: true }).eq('organizador_id', p.id);
+      setOrganizes((count ?? 0) > 0);
+    })();
+  }, [session]);
+  const tabs = organizes ? [...TEACHER_TABS, { to: routes.teacher.myTrips, label: 'Mis giras', icon: 'bus' as IconName }] : TEACHER_TABS;
   return (
-    <nav aria-label="Navegación del docente" className="tab-bar" style={{ gridTemplateColumns: `repeat(${TEACHER_TABS.length}, minmax(0, 1fr))` }}>
-      {TEACHER_TABS.map((t) => (
+    <nav aria-label="Navegación del docente" className="tab-bar" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+      {tabs.map((t) => (
         <NavLink key={t.to} to={t.to} end className="tab-bar__item">
           <Icon name={t.icon} size={22} />
           {t.label}

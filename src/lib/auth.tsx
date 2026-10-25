@@ -74,6 +74,9 @@ export function homeFor(roles: string[], family = false) {
 export const areaOf = (path: string) => '/' + (path.split('/')[1] ?? '');
 
 /** Whether the person can use the administration panel (guide teachers see their own section). */
-export const hasPanel = (roles: string[]) => roles.some((r) => ['dir', 'ori', 'adm', 'gui'].includes(r));
+/** Permissions that open a page of the panel; anyone who has one of them can enter it, whatever their role. */
+const PANEL_PERMS: PermissionId[] = ['viewAttendance', 'approveJust', 'approveExit', 'teacherAbs', 'assign', 'trips', 'payments', 'notices', 'earlyWarning', 'reports', 'users', 'settings'];
+
+export const hasPanel = (roles: string[], perms: string[] = []) => roles.some((r) => ['dir', 'ori', 'adm', 'gui'].includes(r)) || perms.some((p) => PANEL_PERMS.includes(p as PermissionId));
 
 export const signOut = () => supabase?.auth.signOut();

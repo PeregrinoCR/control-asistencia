@@ -32,7 +32,7 @@ export const PERMISSION_GROUPS: Array<{ id: string; label: string; permissions: 
     label: 'Docentes',
     permissions: [
       { id: 'teacherAbs', label: 'Registrar ausencias de docentes', help: 'Y elegir sustitutos o lección libre' },
-      { id: 'assign', label: 'Asignar profesores y horarios', help: 'Secciones, materias y profesor guía' },
+      { id: 'assign', label: 'Asignar profesores y horarios', help: 'Secciones, materias y docente guía' },
     ],
   },
   {
@@ -98,28 +98,28 @@ export const ROLES: Role[] = [
     help: 'Administra todo el colegio',
     grants: ALL_PERMISSIONS.map((p) => p.id),
   },
-  { id: 'doc', name: 'Docente', help: 'Da lecciones', grants: ['rollCall'] },
+  { id: 'doc', name: 'Docente', help: 'Pasa lista en sus lecciones', grants: ['rollCall'] },
   {
     id: 'gui',
-    name: 'Profesor guía',
-    help: 'A cargo de una sección',
+    name: 'Docente guía',
+    help: 'Docente a cargo de una sección: ve la asistencia, justificaciones y alertas de su grupo',
     grants: ['viewAttendance', 'approveJust', 'earlyWarning'],
     scopedToSection: true,
   },
   {
     id: 'ori',
     name: 'Orientación',
-    help: 'Seguimiento de estudiantes',
+    help: 'Seguimiento de estudiantes en riesgo y comunicación con las familias',
     grants: ['viewAttendance', 'approveJust', 'notices', 'earlyWarning', 'saber', 'reports'],
   },
   {
     id: 'adm',
-    name: 'Administrativo',
-    help: 'Oficina y secretaría',
+    name: 'Secretaría',
+    help: 'Oficina: matrícula, carnés, pagos, giras y reportes',
     grants: ['viewAttendance', 'approveJust', 'approveExit', 'teacherAbs', 'trips', 'notices', 'payments', 'cards', 'students', 'reports'],
   },
-  { id: 'gua', name: 'Guarda de portón', help: 'Controla entradas y salidas', grants: ['gate'] },
-  { id: 'aux', name: 'Auxiliar', help: 'Personal de apoyo: cuido de exámenes y otras tareas', grants: [] },
+  { id: 'gua', name: 'Portón', help: 'Registra las entradas y salidas con el carné', grants: ['gate'] },
+  { id: 'aux', name: 'Apoyo', help: 'Personal de apoyo: cuido de exámenes y otras tareas', grants: [] },
 ];
 
 /** A school's changes to what a role can do (table `roles_colegio`). */
