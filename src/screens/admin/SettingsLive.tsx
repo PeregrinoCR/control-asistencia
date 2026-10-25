@@ -1,6 +1,6 @@
 import { DEFAULT_THRESHOLDS, THRESHOLD_FIELDS } from '../../data/earlyWarning';
 import { useEffect, useState } from 'react';
-import { Badge, Button, InputField, Segmented, SettingRow, useFlash, Skeleton } from '../../components';
+import { Badge, Button, Icon, InputField, SettingRow, useFlash, Skeleton, type IconName } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos, CLAVE_DEMO, CUENTAS_DEMO } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
@@ -28,7 +28,17 @@ import { justifConfigOf, type JustifConfig } from '../../lib/justificaciones';
 import { supabase } from '../../lib/supabase';
 import { ordenarSecciones } from '../../lib/secciones';
 
-type Tab = 'inst' | 'mod' | 'jor' | 'esp' | 'exa' | 'dev';
+type Tab = 'inst' | 'reg' | 'mod' | 'jor' | 'esp' | 'exa' | 'dev';
+
+const SECTIONS: { id: Tab; label: string; hint: string; icon: IconName; words: string }[] = [
+  { id: 'inst', label: 'Institución', hint: 'Nombre, contacto, logo y curso lectivo', icon: 'home', words: 'nombre telefono logo escudo calendario curso lectivo tipo director' },
+  { id: 'reg', label: 'Reglas y alertas', hint: 'Alerta temprana, justificaciones y cargas', icon: 'alert', words: 'alerta temprana ausencias tardias justificar plazo incapacidad sustituto carga lecciones docente' },
+  { id: 'mod', label: 'Módulos', hint: 'SABER, pagos SINPE y SMS', icon: 'grid', words: 'saber sinpe pagos sms mensajes modulos' },
+  { id: 'jor', label: 'Jornadas y horarios', hint: 'Lecciones, tardías y ausencias', icon: 'calendar', words: 'jornada lecciones horario tarde ausencia nocturna diurna' },
+  { id: 'esp', label: 'Horarios especiales', hint: 'Feriados, suspensiones y eventos', icon: 'pen', words: 'feriado asueto suspension evento especial salida temprana' },
+  { id: 'exa', label: 'Horario de exámenes', hint: 'Pruebas, aulas y avisos', icon: 'fileCheck', words: 'examen prueba aula adecuacion cuido' },
+  { id: 'dev', label: 'Desarrollo', hint: 'Datos de ejemplo y borrado', icon: 'sliders', words: 'ejemplo demo borrar datos prueba' },
+];
 
 export interface SpecialEvent {
   id: string;
@@ -94,6 +104,9 @@ export function SettingsLive() {
   const { school } = useAuth();
   const [tab, setTab] = useState<Tab>('inst');
   const [form, setForm] = useState<Form | null>(null);
+  // What is stored right now, to know whether there are unsaved changes.
+  const [saved, setSaved] = useState('');
+  const [find, setFind] = useState('');
   const [sections, setSections] = useState<string[]>([]);
   const [msg, setMsg] = useFlash();
   const [busy, setBusy] = useState(false);
@@ -109,7 +122,7 @@ export function SettingsLive() {
       if (!r) return;
       const cfg = r.config ?? {};
       const mods = r.modulos ?? {};
-      setForm({
+      const loaded: Form = {
         nombre: r.nombre,
         sector: r.sector,
         telefono: r.telefono ?? '',
@@ -128,7 +141,9 @@ export function SettingsLive() {
         aulasGrupo: cfg.aulasGrupo ?? {},
         eventosAula: cfg.eventosAula ?? [],
         justificacion: justifConfigOf(cfg),
-      });
+      };
+      setForm(loaded);
+      setSaved(JSON.stringify(loaded));
       setSections(ordenarSecciones(s.data).map((x) => x.nombre));
     })();
   }, []);
@@ -151,53 +166,76 @@ export function SettingsLive() {
       .eq('id', school!.id);
     setBusy(false);
     setMsg(error ? { ok: false, text: 'No se guardó: ' + error.message } : { ok: true, text: 'Cambios guardados' });
+    if (!error) setSaved(JSON.stringify(next));
     return error?.message ?? '';
   };
 
+  const dirty = !!form && JSON.stringify(form) !== saved;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
+  const q = find.trim().toLowerCase();
+  const shown = SECTIONS.filter((x) => !q || `${x.label} ${x.hint} ${x.words}`.toLowerCase().includes(q));
+
   return (
     <AdminLayout>
-      <PageHeader
-        kicker="Solo dirección y administración pueden cambiar estos ajustes"
-        title="Configuración"
-        actions={
-          <>
-            {msg && (
-              <span role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-sm strong ink-green' : 'text-sm ink-orange'}>
-                {msg.text}
+      <PageHeader kicker="Solo dirección y administración pueden cambiar estos ajustes" title="Configuración" />
+
+      <div className="settings">
+        <nav className="settings__nav" aria-label="Secciones de configuración">
+          <input type="search" className="input" placeholder="Buscar un ajuste…" aria-label="Buscar un ajuste" value={find} onChange={(e) => setFind(e.target.value)} />
+          {shown.map((x) => (
+            <button key={x.id} type="button" className="settings__item" aria-current={tab === x.id ? 'page' : undefined} onClick={() => setTab(x.id)}>
+              <Icon name={x.icon} size={18} />
+              <span className="stack">
+                <strong>{x.label}</strong>
+                <span className="text-xs muted">{x.hint}</span>
               </span>
-            )}
-            <Button variant="primary" style={{ padding: '0 18px' }} disabled={!form || busy} onClick={() => save()}>
-              {busy ? 'Guardando…' : 'Guardar cambios'}
-            </Button>
-          </>
-        }
-      />
-
-      <Segmented
-        label="Secciones de configuración"
-        mode="tabs"
-        value={tab}
-        onChange={setTab}
-        options={[
-          { value: 'inst', label: 'Institución' },
-          { value: 'mod', label: 'Módulos' },
-          { value: 'jor', label: 'Jornadas y horarios' },
-          { value: 'esp', label: 'Horarios especiales' },
-          { value: 'exa', label: 'Horario de exámenes' },
-          { value: 'dev', label: 'Desarrollo' },
-        ]}
-      />
-
+            </button>
+          ))}
+          {!shown.length && <span className="text-sm muted">Ningún ajuste coincide.</span>}
+        </nav>
+        <div className="settings__body">
       {!form ? (
         <Skeleton count={4} />
       ) : (
-        <div role="tabpanel">
+        <div role="region" aria-label={SECTIONS.find((x) => x.id === tab)?.label}>
           {tab === 'inst' && <InstitutionTab f={form} update={update} />}
+          {tab === 'reg' && <RulesTab f={form} update={update} />}
           {tab === 'mod' && <ModulesTab f={form} update={update} />}
           {tab === 'jor' && <ShiftsTab f={form} update={update} />}
           {tab === 'esp' && <SpecialTab f={form} update={update} save={save} sections={sections} />}
           {tab === 'exa' && <ExamsTab f={form} update={update} sections={sections} save={save} />}
           {tab === 'dev' && school && <DevTab colegioId={school.id} />}
+        </div>
+      )}
+        </div>
+      </div>
+
+      {(dirty || msg) && (
+        <div className="savebar" role="region" aria-label="Guardar cambios">
+          {msg && !dirty ? (
+            <span role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-sm strong ink-green' : 'text-sm ink-orange'}>
+              {msg.text}
+            </span>
+          ) : (
+            <span className="text-sm strong">
+              Hay cambios sin guardar
+              {msg && !msg.ok && <span className="ink-orange"> · {msg.text}</span>}
+            </span>
+          )}
+          {dirty && (
+            <>
+              <Button onClick={() => setForm(JSON.parse(saved))}>Descartar</Button>
+              <Button variant="primary" disabled={busy} onClick={() => save()}>
+                {busy ? 'Guardando…' : 'Guardar cambios'}
+              </Button>
+            </>
+          )}
         </div>
       )}
     </AdminLayout>
@@ -235,6 +273,51 @@ function InstitutionTab({ f, update }: TabProps) {
             <InputField key={x.id} id={x.id} type={x.type} label={x.label} hint={empty(x.id) ? 'pendiente' : undefined} placeholder={x.placeholder} value={value(x.id)} onChange={(e) => set(x.id, e.target.value)} />
           ))}
         </div>
+        <fieldset className="fieldset">
+          <legend>Tipo de institución</legend>
+          <div className="row wrap gap-8">
+            {INSTITUTION_KINDS.map((k, i) => (
+              <button key={k} type="button" className="chip" aria-pressed={i === f.tipo} onClick={() => update({ tipo: i })}>
+                {k}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      </section>
+
+      <aside className="split__side stack gap-16">
+        <Logo />
+        <section aria-labelledby="curso-t" className="card gap-10">
+          <h2 id="curso-t" className="title-card">
+            Curso lectivo {new Date().getFullYear()}
+          </h2>
+          {SCHOOL_CALENDAR.filter((c) => !c.label.startsWith('Feriados')).map((c, i) => (
+            <InputField
+              key={c.label}
+              id={`cal-${i}`}
+              label={c.label}
+              placeholder={c.value}
+              value={f.calendario[c.label] ?? ''}
+              onChange={(e) => update({ calendario: { ...f.calendario, [c.label]: e.target.value } })}
+            />
+          ))}
+          <span className="text-xs muted">Los feriados y asuetos se registran en Horarios especiales como suspensión de lecciones.</span>
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+
+function RulesTab({ f, update }: TabProps) {
+  const value = (id: string) => f.institucion[id] ?? '';
+  const set = (id: string, v: string) => update({ institucion: { ...f.institucion, [id]: v } });
+  return (
+    <div className="split">
+      <section aria-labelledby="reg-t" className="card card--roomy split__main">
+        <h2 id="reg-t" className="title-section">
+          Reglas y alertas
+        </h2>
         <InputField
           id="c-incap-dias"
           label="Días de incapacidad para pedir sustituto"
@@ -280,37 +363,9 @@ function InstitutionTab({ f, update }: TabProps) {
           </div>
           <span className="text-xs muted">Si deja un campo vacío se usa el número de ejemplo. Los cambios se aplican la próxima vez que se abra Alerta temprana.</span>
         </fieldset>
-        <fieldset className="fieldset">
-          <legend>Tipo de institución</legend>
-          <div className="row wrap gap-8">
-            {INSTITUTION_KINDS.map((k, i) => (
-              <button key={k} type="button" className="chip" aria-pressed={i === f.tipo} onClick={() => update({ tipo: i })}>
-                {k}
-              </button>
-            ))}
-          </div>
-        </fieldset>
       </section>
-
       <aside className="split__side stack gap-16">
-        <Logo />
         <JustificationRules f={f} update={update} />
-        <section aria-labelledby="curso-t" className="card gap-10">
-          <h2 id="curso-t" className="title-card">
-            Curso lectivo {new Date().getFullYear()}
-          </h2>
-          {SCHOOL_CALENDAR.filter((c) => !c.label.startsWith('Feriados')).map((c, i) => (
-            <InputField
-              key={c.label}
-              id={`cal-${i}`}
-              label={c.label}
-              placeholder={c.value}
-              value={f.calendario[c.label] ?? ''}
-              onChange={(e) => update({ calendario: { ...f.calendario, [c.label]: e.target.value } })}
-            />
-          ))}
-          <span className="text-xs muted">Los feriados y asuetos se registran en Horarios especiales como suspensión de lecciones.</span>
-        </section>
       </aside>
     </div>
   );
