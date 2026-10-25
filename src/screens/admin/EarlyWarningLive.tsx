@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Icon, Segmented, StatusBadge, Switch, TextareaField, InputField, useFlash } from '../../components';
+import { Button, Icon, Segmented, StatusBadge, Switch, TextareaField, InputField, useFlash, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { CRITERIA, RISK, criteriaFor, thresholdsOf } from '../../data/earlyWarning';
 import { ruleState } from '../../data/school';
@@ -160,7 +160,7 @@ export function EarlyWarningLive() {
           No se pudo cargar: {error}
         </p>
       ) : !cases ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : (
         <>
           <section aria-label="Resumen de la semana" className="card card--night row wrap gap-16" style={{ alignItems: 'center', padding: '16px 20px' }}>

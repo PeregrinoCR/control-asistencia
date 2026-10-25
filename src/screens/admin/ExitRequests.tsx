@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, EmptyState, InputField, Segmented, useFlash } from '../../components';
+import { Badge, Button, EmptyState, InputField, Segmented, useFlash, Skeleton } from '../../components';
 import { useAuth } from '../../lib/auth';
 import { localDate } from '../../lib/schedule';
 import { supabase } from '../../lib/supabase';
@@ -131,7 +131,7 @@ export function ExitRequests({ onDecided }: { onDecided?: () => void }) {
           {msg.text}
         </p>
       )}
-      {rows === null && <p className="text-sm muted">Cargando…</p>}
+      {rows === null && <Skeleton count={4} />}
       {rows && shown.length === 0 && (
         <EmptyState title={filter === 'pendiente' ? 'No hay solicitudes por decidir' : range === 'hoy' ? 'No hay salidas tempranas hoy' : 'No hay salidas tempranas en esas fechas'}>
           Cuando una familia pida una salida, aparecerá aquí para que la autorice.

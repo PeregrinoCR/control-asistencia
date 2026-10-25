@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, InputField, Segmented, SettingRow, StatusBadge, TextareaField, useFlash } from '../../components';
+import { Button, InputField, Segmented, SettingRow, StatusBadge, TextareaField, useFlash, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { AUTO_RULES, NOTICE_TONE, NOTICE_TYPES, type NoticeType } from '../../data/notices';
 import { ruleState } from '../../data/school';
@@ -412,7 +412,7 @@ export function NoticesLive() {
             Programados y borradores
           </h2>
           {!notices ? (
-            <p className="text-sm muted">Cargando…</p>
+            <Skeleton count={4} />
           ) : queued.length === 0 ? (
             <p className="text-sm muted">No hay avisos programados ni borradores. Redacte uno y elija «Programar» o «Guardar borrador».</p>
           ) : (
@@ -479,7 +479,7 @@ export function NoticesLive() {
             />
           </div>
           {!notices ? (
-            <p className="text-sm muted">Cargando…</p>
+            <Skeleton count={4} />
           ) : sent.length === 0 ? (
             <p className="text-sm muted">{filter === 'todos' ? 'Todavía no se ha enviado ningún aviso.' : 'No hay avisos con ese filtro.'}</p>
           ) : (
@@ -531,7 +531,7 @@ export function NoticesLive() {
                         <div className="stack gap-6 grow" style={{ minWidth: 280 }}>
                           <strong>Sin abrir{pending ? ` (${pending.length})` : ''}</strong>
                           {!pending ? (
-                            <p className="text-sm muted">Cargando…</p>
+                            <Skeleton count={4} />
                           ) : pending.length === 0 ? (
                             <p className="text-sm muted">Todas las familias lo abrieron.</p>
                           ) : (

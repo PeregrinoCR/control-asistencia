@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties, type DragEvent, type FormEvent } from 'react';
-import { Button, InputField, Meter, useFlash } from '../../components';
+import { Button, InputField, Meter, useFlash, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { useAuth } from '../../lib/auth';
@@ -199,7 +199,7 @@ export function AssignmentsLive() {
           No se pudo cargar: {data.error}
         </p>
       ) : !data.sections ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : (
         <>
           <div className="row wrap gap-10" style={{ alignItems: 'flex-end' }}>

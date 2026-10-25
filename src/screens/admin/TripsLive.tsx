@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Badge, Button, InputField, Segmented, StatusBadge } from '../../components';
+import { Badge, Button, InputField, Segmented, StatusBadge, Skeleton } from '../../components';
 import { useLocation } from 'react-router-dom';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { ExitRequests } from './ExitRequests';
@@ -172,7 +172,7 @@ export function TripsLive() {
       />
 
       {!trips || !exits ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : tab === 'trip' ? (
         <div className="row gap-16" role="tabpanel" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {trips.length > 0 && (
@@ -587,7 +587,7 @@ function TripDetail({
           </p>
         )}
         {!roster ? (
-          <p className="text-sm muted">Cargando…</p>
+          <Skeleton count={4} />
         ) : rows.length === 0 ? (
           <p className="text-sm muted">No hay estudiantes matriculados en esas secciones.</p>
         ) : (

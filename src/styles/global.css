@@ -1097,11 +1097,13 @@ p {
   padding: 12px 0;
 }
 .empty-state__icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--neutral-bg);
-  color: var(--muted);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--blue-bg, var(--neutral-bg));
+  color: var(--blue);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--blue) 8%, transparent);
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1279,4 +1281,15 @@ p {
 }
 .skeleton-line {
   height: 14px;
+}
+
+/* Fundido breve al abrir una pantalla */
+@media (prefers-reduced-motion: no-preference) {
+  .admin__main, .screen-body {
+    animation: screen-in var(--dur) var(--ease) both;
+  }
+}
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }

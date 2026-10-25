@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { Badge, Button, InputField, useFlash } from '../../components';
+import { Badge, Button, InputField, useFlash, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { SCHOOL_DAYS } from '../../data/schedule';
 import { useAuth } from '../../lib/auth';
@@ -354,7 +354,7 @@ export function ExamCareLive() {
           No se pudo cargar: {error}
         </p>
       ) : !data ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : nights.length === 0 ? (
         <p className="card text-sm muted">
           No hay pruebas próximas. Agréguelas en Configuración › Horario de exámenes, con su aula, hora de inicio y duración.

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch, useToast } from '../../components';
+import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch, useToast, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { LESSONS } from '../../lib/schedule';
 import { useAuth } from '../../lib/auth';
@@ -62,7 +62,7 @@ export function UsersPermissions() {
             No se pudo cargar el personal: {staff.error}
           </p>
         ) : loading ? (
-          <p className="text-sm muted">Cargando…</p>
+          <Skeleton count={4} />
         ) : staff.live && users.length === 0 ? (
           <p className="text-sm muted">Todavía no hay personal registrado para su colegio.</p>
         ) : tab === 'users' ? (
@@ -626,7 +626,7 @@ function PersonHistory({ id, live, load }: { id: string; live: boolean; load: (i
     load(id).then((r) => setEntries(r ?? 'error'));
   }, [id, live, load]);
   if (!live) return <p className="text-sm muted">El historial se guarda cuando el colegio usa el servidor.</p>;
-  if (entries === null) return <p className="text-sm muted">Cargando…</p>;
+  if (entries === null) return <Skeleton count={4} />;
   if (entries === 'error') return <p className="text-sm muted">No se pudo leer el historial. Falta aplicar la actualización 0021 del servidor.</p>;
   if (entries.length === 0) return <p className="text-sm muted">Todavía no hay cambios registrados para esta persona. Se anotan desde ahora.</p>;
   return <HistoryList entries={entries} />;
@@ -837,7 +837,7 @@ function HistoryTab({ staff }: { staff: Staff }) {
       {!staff.live ? (
         <p className="text-sm muted">El historial se guarda cuando el colegio usa el servidor.</p>
       ) : entries === null ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : entries === 'error' ? (
         <p className="text-sm muted">No se pudo leer el historial. Falta aplicar la actualización 0021 del servidor.</p>
       ) : entries.length === 0 ? (

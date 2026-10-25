@@ -556,7 +556,7 @@ export function ReportsLive() {
                 <span className="text-sm muted">Lecciones ausentes sin justificar · los 10 primeros</span>
               </div>
               {!absentees ? (
-                <p className="text-sm muted">Cargando…</p>
+                <Skeleton count={4} />
               ) : top.length === 0 ? (
                 <p className="text-sm muted">Nadie tiene ausencias sin justificar en este periodo.</p>
               ) : (

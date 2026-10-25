@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, EmptyState, InputField, Stat, useToast } from '../../components';
+import { Button, EmptyState, InputField, Stat, useToast, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { fechaCorta, type Ausencia, type JustifConfig } from '../../lib/justificaciones';
 import { LESSONS } from '../../lib/schedule';
@@ -72,7 +72,7 @@ export function JustificationsView({ items, rules, error, onRemind, onReopen }: 
           No se pudieron cargar: {error}
         </p>
       ) : items === null ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : (
         <div className="stack gap-18">
           <section aria-label="Resumen" className="grid-tiles">

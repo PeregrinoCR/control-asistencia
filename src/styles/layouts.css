@@ -443,13 +443,24 @@ button.admin__link {
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: var(--bg, #f4f5f7);
+  background: radial-gradient(900px 480px at 50% -10%, var(--blue-bg, rgba(30, 79, 216, 0.14)), transparent 70%), var(--bg, #f4f5f7);
 }
 
 .login__card {
   width: 100%;
   max-width: 380px;
-  padding: 24px;
+  padding: 28px 24px;
+  box-shadow: var(--shadow-lg);
+  animation: login-in var(--dur) var(--ease) both;
+}
+.login__card .admin__logo {
+  width: 44px;
+  height: 44px;
+  box-shadow: var(--shadow-md);
+}
+@keyframes login-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
 .link-button {

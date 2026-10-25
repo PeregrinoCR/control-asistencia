@@ -1,6 +1,6 @@
 import { DEFAULT_THRESHOLDS, THRESHOLD_FIELDS } from '../../data/earlyWarning';
 import { useEffect, useState } from 'react';
-import { Badge, Button, InputField, Segmented, SettingRow, useFlash } from '../../components';
+import { Badge, Button, InputField, Segmented, SettingRow, useFlash, Skeleton } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { borrarDatos, cargarEjemplos, CLAVE_DEMO, CUENTAS_DEMO } from '../../lib/devData';
 import { aulaDe, eventoActivo, type AulasConfig, type EventoAula } from '../../lib/aulas';
@@ -189,7 +189,7 @@ export function SettingsLive() {
       />
 
       {!form ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={4} />
       ) : (
         <div role="tabpanel">
           {tab === 'inst' && <InstitutionTab f={form} update={update} />}
