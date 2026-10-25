@@ -3,7 +3,8 @@ import { Avatar, Badge, Button, Icon, InputField, Segmented, Switch, useToast } 
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { LESSONS } from '../../lib/schedule';
 import { useAuth } from '../../lib/auth';
-import { useStaff } from '../../lib/staff';
+import { routes } from '../../routes';
+import { daysSince, describeChange, useStaff, whenLabel, type HistoryEntry } from '../../lib/staff';
 import {
   PERMISSION_GROUPS,
   PERMISSION_LABEL,
@@ -20,14 +21,15 @@ import {
   type User,
 } from '../../data/users';
 
-type Tab = 'users' | 'roles';
+type Tab = 'users' | 'roles' | 'history';
 
 /** Dirección · Usuarios y permisos */
 export function UsersPermissions() {
   const [tab, setTab] = useState<Tab>('users');
   const staff = useStaff();
   const [users, setUsers] = useState(USERS);
-  const [roles, setRoles] = useState(ROLES);
+  const [localRoles, setLocalRoles] = useState(ROLES);
+  const roles = staff.live ? staff.roles : localRoles;
 
   // With a server, the list comes from the school's real staff.
   useEffect(() => {
@@ -49,8 +51,9 @@ export function UsersPermissions() {
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'users', label: `Usuarios · ${users.filter((u) => u.active).length}` },
-          { value: 'roles', label: `Roles · ${roles.length}` },
+          { value: 'users', label: `Personas · ${users.filter((u) => u.active).length}` },
+          { value: 'roles', label: 'Qué puede hacer cada rol' },
+          { value: 'history', label: 'Historial de cambios' },
         ]}
       />
       <div role="tabpanel">
@@ -64,8 +67,10 @@ export function UsersPermissions() {
           <p className="text-sm muted">Todavía no hay personal registrado para su colegio.</p>
         ) : tab === 'users' ? (
           <UsersTab users={users} setUsers={setUsers} roles={roles} staff={staff} />
+        ) : tab === 'roles' ? (
+          <RolesTab roles={roles} users={users} staff={staff} setLocalRoles={setLocalRoles} />
         ) : (
-          <RolesTab roles={roles} setRoles={setRoles} users={users} />
+          <HistoryTab staff={staff} />
         )}
       </div>
     </AdminLayout>
@@ -74,20 +79,43 @@ export function UsersPermissions() {
 
 type Staff = ReturnType<typeof useStaff>;
 
+type StatusFilter = 'all' | 'nocuenta' | 'off';
+type FichaTab = 'permisos' | 'invitacion' | 'historial';
+
+/** Account state of a person: whether they can sign in, are still invited or were switched off. */
+function statusOf(u: User): { label: string; tone: 'green' | 'amber' | 'neutral' } {
+  if (!u.active) return { label: 'Desactivada', tone: 'neutral' };
+  if (u.account === false) return { label: 'Invitada, sin cuenta', tone: 'amber' };
+  return { label: 'Con cuenta', tone: 'green' };
+}
+
 function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: (u: User[]) => void; roles: Role[]; staff: Staff }) {
   const { session } = useAuth();
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | RoleId>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedId, setSelectedId] = useState<User['id'] | 'new'>(staff.live ? (users[0]?.id ?? 'new') : 2);
+  const [fichaTab, setFichaTab] = useState<FichaTab>('permisos');
   const toast = useToast();
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const sections = staff.live ? staff.sections : SECTION_IDS;
+  const noAccount = users.filter((u) => u.active && u.account === false).length;
 
   const list = users.filter(
-    (u) => (roleFilter === 'all' || u.roles.includes(roleFilter)) && (u.name + u.contact).toLowerCase().includes(query.toLowerCase()),
+    (u) =>
+      (roleFilter === 'all' || u.roles.includes(roleFilter)) &&
+      (statusFilter === 'all' || (statusFilter === 'off' ? !u.active : u.active && u.account === false)) &&
+      (u.name + u.contact).toLowerCase().includes(query.toLowerCase()),
   );
   const selected = selectedId === 'new' ? null : users.find((u) => u.id === selectedId) ?? users[0];
+
+  const pick = (id: User['id']) => {
+    setSelectedId(id);
+    setFichaTab('permisos');
+    setSaved(false);
+    setSaveError('');
+  };
 
   const update = (u: User) => {
     setUsers(users.map((x) => (x.id === u.id ? u : x)));
@@ -107,24 +135,38 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
     if (!selected) return;
     const error = await staff.remove(String(selected.id));
     setSaveError(error);
-    if (!error) setSelectedId(users.find((u) => u.id !== selected.id)?.id ?? 'new');
+    if (!error) pick(users.find((u) => u.id !== selected.id)?.id ?? 'new');
   };
 
   return (
     <div className="split">
-      <section aria-label="Lista de usuarios" className="card split__main" style={{ padding: '14px 18px 18px', flexBasis: 560 }}>
-        <div className="row wrap gap-10">
-          <div className="search">
+      <section aria-label="Lista de personas" className="card split__side gap-10" style={{ padding: 12, flexBasis: 340 }}>
+        <div className="row gap-8">
+          <div className="search grow">
             <Icon name="search" size={18} />
             <label htmlFor="u-buscar" className="sr-only">
-              Buscar usuario
+              Buscar persona
             </label>
-            <input id="u-buscar" type="search" className="input" placeholder="Buscar por nombre o correo" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input id="u-buscar" type="search" className="input" placeholder="Buscar persona" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
+          <Button variant="primary" onClick={() => { setSelectedId('new'); setSaveError(''); }}>
+            Invitar
+          </Button>
+        </div>
+        <div className="row wrap gap-6">
+          <button type="button" className="chip chip--sm" aria-pressed={statusFilter === 'all'} onClick={() => setStatusFilter('all')}>
+            Todas
+          </button>
+          <button type="button" className="chip chip--sm" aria-pressed={statusFilter === 'nocuenta'} onClick={() => setStatusFilter('nocuenta')}>
+            Sin cuenta · {noAccount}
+          </button>
+          <button type="button" className="chip chip--sm" aria-pressed={statusFilter === 'off'} onClick={() => setStatusFilter('off')}>
+            Desactivadas
+          </button>
           <label htmlFor="u-rol" className="sr-only">
             Filtrar por rol
           </label>
-          <select id="u-rol" className="input" style={{ width: 'auto' }} value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as 'all' | RoleId)}>
+          <select id="u-rol" className="input" style={{ width: 'auto', height: 32, fontSize: 13 }} value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as 'all' | RoleId)}>
             <option value="all">Todos los roles</option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>
@@ -132,56 +174,36 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
               </option>
             ))}
           </select>
-          <Button variant="primary" onClick={() => setSelectedId('new')} style={{ marginLeft: 'auto' }}>
-            Invitar usuario
-          </Button>
         </div>
-        <div className="table-wrap">
-          <table className="table table--compact" style={{ minWidth: 640 }}>
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Roles</th>
-                <th>Sección</th>
-                <th>Último acceso</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((u) => (
-                <tr key={u.id} aria-selected={u.id === selectedId} style={u.active ? undefined : { opacity: 0.6 }}>
-                  <td>
-                    <button type="button" className="row-button" onClick={() => setSelectedId(u.id)}>
-                      <Avatar name={u.name.replace(/[^\p{L} ]/gu, '').trim()} size="sm" />
-                      <span className="stack">
-                        <span>{u.name}</span>
-                        <span className="text-xs muted" style={{ fontWeight: 400 }}>
-                          {u.contact}
-                        </span>
-                      </span>
-                    </button>
-                  </td>
-                  <td>
-                    <span className="row wrap gap-4">
-                      {u.active ? (
-                        u.roles.map((r) => (
-                          <Badge key={r} tone={r === 'dir' ? 'blue' : 'soft'}>
-                            {roles.find((x) => x.id === r)!.name}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge tone="neutral">Desactivado</Badge>
-                      )}
-                      {u.active && u.extra.length > 0 && <Badge tone="amber">+{u.extra.length} extra</Badge>}
-                    </span>
-                  </td>
-                  <td>{u.section ?? '—'}</td>
-                  <td className="text-sm muted">{u.lastSeen}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="stack gap-4" role="list">
+          {list.map((u) => {
+            const st = statusOf(u);
+            return (
+              <button
+                key={u.id}
+                type="button"
+                role="listitem"
+                aria-current={u.id === selectedId}
+                className="row-button"
+                style={{ width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: u.id === selectedId ? '1px solid var(--blue)' : '1px solid transparent', background: u.id === selectedId ? 'var(--blue-bg)' : undefined, opacity: u.active ? 1 : 0.7 }}
+                onClick={() => pick(u.id)}
+              >
+                <Avatar name={u.name.replace(/[^\p{L} ]/gu, '').trim()} size="sm" />
+                <span className="stack grow" style={{ minWidth: 0 }}>
+                  <span className="row gap-6" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="strong">{u.name}</span>
+                    {st.tone !== 'green' && <Badge tone={st.tone}>{st.label}</Badge>}
+                  </span>
+                  <span className="text-xs muted" style={{ fontWeight: 400 }}>
+                    {u.roles.map((r) => roles.find((x) => x.id === r)?.name).filter(Boolean).join(' · ') || 'Sin roles'}
+                    {u.section ? ` ${u.section}` : ''} · {u.lastSeen}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+          {list.length === 0 && <p className="text-sm muted" style={{ padding: 8 }}>Nadie coincide con la búsqueda.</p>}
         </div>
-        {list.length === 0 && <p className="text-sm muted" style={{ paddingTop: 12 }}>Ningún usuario coincide con la búsqueda.</p>}
       </section>
 
       {selected ? (
@@ -190,6 +212,11 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
           user={selected}
           roles={roles}
           sections={sections}
+          schoolName={staff.school?.nombre ?? '[NOMBRE DEL COLEGIO]'}
+          live={staff.live}
+          loadHistory={staff.history}
+          tab={fichaTab}
+          setTab={setFichaTab}
           onChange={update}
           saved={saved}
           error={saveError}
@@ -203,15 +230,19 @@ function UsersTab({ users, setUsers, roles, staff }: { users: User[]; setUsers: 
           onInvite={async (u) => {
             if (staff.live) {
               const { id, error } = await staff.invite(u);
-              if (id) setSelectedId(id);
+              if (id) {
+                setSelectedId(id);
+                setFichaTab('invitacion');
+              }
               return error;
             }
             const id = Math.max(...users.map((x) => Number(x.id))) + 1;
             setUsers([...users, { ...u, id }]);
             setSelectedId(id);
+            setFichaTab('invitacion');
             return '';
           }}
-          onCancel={() => setSelectedId(users[0]?.id ?? 'new')}
+          onCancel={() => pick(users[0]?.id ?? 'new')}
         />
       )}
     </div>
@@ -271,6 +302,11 @@ interface UserPanelProps {
   user: User;
   roles: Role[];
   sections: string[];
+  schoolName: string;
+  live: boolean;
+  loadHistory: (id?: string) => Promise<HistoryEntry[] | null>;
+  tab: FichaTab;
+  setTab: (t: FichaTab) => void;
   onChange: (u: User) => void;
   saved: boolean;
   error: string;
@@ -324,29 +360,57 @@ function WorkHours({ value, onChange }: { value?: User['work']; onChange: (w: Us
   );
 }
 
-function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRemove }: UserPanelProps & { onRemove?: () => void }) {
+/** The text a person receives to create their account; Dirección pastes it into WhatsApp or an email. */
+function inviteText(u: User, roles: Role[], schoolName: string) {
+  const first = u.name.replace(/[^\p{L} ]/gu, '').trim() || 'hola';
+  const isPhone = /^[\d\s+-]+$/.test(u.contact);
+  const names = u.roles.map((r) => roles.find((x) => x.id === r)?.name).filter(Boolean).join(' y ');
+  return `Hola ${first}, ${schoolName} le invita a usar la app de asistencia.\n\n1. Entre a ${window.location.origin}${routes.login}\n2. Cree su cuenta con este mismo ${isPhone ? 'número de teléfono' : 'correo'}: ${u.contact}\n\nAl entrar verá lo que le corresponde${names ? ` como ${names}` : ''}.`;
+}
+
+function UserPanel({ user, roles, sections, schoolName, live, loadHistory, tab, setTab, onChange, saved, error, onSave, onRemove }: UserPanelProps & { onRemove?: () => void }) {
   const { fromRoles, all } = effectivePermissions(user, roles);
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
+  const toast = useToast();
   const isGuide = user.roles.includes('gui');
   const noRoles = user.roles.length === 0;
   // Extra permissions of a guide teacher: some apply to their section only, the rest do nothing for them.
   const guideExtras = isGuide ? user.extra.filter((p) => SCOPED.has(p)) : [];
   const dead = guideExtras.filter((p) => !GUIDE_EXTRA_SECTION.has(p));
   const staffBlind = user.extra.includes('teacherAbs') && !user.roles.some((r) => r === 'dir' || r === 'adm');
+  const st = statusOf(user);
+  const text = inviteText(user, roles, schoolName);
 
   const toggleExtra = (p: PermissionId) =>
     onChange({ ...user, extra: user.extra.includes(p) ? user.extra.filter((x) => x !== p) : [...user.extra, p] });
 
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Invitación copiada. Péguela en WhatsApp o en un correo.');
+    } catch {
+      toast('No se pudo copiar solo: seleccione el texto y cópielo.');
+    }
+  };
+
   return (
-    <aside aria-labelledby="ficha-u" className="card split__side gap-16" style={{ padding: 20, flexBasis: 380 }}>
-      <div className="row gap-12">
-        <Avatar name={user.name.replace(/[^\p{L} ]/gu, '').trim()} size="lg" tone="blue" />
-        <div className="stack grow">
-          <h2 id="ficha-u" className="display" style={{ fontSize: 20 }}>
-            {user.name}
-          </h2>
-          <span className="text-sm muted">{user.contact}</span>
+    <aside aria-labelledby="ficha-u" className="card split__main gap-14" style={{ padding: 20, flexBasis: 560 }}>
+      <div className="row between gap-12" style={{ alignItems: 'flex-start' }}>
+        <div className="row gap-12">
+          <Avatar name={user.name.replace(/[^\p{L} ]/gu, '').trim()} size="lg" tone="blue" />
+          <div className="stack">
+            <h2 id="ficha-u" className="display" style={{ fontSize: 22 }}>
+              {user.name}
+            </h2>
+            <span className="text-sm muted">{user.contact}</span>
+          </div>
+        </div>
+        <div className="stack gap-2" style={{ alignItems: 'flex-end' }}>
+          <Badge tone={st.tone}>{st.label}</Badge>
+          <span className="text-xs muted">
+            {user.account === false ? (user.invitedAt ? `Invitada hace ${daysSince(user.invitedAt)} días` : 'Aún no crea su cuenta') : user.lastLogin ? `Último ingreso: ${whenLabel(user.lastLogin)}` : user.lastSeen}
+          </span>
         </div>
       </div>
 
@@ -358,70 +422,103 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
         <Switch label="Cuenta activa" checked={user.active} onChange={(v) => onChange({ ...user, active: v })} />
       </div>
 
-      <RoleChecks value={user.roles} roles={roles} onChange={(r) => onChange({ ...user, roles: r, section: r.includes('gui') ? user.section : undefined })} />
-      {isGuide && <SectionPicker value={user.section} sections={sections} onChange={(s) => onChange({ ...user, section: s })} />}
-      {!user.roles.includes('doc') && <WorkHours value={user.work} onChange={(w) => onChange({ ...user, work: w })} />}
+      <Segmented
+        mode="tabs"
+        label="Datos de la persona"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'permisos', label: 'Roles y permisos' },
+          { value: 'invitacion', label: 'Invitación' },
+          { value: 'historial', label: 'Historial' },
+        ]}
+      />
 
-      <div className="stack gap-8">
-        <h3 className="eyebrow">Permisos</h3>
-        <span className="text-xs muted">
-          Los marcados "por rol" vienen de sus roles. Puede sumar permisos extra solo para esta persona.
-        </span>
-        {noRoles && (
-          <span className="text-sm ink-orange" role="alert">
-            Sin roles, esta persona solo tendrá los permisos extra.
-          </span>
-        )}
-        {dead.length > 0 && (
-          <span className="text-sm ink-orange" role="alert">
-            Es profesor guía: {dead.map((p) => PERMISSION_LABEL[p]).join(', ')} no se puede dar como permiso extra. Para eso
-            necesita el rol Administrativo.
-          </span>
-        )}
-        {staffBlind && (
-          <span className="text-sm ink-orange" role="alert">
-            Solo Dirección y Administrativos ven la lista del personal, así que sin uno de esos roles no podrá elegir sustitutos.
-          </span>
-        )}
-        {PERMISSION_GROUPS.map((g) => {
-          const active = g.permissions.filter((p) => all.has(p.id)).length;
-          return (
-          <details key={g.id} className="perm-group" open={active > 0}>
-            <summary className="perm-group__head">
-              <span>{g.label}</span>
-              <span className="perm-group__count" data-on={active > 0}>
-                {active} de {g.permissions.length}
+      {tab === 'permisos' && (
+        <>
+          <RoleChecks value={user.roles} roles={roles} onChange={(r) => onChange({ ...user, roles: r, section: r.includes('gui') ? user.section : undefined })} />
+          {isGuide && <SectionPicker value={user.section} sections={sections} onChange={(s) => onChange({ ...user, section: s })} />}
+          {!user.roles.includes('doc') && <WorkHours value={user.work} onChange={(w) => onChange({ ...user, work: w })} />}
+
+          <div className="stack gap-8">
+            <h3 className="eyebrow">Permisos</h3>
+            <span className="text-xs muted">Los marcados «por rol» vienen de sus roles. Puede sumar permisos extra solo para esta persona.</span>
+            {noRoles && (
+              <span className="text-sm ink-orange" role="alert">
+                Sin roles, esta persona solo tendrá los permisos extra.
               </span>
-            </summary>
-            {g.permissions.map((p) => {
-              const byRole = fromRoles.has(p.id);
-              const has = all.has(p.id);
-              const scoped = has && isGuide && byRole && isSectionScoped(user, p.id, roles);
-              return (
-                <label key={p.id} className="row gap-10" style={{ minHeight: 36, fontSize: 14, cursor: byRole ? 'default' : 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    className="checkbox"
-                    style={{ width: 18, height: 18, margin: 0 }}
-                    checked={has}
-                    disabled={byRole}
-                    onChange={() => toggleExtra(p.id)}
-                  />
-                  <span className="grow" style={{ color: has ? 'var(--ink)' : 'var(--muted)' }}>
-                    {p.label}
-                  </span>
-                  {byRole ? (
-                    <Badge tone="soft">{scoped ? `Por rol · solo ${user.section ?? 'su sección'}` : 'Por rol'}</Badge>
-                  ) : has ? (
-                    <Badge tone="amber">{guideExtras.includes(p.id) ? (GUIDE_EXTRA_SECTION.has(p.id) ? `Extra · solo ${user.section ?? 'su sección'}` : 'Extra · sin efecto') : 'Extra'}</Badge>
-                  ) : null}
-                </label>
-              );
-            })}
-          </details>
-          );
-        })}
-      </div>
+            )}
+            {dead.length > 0 && (
+              <span className="text-sm ink-orange" role="alert">
+                Es profesor guía: {dead.map((p) => PERMISSION_LABEL[p]).join(', ')} no se puede dar como permiso extra. Para eso necesita el rol Administrativo.
+              </span>
+            )}
+            {staffBlind && (
+              <span className="text-sm ink-orange" role="alert">
+                Solo Dirección y Administrativos ven la lista del personal, así que sin uno de esos roles no podrá elegir sustitutos.
+              </span>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 10 }}>
+              {PERMISSION_GROUPS.map((g) => {
+                const active = g.permissions.filter((p) => all.has(p.id)).length;
+                return (
+                  <section key={g.id} aria-label={g.label} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
+                    <div className="row between" style={{ marginBottom: 4 }}>
+                      <strong style={{ fontSize: 14 }}>{g.label}</strong>
+                      <span className="text-xs muted">
+                        {active} de {g.permissions.length}
+                      </span>
+                    </div>
+                    {g.permissions.map((p) => {
+                      const byRole = fromRoles.has(p.id);
+                      const has = all.has(p.id);
+                      const scoped = has && isGuide && byRole && isSectionScoped(user, p.id, roles);
+                      return (
+                        <label key={p.id} className="row gap-8" style={{ minHeight: 34, fontSize: 13, cursor: byRole ? 'default' : 'pointer', alignItems: 'center' }}>
+                          <input type="checkbox" className="checkbox" style={{ width: 18, height: 18, margin: 0 }} checked={has} disabled={byRole} onChange={() => toggleExtra(p.id)} />
+                          <span className="grow" style={{ color: has ? 'var(--ink)' : 'var(--muted)' }}>
+                            {p.label}
+                          </span>
+                          {byRole ? (
+                            <Badge tone="soft">{scoped ? `Rol · solo ${user.section ?? 'su sección'}` : 'Rol'}</Badge>
+                          ) : has ? (
+                            <Badge tone="amber">{guideExtras.includes(p.id) ? (GUIDE_EXTRA_SECTION.has(p.id) ? `Extra · solo ${user.section ?? 'su sección'}` : 'Extra · sin efecto') : 'Extra'}</Badge>
+                          ) : null}
+                        </label>
+                      );
+                    })}
+                  </section>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab === 'invitacion' && (
+        <div className="stack gap-10">
+          {user.account === false ? (
+            <>
+              <p className="text-sm">
+                {user.name} todavía no tiene cuenta. Cuando cree una con <strong>{user.contact}</strong>, queda enlazada sola con esta ficha y entra con lo que le corresponde.
+              </p>
+              <textarea className="input" readOnly rows={6} aria-label="Texto de la invitación" style={{ padding: '10px 12px', borderRadius: 'var(--radius-md)' }} value={text} />
+              <div className="row gap-8">
+                <Button variant="primary" onClick={copy}>
+                  Copiar invitación
+                </Button>
+              </div>
+              <span className="text-xs muted">La app no envía el mensaje: lo manda usted por WhatsApp o correo. {user.invitedAt && `Ficha creada hace ${daysSince(user.invitedAt)} días.`}</span>
+            </>
+          ) : (
+            <p className="text-sm">
+              {user.name} ya creó su cuenta{user.lastLogin ? ` y entró por última vez ${whenLabel(user.lastLogin).toLowerCase()}` : ''}. Si cambia de correo o de teléfono, hay que corregirlo en su ficha para que no pierda el acceso.
+            </p>
+          )}
+        </div>
+      )}
+
+      {tab === 'historial' && <PersonHistory id={String(user.id)} live={live} load={loadHistory} />}
 
       <div className="row wrap between gap-8" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 14 }}>
         {error ? (
@@ -433,7 +530,9 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
             Cambios guardados
           </span>
         ) : (
-          <span className="text-xs muted">{all.size} de {PERMISSION_GROUPS.reduce((n, g) => n + g.permissions.length, 0)} permisos</span>
+          <span className="text-xs muted">
+            {all.size} de {PERMISSION_GROUPS.reduce((n, g) => n + g.permissions.length, 0)} permisos
+          </span>
         )}
         <Button variant="primary" onClick={onSave} disabled={isGuide && !user.section}>
           Guardar cambios
@@ -449,8 +548,7 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
           ) : (
             <>
               <span className="text-sm">
-                Se quita a <strong>{user.name}</strong> del personal. Su cuenta de inicio de sesión queda, sin acceso al colegio.
-                Escriba ELIMINAR para confirmar.
+                Se quita a <strong>{user.name}</strong> del personal. Su cuenta de inicio de sesión queda, sin acceso al colegio. Escriba ELIMINAR para confirmar.
               </span>
               <InputField id="del-word" label="Escriba ELIMINAR" value={typed} onChange={(e) => setTyped(e.target.value)} />
               <div className="row gap-8">
@@ -465,6 +563,38 @@ function UserPanel({ user, roles, sections, onChange, saved, error, onSave, onRe
       )}
     </aside>
   );
+}
+
+/** Lines of the change history, newest first. */
+function HistoryList({ entries, withName }: { entries: HistoryEntry[]; withName?: boolean }) {
+  return (
+    <div className="stack">
+      {entries.map((e, i) => (
+        <div key={i} className="row gap-10" style={{ alignItems: 'flex-start', padding: '9px 0', borderTop: i ? '1px solid var(--border-soft)' : undefined }}>
+          <span className="text-xs muted" style={{ width: 96, flexShrink: 0, fontWeight: 600 }}>
+            {whenLabel(e.when)}
+          </span>
+          <span className="stack" style={{ fontSize: 14 }}>
+            <span>{describeChange(e, withName)}</span>
+            <span className="text-xs muted">{e.who ? `Por ${e.who}` : 'Por el sistema'}</span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PersonHistory({ id, live, load }: { id: string; live: boolean; load: (id?: string) => Promise<HistoryEntry[] | null> }) {
+  const [entries, setEntries] = useState<HistoryEntry[] | null | 'error'>(null);
+  useEffect(() => {
+    if (!live) return;
+    load(id).then((r) => setEntries(r ?? 'error'));
+  }, [id, live, load]);
+  if (!live) return <p className="text-sm muted">El historial se guarda cuando el colegio usa el servidor.</p>;
+  if (entries === null) return <p className="text-sm muted">Cargando…</p>;
+  if (entries === 'error') return <p className="text-sm muted">No se pudo leer el historial. Falta aplicar la actualización 0021 del servidor.</p>;
+  if (entries.length === 0) return <p className="text-sm muted">Todavía no hay cambios registrados para esta persona. Se anotan desde ahora.</p>;
+  return <HistoryList entries={entries} />;
 }
 
 interface InvitePanelProps {
@@ -516,14 +646,43 @@ function InvitePanel({ roles, sections, onInvite, onCancel }: InvitePanelProps) 
   );
 }
 
-function RolesTab({ roles, setRoles, users }: { roles: Role[]; setRoles: (r: Role[]) => void; users: User[] }) {
-  const toggle = (roleId: RoleId, p: PermissionId) =>
-    setRoles(
-      roles.map((r) =>
-        r.id !== roleId ? r : { ...r, grants: r.grants.includes(p) ? r.grants.filter((x) => x !== p) : [...r.grants, p] },
-      ),
-    );
+function RolesTab({ roles, users, staff, setLocalRoles }: { roles: Role[]; users: User[]; staff: Staff; setLocalRoles: (r: Role[]) => void }) {
+  const toast = useToast();
+  const fresh = () => Object.fromEntries(roles.map((r) => [r.id, r.grants])) as Record<string, PermissionId[]>;
+  const [draft, setDraft] = useState(fresh);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  // After saving (or reloading) the roles, the table starts again from what the server has.
+  useEffect(() => setDraft(fresh()), [roles]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const base = (id: RoleId) => ROLES.find((r) => r.id === id)!.grants;
+  const same = (a: PermissionId[], b: PermissionId[]) => a.length === b.length && a.every((x) => b.includes(x));
+  const current = (r: Role) => draft[r.id] ?? r.grants;
+  const changed = roles.filter((r) => !same(current(r), r.grants));
   const count = (id: RoleId) => users.filter((u) => u.active && u.roles.includes(id)).length;
+  const affected = users.filter((u) => u.active && u.roles.some((r) => changed.some((c) => c.id === r))).length;
+
+  const toggle = (roleId: RoleId, p: PermissionId) =>
+    setDraft((d) => {
+      const now = d[roleId] ?? [];
+      return { ...d, [roleId]: now.includes(p) ? now.filter((x) => x !== p) : [...now, p] };
+    });
+
+  const save = async () => {
+    setBusy(true);
+    setError('');
+    const changes: Partial<Record<RoleId, PermissionId[] | null>> = {};
+    changed.forEach((r) => (changes[r.id] = same(current(r), base(r.id)) ? null : current(r)));
+    if (staff.live) {
+      const err = await staff.saveRoles(changes);
+      if (err) setError(err);
+      else toast('Roles guardados');
+    } else {
+      setLocalRoles(roles.map((r) => (changed.includes(r) ? { ...r, grants: current(r) } : r)));
+      toast('Roles guardados');
+    }
+    setBusy(false);
+  };
 
   return (
     <section aria-labelledby="matriz-t" className="card gap-10">
@@ -531,10 +690,28 @@ function RolesTab({ roles, setRoles, users }: { roles: Role[]; setRoles: (r: Rol
         <h2 id="matriz-t" className="title-section">
           Qué puede hacer cada rol
         </h2>
-        <span className="text-sm muted">
-          Los cambios aplican a todas las personas con ese rol. Dirección siempre conserva "Gestionar usuarios".
-        </span>
+        <span className="text-sm muted">Lo que marque aquí vale para todas las personas con ese rol. Dirección siempre conserva «Gestionar usuarios» y «Cambiar la configuración».</span>
       </div>
+      {changed.length > 0 && (
+        <div className="row wrap between gap-10" role="status" style={{ background: 'var(--amber-bg)', borderRadius: 'var(--radius-md)', padding: '10px 14px' }}>
+          <span className="text-sm strong" style={{ color: 'var(--amber-ink)' }}>
+            Cambios sin guardar en {changed.map((r) => r.name).join(', ')} · afectan a {affected} {affected === 1 ? 'persona' : 'personas'}
+          </span>
+          <span className="row gap-8">
+            <Button onClick={() => setDraft(fresh())} disabled={busy}>
+              Descartar
+            </Button>
+            <Button variant="primary" onClick={save} disabled={busy}>
+              {busy ? 'Guardando…' : 'Guardar roles'}
+            </Button>
+          </span>
+        </div>
+      )}
+      {error && (
+        <p className="notice" role="alert">
+          No se guardó: {error}
+        </p>
+      )}
       <div className="table-wrap">
         <table className="table table--dense" style={{ minWidth: 860 }}>
           <thead>
@@ -545,8 +722,14 @@ function RolesTab({ roles, setRoles, users }: { roles: Role[]; setRoles: (r: Rol
                   <span className="stack">
                     <span>{r.name}</span>
                     <span className="text-xs" style={{ fontWeight: 400 }}>
-                      {count(r.id)} {count(r.id) === 1 ? 'usuario' : 'usuarios'}
+                      {count(r.id)} {count(r.id) === 1 ? 'persona' : 'personas'}
                     </span>
+                    {!same(current(r), base(r.id)) && (
+                      <button type="button" className="link-button text-xs" onClick={() => setDraft((d) => ({ ...d, [r.id]: base(r.id) }))}>
+                        Valores de fábrica
+                      </button>
+                    )}
+                    {same(current(r), r.grants) && staff.overridden.has(r.id) && <span className="text-xs" style={{ fontWeight: 400, color: 'var(--amber-ink)' }}>Cambiado por el colegio</span>}
                   </span>
                 </th>
               ))}
@@ -571,19 +754,11 @@ function RolesTab({ roles, setRoles, users }: { roles: Role[]; setRoles: (r: Rol
                     </span>
                   </td>
                   {roles.map((r) => {
-                    const on = r.grants.includes(p.id);
-                    const locked = r.id === 'dir' && p.id === 'users';
+                    const on = current(r).includes(p.id);
+                    const locked = r.id === 'dir' && (p.id === 'users' || p.id === 'settings');
                     return (
                       <td key={r.id} className="center">
-                        <button
-                          type="button"
-                          role="checkbox"
-                          className="perm-check"
-                          aria-checked={on}
-                          aria-label={`${r.name}: ${p.label}`}
-                          disabled={locked}
-                          onClick={() => toggle(r.id, p.id)}
-                        >
+                        <button type="button" role="checkbox" className="perm-check" aria-checked={on || locked} aria-label={`${r.name}: ${p.label}`} disabled={locked} onClick={() => toggle(r.id, p.id)}>
                           <Icon name="check" size={16} strokeWidth={3} />
                         </button>
                       </td>
@@ -595,6 +770,46 @@ function RolesTab({ roles, setRoles, users }: { roles: Role[]; setRoles: (r: Rol
           </tbody>
         </table>
       </div>
+    </section>
+  );
+}
+
+function HistoryTab({ staff }: { staff: Staff }) {
+  const [entries, setEntries] = useState<HistoryEntry[] | null | 'error'>(null);
+  const load = () => {
+    setEntries(null);
+    staff.history().then((r) => setEntries(r ?? 'error'));
+  };
+  useEffect(() => {
+    if (staff.live) load();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <section aria-labelledby="hist-t" className="card gap-10">
+      <div className="row wrap between gap-8" style={{ alignItems: 'baseline' }}>
+        <h2 id="hist-t" className="title-section">
+          Historial de cambios
+        </h2>
+        <span className="row gap-10" style={{ alignItems: 'baseline' }}>
+          <span className="text-sm muted">Quién cambió roles, permisos y cuentas, y cuándo.</span>
+          {staff.live && (
+            <Button size="sm" onClick={load}>
+              Actualizar
+            </Button>
+          )}
+        </span>
+      </div>
+      {!staff.live ? (
+        <p className="text-sm muted">El historial se guarda cuando el colegio usa el servidor.</p>
+      ) : entries === null ? (
+        <p className="text-sm muted">Cargando…</p>
+      ) : entries === 'error' ? (
+        <p className="text-sm muted">No se pudo leer el historial. Falta aplicar la actualización 0021 del servidor.</p>
+      ) : entries.length === 0 ? (
+        <p className="text-sm muted">Todavía no hay cambios registrados. Se anotan desde ahora.</p>
+      ) : (
+        <HistoryList entries={entries} withName />
+      )}
     </section>
   );
 }

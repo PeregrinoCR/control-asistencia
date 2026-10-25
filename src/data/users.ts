@@ -122,6 +122,23 @@ export const ROLES: Role[] = [
   { id: 'aux', name: 'Auxiliar', help: 'Personal de apoyo: cuido de exámenes y otras tareas', grants: [] },
 ];
 
+/** A school's changes to what a role can do (table `roles_colegio`). */
+export interface RoleOverride {
+  rol_id: string;
+  permisos: PermissionId[];
+}
+
+/** Roles with the school's own changes applied. Dirección always keeps managing users and settings. */
+export function withRoleOverrides(overrides: RoleOverride[] | null | undefined, base: Role[] = ROLES): Role[] {
+  const by = new Map((overrides ?? []).map((o) => [o.rol_id, o.permisos]));
+  return base.map((r) => {
+    const own = by.get(r.id);
+    if (!own) return r;
+    const grants = r.id === 'dir' ? [...new Set<PermissionId>([...own, 'users', 'settings'])] : own;
+    return { ...r, grants };
+  });
+}
+
 export interface User {
   /** Number in the sample data, uuid from the server. */
   id: number | string;
@@ -135,6 +152,10 @@ export interface User {
   work?: { dias: string[]; desde: number; hasta: number } | null;
   active: boolean;
   lastSeen: string;
+  /** From the server: whether the person has created their account yet, and when they were invited and last signed in (ISO). */
+  account?: boolean;
+  invitedAt?: string;
+  lastLogin?: string | null;
 }
 
 export const USERS: User[] = [

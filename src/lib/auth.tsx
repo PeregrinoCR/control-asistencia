@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { ROLES, effectivePermissions, type PermissionId } from '../data/users';
+import { effectivePermissions, withRoleOverrides, type PermissionId, type RoleOverride } from '../data/users';
 import { routes } from '../routes';
 import { supabase } from './supabase';
 
@@ -36,14 +36,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const load = async (session: Session | null) => {
       if (!session) return setState({ ready: true, session, school: null, roles: [], family: false, perms: [] });
       const uid = session.user.id;
-      const [school, me, guardian, adult] = await Promise.all([
+      const [school, me, guardian, adult, overrides] = await Promise.all([
         db.from('colegios').select('id, nombre, logo:config->>logo').maybeSingle(),
         db.from('personal').select('roles, permisos_extra').eq('usuario_id', uid).maybeSingle(),
         db.from('encargados').select('id').eq('usuario_id', uid).maybeSingle(),
         db.from('estudiantes').select('id').eq('usuario_id', uid).maybeSingle(),
+        // The school's own changes to what each role can do; without them (or before the update) the defaults apply.
+        db.from('roles_colegio').select('rol_id, permisos'),
       ]);
       const roles = me.data?.roles ?? [];
-      const perms = me.data ? [...effectivePermissions({ roles, extra: me.data.permisos_extra ?? [] }, ROLES).all] : [];
+      const perms = me.data ? [...effectivePermissions({ roles, extra: me.data.permisos_extra ?? [] }, withRoleOverrides(overrides.error ? [] : (overrides.data as RoleOverride[]))).all] : [];
       setState({ ready: true, session, school: school.data, roles, family: !!(guardian.data || adult.data), perms });
     };
     db.auth.getSession().then(({ data }) => load(data.session));
