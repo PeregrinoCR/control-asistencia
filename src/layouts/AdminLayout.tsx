@@ -7,40 +7,40 @@ import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { routes } from '../routes';
 
-type MenuLink = { to: string; label: string; perm: PermissionId | PermissionId[]; count?: { n: number; tone: 'blue' | 'orange' } };
+type MenuLink = { to: string; label: string; icon: IconName; perm: PermissionId | PermissionId[]; count?: { n: number; tone: 'blue' | 'orange' } };
 
 /** The menu, by what the staff does with each page: day to day, the school year, families, administration. */
 const GROUPS: Array<{ title: string; links: MenuLink[] }> = [
   {
     title: 'Día a día',
     links: [
-      { to: routes.admin.today, label: 'Hoy', perm: 'viewAttendance' },
-      { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', perm: 'teacherAbs', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
-      { to: routes.admin.justifications, label: 'Justificaciones', perm: 'approveJust', count: { n: navCounts.justifications, tone: 'orange' } },
+      { to: routes.admin.today, label: 'Hoy', icon: 'home', perm: 'viewAttendance' },
+      { to: routes.admin.teacherAbsences, label: 'Docentes ausentes', icon: 'alert', perm: 'teacherAbs', count: { n: navCounts.teacherAbsences, tone: 'blue' } },
+      { to: routes.admin.justifications, label: 'Justificaciones', icon: 'fileCheck', perm: 'approveJust', count: { n: navCounts.justifications, tone: 'orange' } },
     ],
   },
   {
     title: 'Académico',
     links: [
-      { to: routes.admin.schedules, label: 'Horarios y cargas', perm: 'assign' },
-      { to: routes.admin.rooms, label: 'Aulas y grupos', perm: 'assign' },
-      { to: routes.admin.students, label: 'Estudiantes', perm: 'viewAttendance' },
-      { to: routes.admin.examCare, label: 'Cuido de exámenes', perm: 'assign' },
+      { to: routes.admin.schedules, label: 'Horarios y cargas', icon: 'calendar', perm: 'assign' },
+      { to: routes.admin.rooms, label: 'Aulas y grupos', icon: 'grid', perm: 'assign' },
+      { to: routes.admin.students, label: 'Estudiantes', icon: 'users', perm: 'viewAttendance' },
+      { to: routes.admin.examCare, label: 'Cuido de exámenes', icon: 'pen', perm: 'assign' },
     ],
   },
   {
     title: 'Familias',
     links: [
-      { to: routes.admin.trips, label: 'Giras y salidas', perm: ['trips', 'payments', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
-      { to: routes.admin.notices, label: 'Avisos a familias', perm: 'notices' },
-      { to: routes.admin.earlyWarning, label: 'Alerta temprana', perm: 'earlyWarning', count: { n: navCounts.earlyWarning, tone: 'orange' } },
+      { to: routes.admin.trips, label: 'Giras y salidas', icon: 'bus', perm: ['trips', 'payments', 'approveExit'], count: { n: navCounts.trips, tone: 'blue' } },
+      { to: routes.admin.notices, label: 'Avisos a familias', icon: 'message', perm: 'notices' },
+      { to: routes.admin.earlyWarning, label: 'Alerta temprana', icon: 'bell', perm: 'earlyWarning', count: { n: navCounts.earlyWarning, tone: 'orange' } },
     ],
   },
   {
     title: 'Administración',
     links: [
-      { to: routes.admin.reports, label: 'Reportes', perm: 'reports' },
-      { to: routes.admin.users, label: 'Usuarios y permisos', perm: 'users' },
+      { to: routes.admin.reports, label: 'Reportes', icon: 'chart', perm: 'reports' },
+      { to: routes.admin.users, label: 'Usuarios y permisos', icon: 'shield', perm: 'users' },
     ],
   },
 ];
@@ -145,7 +145,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <span className="admin__group-title">{g.title}</span>
             {g.links.map((l) => (
               <NavLink key={l.to} to={l.to} end className="admin__link">
-                {l.label}
+                <span className="admin__link-main">
+                  <Icon name={l.icon} size={18} />
+                  {l.label}
+                </span>
                 {l.count && !supabase && <span className={cx('count', `count--${l.count.tone}`)}>{l.count.n}</span>}
               </NavLink>
             ))}
@@ -153,12 +156,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         ))}
         {allowed('settings') && (
           <NavLink to={routes.admin.settings} className="admin__link admin__link--bottom">
-            Configuración
+            <span className="admin__link-main">
+              <Icon name="sliders" size={18} />
+              Configuración
+            </span>
           </NavLink>
         )}
         {session && (
           <button type="button" className="admin__link" onClick={() => signOut()} title={session.user.email}>
-            Salir
+            <span className="admin__link-main">
+              <Icon name="logout" size={18} />
+              Salir
+            </span>
           </button>
         )}
       </nav>

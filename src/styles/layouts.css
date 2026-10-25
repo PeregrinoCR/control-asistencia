@@ -459,3 +459,49 @@ button.admin__link {
   cursor: pointer;
   align-self: center;
 }
+
+
+/* ---------- Modern polish: admin menu ---------- */
+
+.admin__link {
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  position: relative;
+}
+.admin__link {
+  font-size: 14.5px;
+  padding: 0 10px;
+}
+.admin__link-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.admin__link-main svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.admin__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.admin__link:hover svg {
+  opacity: 1;
+}
+.admin__link[aria-current='page'] {
+  background: var(--night-2);
+  box-shadow: inset 3px 0 0 var(--blue-bright, #6b8cff);
+}
+.admin__link[aria-current='page'] svg {
+  opacity: 1;
+  color: var(--blue-bright, #6b8cff);
+}
+.admin__group-title {
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+.count {
+  min-width: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

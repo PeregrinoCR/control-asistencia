@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Avatar, Button, CheckCard, Icon, InputField, MiniStat, Segmented, useFlash } from '../../components';
+import { Avatar, Button, CheckCard, Icon, InputField, MiniStat, Segmented, Skeleton, useFlash } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import QRCode from 'qrcode';
 import { CARD_PREFIX } from '../../data/gate';
@@ -186,7 +186,7 @@ export function StudentsLive() {
           No se pudieron cargar los estudiantes: {data.error}
         </p>
       ) : !data.students ? (
-        <p className="text-sm muted">Cargando…</p>
+        <Skeleton count={8} label="Cargando los estudiantes" />
       ) : (
         <>
           <Segmented

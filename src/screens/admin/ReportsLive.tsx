@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Meter, Segmented, Stat } from '../../components';
+import { Button, Meter, Segmented, Skeleton, Stat } from '../../components';
 import { LineChart, type ChartPoint } from '../../components/LineChart';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { NOTICE_TYPES } from '../../data/notices';
@@ -419,17 +419,20 @@ export function ReportsLive() {
           No se pudo cargar: {error}
         </p>
       ) : !rows ? (
-        <p className="text-sm muted">Cargando…</p>
+        <>
+          <Skeleton variant="tiles" label="Cargando los reportes" />
+          <Skeleton count={6} label="Cargando el gráfico y las tablas" />
+        </>
       ) : (
         <>
           <p className="text-sm muted">
             {scopeText} · {periodText}. Se compara con {rangeLabel(prev)}.
           </p>
           <div className="grid-tiles">
-            <Stat label="Asistencia" value={tc.pct == null ? '—' : pct(tc.pct)} note={<ChangeNote c={pointsChange(tc.pct, tp.pct)} />} />
-            <Stat label="Lecciones ausentes" value={String(tc.ausencias)} ink="orange" note={<ChangeNote c={countChange(tc.ausencias, tp.ausencias)} />} />
-            <Stat label="Lecciones con tardía" value={String(tc.tardias)} ink="amber" note={<ChangeNote c={countChange(tc.tardias, tp.tardias)} />} />
-            <Stat label="Justificaciones aprobadas" value={String(justCur)} ink="green" note={<ChangeNote c={countChange(justCur, justPrev, false)} />} />
+            <Stat icon="chart" label="Asistencia" value={tc.pct == null ? '—' : pct(tc.pct)} note={<ChangeNote c={pointsChange(tc.pct, tp.pct)} />} />
+            <Stat icon="alert" label="Lecciones ausentes" value={String(tc.ausencias)} ink="orange" note={<ChangeNote c={countChange(tc.ausencias, tp.ausencias)} />} />
+            <Stat icon="clock" label="Lecciones con tardía" value={String(tc.tardias)} ink="amber" note={<ChangeNote c={countChange(tc.tardias, tp.tardias)} />} />
+            <Stat icon="fileCheck" label="Justificaciones aprobadas" value={String(justCur)} ink="green" note={<ChangeNote c={countChange(justCur, justPrev, false)} />} />
           </div>
 
           <section aria-labelledby="chart-t" className="card gap-14" style={{ padding: 20 }}>

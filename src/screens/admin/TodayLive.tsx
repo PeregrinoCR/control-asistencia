@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Avatar, ButtonLink, EmptyState, Stat, StatusBadge, type Status } from '../../components';
+import { Avatar, ButtonLink, EmptyState, Skeleton, Stat, StatusBadge, type Status } from '../../components';
 import { AdminLayout, PageHeader } from '../../layouts/AdminLayout';
 import { useAuth } from '../../lib/auth';
 import { AttentionCards, type AttentionItem } from './AttentionCards';
@@ -236,15 +236,18 @@ export function TodayLive() {
           No se pudo cargar: {error}
         </p>
       ) : !data ? (
-        <p className="text-sm muted">Cargando…</p>
+        <>
+          <Skeleton variant="tiles" label="Cargando la asistencia de hoy" />
+          <Skeleton count={6} label="Cargando las secciones" />
+        </>
       ) : (
         <>
           <AttentionCards items={pending ? items : items.filter((i) => i.id === 'listas')} />
           <div className="grid-tiles">
-            <Stat label="Asistencia general" value={marked ? pct((100 * total('present')) / marked) : '—'} note={`${total('present')} de ${marked} con lista`} />
-            <Stat label="Ausentes" value={String(total('absent'))} ink="orange" note="Faltaron al menos a una lección" />
-            <Stat label="Llegadas tardías" value={String(total('late'))} ink="amber" />
-            <Stat label="Secciones con lista" value={`${data.sections.length - pendingLists} de ${data.sections.length}`} note="Con todas sus lecciones marcadas" />
+            <Stat icon="check" label="Asistencia general" value={marked ? pct((100 * total('present')) / marked) : '—'} note={`${total('present')} de ${marked} con lista`} />
+            <Stat icon="alert" label="Ausentes" value={String(total('absent'))} ink="orange" note="Faltaron al menos a una lección" />
+            <Stat icon="clock" label="Llegadas tardías" value={String(total('late'))} ink="amber" />
+            <Stat icon="checkSquare" label="Secciones con lista" value={`${data.sections.length - pendingLists} de ${data.sections.length}`} note="Con todas sus lecciones marcadas" />
           </div>
 
           <div className="split">

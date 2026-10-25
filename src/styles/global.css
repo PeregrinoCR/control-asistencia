@@ -1110,3 +1110,161 @@ p {
 .input--invalid {
   border-color: var(--orange);
 }
+
+
+/* ---------- Modern polish: depth, motion and feedback ---------- */
+
+.btn,
+.chip,
+.choice,
+.icon-btn,
+.segmented__item,
+.row-button,
+.link-button,
+.input,
+.textarea,
+.badge {
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--blue-ink);
+}
+.btn--danger:hover:not(:disabled) {
+  background: var(--orange-ink);
+}
+.btn--dark:hover:not(:disabled) {
+  background: var(--ink-2);
+}
+.btn--secondary:hover:not(:disabled),
+.btn--dashed:hover:not(:disabled),
+.icon-btn:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: var(--muted-2);
+}
+.btn--quiet:hover:not(:disabled) {
+  background: var(--border);
+}
+.btn--outline-blue:hover:not(:disabled),
+.btn--ghost:hover:not(:disabled) {
+  background: var(--blue-bg);
+}
+.btn--danger-outline:hover:not(:disabled),
+.btn--ghost-danger:hover:not(:disabled) {
+  background: var(--orange-bg);
+}
+.btn:active:not(:disabled),
+.chip:active,
+.choice:active,
+.icon-btn:active,
+.segmented__item:active {
+  transform: scale(0.98);
+}
+.chip:hover:not([aria-pressed='true']),
+.choice:hover:not([aria-pressed='true']) {
+  border-color: var(--blue);
+  background: var(--hover);
+}
+.segmented__item:hover:not([aria-pressed='true']):not([aria-selected='true']) {
+  background: rgba(255, 255, 255, 0.55);
+}
+.row-button:hover {
+  color: var(--blue-ink);
+}
+.input:hover:not(:focus-visible),
+.textarea:hover:not(:focus-visible) {
+  border-color: var(--muted-2);
+}
+
+/* Cards and KPI tiles: a soft shadow instead of a flat outline. */
+.card,
+.stat {
+  box-shadow: var(--shadow-sm);
+}
+.card--inset,
+.card--night,
+.card .card,
+.card .stat {
+  box-shadow: none;
+}
+.stat__value,
+.mini-stat__value,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.stat {
+  position: relative;
+}
+.stat__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+  margin-bottom: 6px;
+}
+.stat__icon--orange { background: var(--orange-bg); color: var(--orange-ink); }
+.stat__icon--amber { background: var(--amber-bg); color: var(--amber-ink); }
+.stat__icon--green { background: var(--green-bg); color: var(--green-ink); }
+
+/* Tables: rows react to the pointer and the header reads as a header. */
+.table th {
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+  background: var(--bg);
+}
+.table th:first-child { border-top-left-radius: var(--radius-xs); }
+.table th:last-child { border-top-right-radius: var(--radius-xs); }
+.table tbody tr {
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.table tbody tr:hover {
+  background: var(--hover);
+}
+.table tbody tr[aria-selected='true'] {
+  background: var(--blue-bg);
+}
+.table td.num,
+.table th.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading skeletons: a quiet shimmer where content will appear. */
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--neutral-bg) 25%, var(--sunken) 37%, var(--neutral-bg) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+.skeleton-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.skeleton-tile {
+  height: 108px;
+  border-radius: var(--radius-xl);
+}
+.skeleton-line {
+  height: 14px;
+}

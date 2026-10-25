@@ -14,7 +14,7 @@
   --ink-3: #3a4652;
   --muted: #4a5663;
   --muted-2: #5a6570;
-  --faint: #a3aca3;
+  --faint: #6b756e;
 
   /* Lines */
   --border: #e2e5de;
@@ -60,4 +60,15 @@
   --radius-2xl: 20px;
   --radius-pill: 999px;
   --shadow-raised: rgba(23, 34, 46, 0.12) 0 1px 3px;
+  --shadow-sm: 0 1px 2px rgba(23, 34, 46, 0.05), 0 1px 3px rgba(23, 34, 46, 0.07);
+  --shadow-md: 0 2px 4px rgba(23, 34, 46, 0.05), 0 8px 20px rgba(23, 34, 46, 0.08);
+  --shadow-lg: 0 10px 32px rgba(23, 34, 46, 0.16);
+
+  /* Motion */
+  --dur-fast: 150ms;
+  --dur: 220ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Hover tint for rows and quiet controls */
+  --hover: rgba(30, 79, 216, 0.05);
 }
