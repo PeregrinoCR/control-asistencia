@@ -26,10 +26,10 @@ button {
 }
 
 a {
-  color: var(--blue);
+  color: var(--link);
 }
 a:hover {
-  color: var(--blue-ink);
+  color: var(--link-hover);
 }
 
 h1,
@@ -234,10 +234,10 @@ p {
 }
 .btn--dark {
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 .btn--dark:hover {
-  color: #fff;
+  color: var(--on-ink);
 }
 .btn--secondary {
   background: var(--surface);
@@ -307,7 +307,7 @@ p {
   height: 9px;
   border-radius: 50%;
   background: var(--orange);
-  border: 2px solid #fff;
+  border: 2px solid var(--surface);
 }
 
 /* ---------- Badges ---------- */
@@ -366,8 +366,8 @@ p {
   padding: 16px;
 }
 .card--night {
-  background: var(--night);
-  border-color: var(--night);
+  background: var(--night-card);
+  border-color: var(--night-card);
   color: #f2f4f0;
 }
 .card--inset {
@@ -954,7 +954,7 @@ p {
 
 /* Visible keyboard focus everywhere (the browser default is removed by resets on some controls). */
 :focus-visible {
-  outline: 3px solid var(--blue);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 .btn--primary:focus-visible,
@@ -1066,10 +1066,10 @@ p {
   padding: 12px 16px;
   border-radius: var(--radius-lg);
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   font-size: 15px;
   font-weight: 600;
-  box-shadow: rgba(23, 34, 46, 0.25) 0 8px 24px;
+  box-shadow: var(--shadow-lg);
   animation: toast-in 0.2s ease-out;
 }
 @keyframes toast-in {
@@ -1140,10 +1140,10 @@ p {
   box-shadow: var(--shadow-sm);
 }
 .btn--primary:hover:not(:disabled) {
-  background: var(--blue-ink);
+  background: var(--blue-hover);
 }
 .btn--danger:hover:not(:disabled) {
-  background: var(--orange-ink);
+  background: var(--orange-hover);
 }
 .btn--dark:hover:not(:disabled) {
   background: var(--ink-2);
@@ -1178,7 +1178,7 @@ p {
   background: var(--hover);
 }
 .segmented__item:hover:not([aria-pressed='true']):not([aria-selected='true']) {
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--seg-hover);
 }
 .row-button:hover {
   color: var(--blue-ink);

@@ -354,7 +354,7 @@ export function NoticesLive() {
 
             <div className="row wrap gap-10" style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 16, alignItems: 'center' }}>
               {urgent ? (
-                <span className="text-sm muted grow">Los avisos urgentes y de suspensión salen de inmediato; también por SMS si la línea está conectada.</span>
+                <span className="text-sm muted grow" style={{ flexBasis: 200 }}>Los avisos urgentes y de suspensión salen de inmediato; también por SMS si la línea está conectada.</span>
               ) : (
                 <>
                   <Segmented
@@ -369,7 +369,7 @@ export function NoticesLive() {
                   {later ? (
                     <input id="a-cuando" type="datetime-local" className="input" aria-label="Fecha y hora de envío" style={{ height: 42, width: 'auto' }} value={when} onChange={(e) => setWhen(e.target.value)} />
                   ) : (
-                    <span className="text-sm muted grow">Llega como notificación a quien la activó.</span>
+                    <span className="text-sm muted grow" style={{ flexBasis: 200 }}>Llega como notificación a quien la activó.</span>
                   )}
                   <span className="grow" />
                 </>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
-import { Avatar, Button, Icon } from '../../components';
+import { Avatar, Button, Icon, ThemeButton } from '../../components';
 import { MobileScreen, TeacherTabBar } from '../../layouts/MobileScreen';
 import type { Mark } from '../../data/school';
 import { SCHOOL_DAYS } from '../../data/schedule';
@@ -177,6 +177,7 @@ export function RollCallLive() {
         <div className="row between">
           <span className="text-sm muted strong">{me.name}</span>
           <span className="row gap-8">
+            <ThemeButton className="link-button text-sm" short />
             {hasPanel(roles, perms) && (
               <Link to={routes.admin.today} className="link-button text-sm">
                 Panel

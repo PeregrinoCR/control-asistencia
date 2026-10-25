@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Button, Icon } from '../../components';
+import { Button, Icon, ThemeButton } from '../../components';
 import { FamilyTabBar, MobileScreen, ScreenHeader } from '../../layouts/MobileScreen';
 import { signOut, useAuth } from '../../lib/auth';
 import { routes } from '../../routes';
@@ -49,6 +49,12 @@ export function FamilySettingsLive() {
                 ))}
               </section>
             )}
+
+            <section className="card card--mobile gap-8">
+              <h2 style={{ fontSize: 16, fontWeight: 700 }}>Apariencia</h2>
+              <span className="text-sm muted">Automático sigue el modo de su teléfono: claro de día y oscuro si lo tiene así.</span>
+              <ThemeButton className="btn btn--secondary" />
+            </section>
 
             <Button size="lg" onClick={() => signOut()}>
               Cerrar sesión

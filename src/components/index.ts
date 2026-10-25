@@ -15,3 +15,4 @@ export { SettingRow, Switch } from './Switch';
 export { ToastProvider, useFlash, useToast } from './Toast';
 export { EmptyState } from './EmptyState';
 export { Skeleton } from './Skeleton';
+export { ThemeButton } from './ThemeButton';

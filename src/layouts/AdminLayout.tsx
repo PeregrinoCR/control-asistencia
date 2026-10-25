@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, Navigate, useLocation } from 'react-router-dom';
-import { Icon, cx, type IconName } from '../components';
+import { Icon, ThemeButton, cx, type IconName } from '../components';
 import { SCHOOL_NAME, navCounts } from '../data/school';
 import type { PermissionId } from '../data/users';
 import { hasPanel, homeFor, signOut, useAuth } from '../lib/auth';
@@ -162,6 +162,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </span>
           </NavLink>
         )}
+        <ThemeButton className="admin__link" />
         {session && (
           <button type="button" className="admin__link" onClick={() => signOut()} title={session.user.email}>
             <span className="admin__link-main">

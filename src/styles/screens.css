@@ -195,7 +195,7 @@
 /* ---------- Familia · Gira ---------- */
 
 .trip-card {
-  background: var(--night);
+  background: var(--night-card);
   color: #f2f4f0;
   border-radius: var(--radius-2xl);
   padding: 16px;
@@ -507,7 +507,7 @@
 .day-tabs__item[aria-selected='true'] {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
 }
 .day-tabs__today {
   font-size: 12px;

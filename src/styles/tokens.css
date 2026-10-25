@@ -71,4 +71,126 @@
 
   /* Hover tint for rows and quiet controls */
   --hover: rgba(30, 79, 216, 0.05);
+
+  /* Pieces that change with the theme */
+  --link: var(--blue);
+  --link-hover: var(--blue-ink);
+  --focus: var(--blue);
+  --blue-hover: #163ba3;
+  --orange-hover: #a3330a;
+  --on-ink: #ffffff;
+  --notif-bg: #f7f8f5;
+  --seg-hover: rgba(255, 255, 255, 0.55);
+  --night-card: var(--night);
+  --nav-edge: transparent;
+  --paper: #ffffff;
+  color-scheme: light;
+}
+
+/*
+ * Dark theme. It follows the device (prefers-color-scheme) unless the person picked a theme in the app:
+ * data-theme="dark" forces it and data-theme="light" keeps the light one. The two blocks below are the same
+ * palette: one for the automatic case, one for the forced case.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e1621;
+    --surface: #16212f;
+    --sunken: #1d2a3a;
+    --neutral-bg: #223041;
+    --ink: #e8edf2;
+    --ink-2: #d3dae2;
+    --ink-3: #bcc6d0;
+    --muted: #a3afbb;
+    --muted-2: #94a1ae;
+    --faint: #7f8c99;
+    --border: #26364b;
+    --border-soft: #1e2b3c;
+    --border-input: #3a4b62;
+    --border-choice: #324259;
+    --border-dashed: #4f6179;
+    --night: #0a111a;
+    --night-2: #1a2a40;
+    --night-line: #223249;
+    --night-card: #1a2a40;
+    --blue: #3b6bf0;
+    --blue-ink: #9db8ff;
+    --blue-bg: #1a2a52;
+    --amber: #e0a040;
+    --amber-ink: #f0c777;
+    --amber-bg: #38290f;
+    --amber-chart: #e0a73f;
+    --orange: #d9531f;
+    --orange-ink: #ff9d78;
+    --orange-bg: #3b1e13;
+    --orange-line: #6b3b29;
+    --green: #2fa68c;
+    --green-ink: #6fdcc0;
+    --green-bg: #11332a;
+    --shadow-raised: rgba(0, 0, 0, 0.5) 0 1px 3px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
+    --hover: rgba(157, 184, 255, 0.07);
+    --link: #8fb0ff;
+    --link-hover: #b9ccff;
+    --focus: #8fb0ff;
+    --blue-hover: #2f5ad6;
+    --orange-hover: #b8420d;
+    --on-ink: #0e1621;
+    --notif-bg: #223041;
+    --seg-hover: rgba(255, 255, 255, 0.06);
+    --nav-edge: #223249;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0e1621;
+  --surface: #16212f;
+  --sunken: #1d2a3a;
+  --neutral-bg: #223041;
+  --ink: #e8edf2;
+  --ink-2: #d3dae2;
+  --ink-3: #bcc6d0;
+  --muted: #a3afbb;
+  --muted-2: #94a1ae;
+  --faint: #7f8c99;
+  --border: #26364b;
+  --border-soft: #1e2b3c;
+  --border-input: #3a4b62;
+  --border-choice: #324259;
+  --border-dashed: #4f6179;
+  --night: #0a111a;
+  --night-2: #1a2a40;
+  --night-line: #223249;
+  --night-card: #1a2a40;
+  --blue: #3b6bf0;
+  --blue-ink: #9db8ff;
+  --blue-bg: #1a2a52;
+  --amber: #e0a040;
+  --amber-ink: #f0c777;
+  --amber-bg: #38290f;
+  --amber-chart: #e0a73f;
+  --orange: #d9531f;
+  --orange-ink: #ff9d78;
+  --orange-bg: #3b1e13;
+  --orange-line: #6b3b29;
+  --green: #2fa68c;
+  --green-ink: #6fdcc0;
+  --green-bg: #11332a;
+  --shadow-raised: rgba(0, 0, 0, 0.5) 0 1px 3px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
+  --hover: rgba(157, 184, 255, 0.07);
+  --link: #8fb0ff;
+  --link-hover: #b9ccff;
+  --focus: #8fb0ff;
+  --blue-hover: #2f5ad6;
+  --orange-hover: #b8420d;
+  --on-ink: #0e1621;
+  --notif-bg: #223041;
+  --seg-hover: rgba(255, 255, 255, 0.06);
+  --nav-edge: #223249;
+  color-scheme: dark;
 }

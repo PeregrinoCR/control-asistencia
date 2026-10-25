@@ -88,7 +88,7 @@ export function SignaturePad({ value, onChange, signer, signedAt, height = 110 }
           onPointerMove={move}
           onPointerUp={end}
           onPointerCancel={end}
-          style={{ width: '100%', height, touchAction: 'none', borderRadius: 'var(--radius-lg)', border: '1.5px dashed var(--blue)', background: 'var(--surface)', cursor: 'crosshair' }}
+          style={{ width: '100%', height, touchAction: 'none', borderRadius: 'var(--radius-lg)', border: '1.5px dashed var(--blue)', background: 'var(--paper)', cursor: 'crosshair' }}
         />
         <div className="row between wrap gap-8">
           <span className="text-xs muted row gap-4">
@@ -110,7 +110,7 @@ export function SignaturePad({ value, onChange, signer, signedAt, height = 110 }
   return (
     <div
       className="stack between"
-      style={{ height, borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--blue)', background: 'var(--surface)', padding: '8px 14px' }}
+      style={{ height, borderRadius: 'var(--radius-lg)', border: '1.5px solid var(--blue)', background: 'var(--paper)', padding: '8px 14px' }}
     >
       <img src={value} alt={`Firma de ${signer}`} style={{ height: height - 54, maxWidth: '100%', objectFit: 'contain', alignSelf: 'flex-start' }} />
       <div className="row between text-xs muted">

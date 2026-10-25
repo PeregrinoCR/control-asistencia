@@ -1,9 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { applyTheme, storedTheme } from './lib/theme';
 import './styles/global.css';
 import './styles/layouts.css';
 import './styles/screens.css';
+
+applyTheme(storedTheme());
 
 // Installable app and notifications. The hosted preview (memory router) runs without it.
 if ('serviceWorker' in navigator && import.meta.env.PROD && import.meta.env.VITE_ROUTER !== 'memory') {

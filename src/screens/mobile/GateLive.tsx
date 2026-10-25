@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Avatar, Badge, Button, EmptyState, Icon, QrScanner, Segmented, type IconName } from '../../components';
+import { Avatar, Badge, Button, EmptyState, Icon, QrScanner, Segmented, ThemeButton, type IconName } from '../../components';
 import { MobileScreen } from '../../layouts/MobileScreen';
 import { cardCode, checkCard, type GateMode, type GateResult, type StudentCard } from '../../data/gate';
 import { homeFor, signOut, useAuth } from '../../lib/auth';
@@ -164,9 +164,12 @@ export function GateLive() {
               Control de portón
             </h1>
           </div>
-          <button type="button" className="link-button text-sm" onClick={() => signOut()}>
-            Salir
-          </button>
+          <span className="row gap-8">
+            <ThemeButton className="link-button text-sm" short />
+            <button type="button" className="link-button text-sm" onClick={() => signOut()}>
+              Salir
+            </button>
+          </span>
         </div>
         <Segmented
           label="Registrar"
